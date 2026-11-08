@@ -12,13 +12,13 @@ The product goal remains open until the specification, approved rollout scope, o
 | Requirements | deferred | 1 |
 | Requirements | not-applicable | 1 |
 | Requirements | planned | 225 |
-| Tasks including epics | configuration-required | 16 |
+| Tasks including epics | configuration-required | 17 |
 | Tasks including epics | deferred | 5 |
 | Tasks including epics | implemented | 3 |
-| Tasks including epics | in-progress | 21 |
+| Tasks including epics | in-progress | 17 |
 | Tasks including epics | not-applicable | 1 |
-| Tasks including epics | planned | 515 |
-| Tasks including epics | verified | 9 |
+| Tasks including epics | planned | 514 |
+| Tasks including epics | verified | 13 |
 
 ## 0-discovery
 
@@ -51,11 +51,11 @@ The product goal remains open until the specification, approved rollout scope, o
 | --- | --- | --- | --- | --- |
 | E01 | Identity, tenancy and persistence foundation | planned |  |  |
 | F-001 | Create reproducible repository workspace and package scripts | verified | D-005 | package.json, package-lock.json, scripts/verify.mjs, docs/verification/checks/results.json, docs/verification/clean-workspace-2026-11-08.md, docs/verification/clean-install-2026-11-08/results.json, apps/api/test/migration-upgrade.test.ts, docs/verification/git-checkout-2026-11-08.md, docs/verification/git-checkout-2026-11-08/results.json |
-| F-002 | Define canonical domain and authenticated command contracts | in-progress | F-001 | docs/architecture/initial-api-contract.md, docs/architecture/aggregate-command-contract.md, apps/api/src/commands.ts, docs/verification/checks/api-integration.log |
-| F-003 | Create database migrations and integrity constraints | in-progress | F-002 | apps/api/migrations/005_aggregate_event_ledger.sql, apps/api/test/migration-upgrade.test.ts, apps/api/test/foundation.test.ts, docs/verification/checks/api-integration.log |
-| F-004 | Implement authentication adapter and secure session boundary | planned | F-003, D-007 |  |
+| F-002 | Define canonical domain and authenticated command contracts | verified | F-001 | docs/architecture/initial-api-contract.md, docs/architecture/aggregate-command-contract.md, apps/api/src/commands.ts, docs/verification/checks/api-integration.log, apps/api/test/foundation.test.ts |
+| F-003 | Create database migrations and integrity constraints | verified | F-002 | apps/api/migrations/005_aggregate_event_ledger.sql, apps/api/test/migration-upgrade.test.ts, apps/api/test/foundation.test.ts, docs/verification/checks/api-integration.log |
+| F-004 | Implement authentication adapter and secure session boundary | configuration-required | F-003, D-007 | apps/api/src/config.ts, apps/api/src/identity.ts, apps/api/src/oidc-client.ts, apps/api/test/foundation.test.ts, docs/verification/checks/api-integration.log |
 | F-005 | Enforce tenant and site access in persistence paths | in-progress | F-004 | apps/api/migrations/001_foundation.sql, apps/api/migrations/005_aggregate_event_ledger.sql, apps/api/test/foundation.test.ts, docs/verification/checks/api-integration.log |
-| F-006 | Implement immutable event, version and idempotency persistence | in-progress | F-003 | apps/api/src/commands.ts, apps/api/test/foundation.test.ts, docs/verification/checks/api-integration.log |
+| F-006 | Implement immutable event, version and idempotency persistence | verified | F-003 | apps/api/src/commands.ts, apps/api/test/foundation.test.ts, docs/verification/checks/api-integration.log |
 | F-007 | Create secure attachment storage and upload quarantine | in-progress | F-005, EVID-001, EVID-002, EVID-003, EVID-004, EVID-005, EVID-006 | docs/architecture/evidence-storage.md, docs/architecture/candidates/evidence-a.md, docs/architecture/candidates/evidence-b.md |
 | EVID-001 | Add scoped upload intents and immutable evidence metadata | in-progress | F-005 | docs/architecture/evidence-storage.md |
 | EVID-002 | Stream validated evidence to a private quarantine store | in-progress | EVID-001 | docs/architecture/evidence-storage.md, apps/api/src/evidence.ts |
@@ -64,7 +64,7 @@ The product goal remains open until the specification, approved rollout scope, o
 | EVID-005 | Verify quarantine, scanner, replay and failure recovery | in-progress | EVID-002, EVID-003, EVID-004 | docs/architecture/evidence-storage.md, apps/api/test/evidence.test.ts |
 | EVID-006 | Reconcile evidence objects with metadata backups and restores | planned | EVID-001, EVID-002, EVID-003 | docs/architecture/evidence-storage.md |
 | F-008 | Build responsive shell and accessible controls | in-progress | F-001 | docs/verification/responsive-shell.md: 15 Edge viewport/orientation and 200%/400% zoom checks pass for public sign-in only; keyboard focus and physical-device limitations are recorded, scripts/browser-smoke.mjs, docs/verification/browser/results.json, docs/verification/responsive-shell.md |
-| F-009 | Create domain, database and browser verification entry points | in-progress | F-001, F-003 | apps/api/test/foundation.test.ts: real PostgreSQL integration entry point for domain, tenancy, command, and rollback behavior, apps/web/scripts/verify-responsive.mjs: repeatable Microsoft Edge responsive public sign-in entry point, docs/verification/checks/results.json: local typecheck, build, traceability, and API integration results, scripts/browser-smoke.mjs, docs/verification/browser/results.json |
+| F-009 | Create domain, database and browser verification entry points | verified | F-001, F-003 | apps/api/test/foundation.test.ts: real PostgreSQL integration entry point for domain, tenancy, command, and rollback behavior, apps/web/scripts/verify-responsive.mjs: repeatable Microsoft Edge responsive public sign-in entry point, docs/verification/checks/results.json: local typecheck, build, traceability, and API integration results, scripts/browser-smoke.mjs, docs/verification/browser/results.json, apps/api/test/foundation.test.ts, docs/verification/checks/results.json |
 | F-010 | Configure CI and secret-safe development environment | in-progress | F-009 | apps/api/test/foundation.test.ts: real PostgreSQL integration entry point for domain, tenancy, command, and rollback behavior, apps/web/scripts/verify-responsive.mjs: repeatable Microsoft Edge responsive public sign-in entry point, docs/verification/checks/results.json: full local typecheck, build, traceability, and API integration results |
 | F-011 | Implement saved drafts with explicit recovery state | in-progress | F-008, F-005 | scripts/browser-smoke.mjs, docs/verification/browser/results.json, apps/web/src/pages/intake.tsx, docs/architecture/platform-strategy.md |
 | BUILD-BR-01 | One controlling work order per visit | planned | F-002, F-009, F-003, F-005, F-006 |  |

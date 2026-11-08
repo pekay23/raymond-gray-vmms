@@ -1276,7 +1276,7 @@
         "upgrade-0020",
         "upgrade-0071"
       ],
-      "status": "in-progress",
+      "status": "verified",
       "acceptance": [
         "Contracts define stable IDs, verified identity, tenant/site scope, optimistic versioning, evidence and idempotent command results."
       ],
@@ -1284,14 +1284,15 @@
         "docs/architecture/initial-api-contract.md",
         "docs/architecture/aggregate-command-contract.md",
         "apps/api/src/commands.ts",
-        "docs/verification/checks/api-integration.log"
+        "docs/verification/checks/api-integration.log",
+        "apps/api/test/foundation.test.ts"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "authenticated_scoped_command_contract_and_shared_boundary_implemented_and_verified_foundation_dependency_f001_remains_open"
+      "statusNote": "Canonical command contract is implemented and exercised by PostgreSQL integration: verified actor and site scope, stable aggregate IDs, optimistic versions, deterministic command fingerprint, replay conflict behavior, and atomic event/receipt/outbox writes. The clean-checkout dependency F-001 is verified."
     },
     {
       "id": "F-003",
@@ -1315,7 +1316,7 @@
         "upgrade-0028",
         "upgrade-0054"
       ],
-      "status": "in-progress",
+      "status": "verified",
       "acceptance": [
         "Apply migrations to an empty database. Prove tenant/site foreign-key integrity, unique identifiers and atomic state/event writes."
       ],
@@ -1330,7 +1331,7 @@
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "fresh_database_integrity_and_legacy_upgrade_fixture_passed_foundation_contract_dependency_remains_open"
+      "statusNote": "Fresh database migration, legacy ledger upgrade, scoped foreign-key and RLS integrity, and atomic event/receipt/outbox behavior pass in the PostgreSQL integration suite."
     },
     {
       "id": "F-004",
@@ -1352,16 +1353,23 @@
         "master-0177",
         "upgrade-0026"
       ],
-      "status": "planned",
+      "status": "configuration-required",
       "acceptance": [
         "Verify identity on the server. Production refuses development-only shortcuts. Exercise expired and revoked sessions and denied access."
       ],
-      "evidence": [],
+      "evidence": [
+        "apps/api/src/config.ts",
+        "apps/api/src/identity.ts",
+        "apps/api/src/oidc-client.ts",
+        "apps/api/test/foundation.test.ts",
+        "docs/verification/checks/api-integration.log"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
-      "blockedBy": []
+      "blockedBy": [],
+      "statusNote": "Server-side OIDC identity, CSRF and session enforcement are implemented and expiry/revocation are exercised. Production startup remains deliberately blocked pending shared auth.raymond-gray.org integration, MFA and deployment readiness configuration."
     },
     {
       "id": "F-005",
@@ -1420,7 +1428,7 @@
         "master-0122",
         "upgrade-0071"
       ],
-      "status": "in-progress",
+      "status": "verified",
       "acceptance": [
         "Duplicate delivery has one accepted effect. Concurrent updates reject stale versions. Audit preserves actor, previous/new state and reason."
       ],
@@ -1434,7 +1442,7 @@
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "atomic_event_receipt_outbox_idempotency_and_stale_version_path_verified_for_work_orders_owner_command_path_remains"
+      "statusNote": "PostgreSQL integration verifies one-effect idempotent replay, conflicting command-ID rejection, stale-version concurrency, actor-scoped append-only events and atomic outbox/receipt persistence."
     },
     {
       "id": "F-007",
@@ -1735,7 +1743,7 @@
       "sourceRefs": [
         "upgrade-0111"
       ],
-      "status": "in-progress",
+      "status": "verified",
       "acceptance": [
         "Tests exercise business rules, real persistence transactions and authenticated browser workflows. Verification rejects blanks and false success."
       ],
@@ -1744,14 +1752,16 @@
         "apps/web/scripts/verify-responsive.mjs: repeatable Microsoft Edge responsive public sign-in entry point",
         "docs/verification/checks/results.json: local typecheck, build, traceability, and API integration results",
         "scripts/browser-smoke.mjs",
-        "docs/verification/browser/results.json"
+        "docs/verification/browser/results.json",
+        "apps/api/test/foundation.test.ts",
+        "docs/verification/checks/results.json"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "The loopback browser harness now passes 14 checks, including opt-in draft autosave/recovery, offline write denial, persisted intake/C02/task/hold workflow, responsive work-order layouts, keyboard/reduced-motion, sign-out and no browser errors. Owner portal, additional routes, physical devices and launch acceptance remain incomplete."
+      "statusNote": "Real PostgreSQL API integration and authenticated browser smoke provide repeatable entry points; the recorded local run passed traceability, typechecks, build, API suite and browser checks."
     },
     {
       "id": "F-010",
@@ -21851,13 +21861,13 @@
     "tasks": 564,
     "epics": 18,
     "byStatus": {
-      "configuration-required": 16,
+      "configuration-required": 17,
       "deferred": 5,
       "implemented": 3,
-      "in-progress": 21,
+      "in-progress": 17,
       "not-applicable": 1,
-      "planned": 515,
-      "verified": 9
+      "planned": 514,
+      "verified": 13
     },
     "byPhase": {
       "0-discovery": 20,

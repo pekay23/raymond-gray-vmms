@@ -418,6 +418,20 @@ test('logout invalidates the server session and requires CSRF',async()=>{
   const session=await app.inject({url:'/api/v1/session',headers:headers(jar)});assert.deepEqual(session.json(),{authenticated:false});
 });
 
+test('expired session is rejected by the server for reads and protected routes',async()=>{
+  const jar=await signIn('test-reader');
+  await admin.query("UPDATE staff_sessions SET expires_at=now()-interval '1 second' WHERE user_id=$1",[reader]);
+  assert.deepEqual((await app.inject({url:'/api/v1/session',headers:headers(jar)})).json(),{authenticated:false});
+  assert.equal((await app.inject({url:`/api/v1/sites/${siteA}/work-orders`,headers:headers(jar)})).statusCode,401);
+});
+
+test('revoked server session is rejected by the server for reads and protected routes',async()=>{
+  const jar=await signIn('test-reader');
+  await admin.query('DELETE FROM staff_sessions WHERE user_id=$1',[reader]);
+  assert.deepEqual((await app.inject({url:'/api/v1/session',headers:headers(jar)})).json(),{authenticated:false});
+  assert.equal((await app.inject({url:`/api/v1/sites/${siteA}/work-orders`,headers:headers(jar)})).statusCode,401);
+});
+
 test('login attempts are bounded without leaking account existence',async()=>{
   const jar:Record<string,string>={};
   updateCookies(jar,(await app.inject('/api/v1/session')).headers['set-cookie']);
