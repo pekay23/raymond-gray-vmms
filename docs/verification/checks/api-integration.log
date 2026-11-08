@@ -1,0 +1,45 @@
+
+> raymond-gray-vmms@0.1.0 test
+> npm run test --workspaces --if-present
+
+
+> @vmms/api@0.1.0 test
+> tsx --test test/*.test.ts
+
+✔ staff evidence upload is quarantined, scanned, verified, and served with an access audit (5361.2911ms)
+﹣ local S3 and malware scanner accept and serve a verified synthetic file (2.1745ms) # SKIP
+✔ unavailable and infected scan verdicts never allow evidence download (803.9227ms)
+✔ worker storage configuration requires its separate object-store identity (16.519ms)
+✔ runtime cannot claim or complete evidence scans or forge accepted evidence (4634.6415ms)
+✔ shared OIDC login binds independent tabs, issues only a local session, and consumes state once (597.6253ms)
+✔ runs with a real non-owner role and fails closed without transaction scope (30.8798ms)
+✔ session identifies only permitted sites and prevents CSRF, forged actor and unauthenticated requests (74.0034ms)
+✔ intake persists one visit, work order and C01 with all gates pending (765.3597ms)
+✔ owner access approval, replay, transfer and revocation require the site capability and preserve revisions (885.5338ms)
+✔ owner access expires at the UTC interval boundary and then records an explicit expiry revision (2108.2163ms)
+✔ owner command outbox failure rolls back scope, relationship, revision, event and receipt (252.6718ms)
+✔ aggregate registry and ledger enforce root type, event version and outbox linkage (130.8537ms)
+✔ simultaneous replay commits once and changed payload key reuse conflicts (173.211ms)
+✔ command replay rechecks current write access before returning a receipt (123.2926ms)
+✔ duplicate VIN does not duplicate customer identity or alter ownership (29.6451ms)
+✔ C02 stays on same work order and replay precedes stale-version rejection (102.2324ms)
+✔ concurrent same-version mutations yield exactly one commit (76.6781ms)
+✔ cross-site and cross-organisation IDs cannot read, mutate or inflate totals (89.7238ms)
+✔ planned task holds retain exact scope and do not prevent unrelated planning (433.4331ms)
+✔ invalid task relationship rolls back version and all command records (105.4006ms)
+✔ forced outbox failure rolls back customer, vehicle, visit, root, WO, event and receipt (138.7197ms)
+✔ RLS isolates reads and scoped FKs, and pooled scope does not leak after commit (61.1556ms)
+✔ runtime role cannot rewrite or delete event and idempotency history (176.5987ms)
+✔ membership lock function is narrowly scoped and grants no membership mutation rights (96.0677ms)
+✔ read-only account cannot mutate and revoked membership loses access (144.1771ms)
+✔ logout invalidates the server session and requires CSRF (112.6094ms)
+✔ login attempts are bounded without leaking account existence (787.8135ms)
+✔ migration preserves legacy work-order event and outbox history with typed scope (2877.9337ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 16567.9997

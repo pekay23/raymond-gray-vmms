@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "signature": "18e7cc5bbf2bdd3a771dd7f550925819c982381f3af4d76a6d4577e8906b839c",
+  "settings": {
+    "widths": [
+      480,
+      768,
+      1024,
+      1440
+    ],
+    "webp": {
+      "quality": 78,
+      "effort": 5
+    },
+    "avif": {
+      "quality": 48,
+      "effort": 5
+    },
+    "sharp": "0.35.5"
+  },
+  "inputs": [
+    {
+      "name": "square",
+      "file": "workshop-square.png",
+      "sha256": "5405ae53485ccd436fe46f897ebf5bf8e6515b33be21bc3be98760521db5a779",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "name": "panorama",
+      "file": "workshop-panorama.png",
+      "sha256": "e3bde426c146a6a5bcb954dfbace303ab7d0cdd0b675aec347c79a44f251040a",
+      "width": 1915,
+      "height": 821
+    },
+    {
+      "name": "portrait",
+      "file": "workshop-portrait.png",
+      "sha256": "df17564fcc7309e9f31da0472ae533189ca150c82f613d879831e608c698cbf8",
+      "width": 1086,
+      "height": 1448
+    }
+  ],
+  "variants": {
+    "square": {
+      "aspectRatio": 1,
+      "webp": [
+        {
+          "src": "/images/workshop/workshop-square-480.webp",
+          "width": 480,
+          "height": 480,
+          "bytes": 21660,
+          "sha256": "d29b6d7ff2bacb517c2f436ab0863b01d5d44972aba7f9550bb7824d9038b518"
+        },
+        {
+          "src": "/images/workshop/workshop-square-768.webp",
+          "width": 768,
+          "height": 768,
+          "bytes": 43094,
+          "sha256": "ec516116b6cba3ebfa6a42173644715da1ed44dcdb7fff69c3cbb09aae87fb83"
+        },
+        {
+          "src": "/images/workshop/workshop-square-1024.webp",
+          "width": 1024,
+          "height": 1024,
+          "bytes": 65540,
+          "sha256": "798828e882f8a2b3c60f320c522a1504940c06835312f2c5eac6d51108318fe9"
+        }
+      ],
+      "avif": [
+        {
+          "src": "/images/workshop/workshop-square-480.avif",
+          "width": 480,
+          "height": 480,
+          "bytes": 10737,
+          "sha256": "28fb4463f0c4cd7ae2e69aa20bec034184c9ea3c6a09c4bc1ad94e8eb70bf7a1"
+        },
+        {
+          "src": "/images/workshop/workshop-square-768.avif",
+          "width": 768,
+          "height": 768,
+          "bytes": 21281,
+          "sha256": "509c1986698c61f6777ec258ecc969aaa202bb9dc41ad8f4729e777c28c8c7da"
+        },
+        {
+          "src": "/images/workshop/workshop-square-1024.avif",
+          "width": 1024,
+          "height": 1024,
+          "bytes": 32302,
+          "sha256": "e96d22667b492701cec01735b3d94d4dbdb8a5f13dc41a141cc44ca98742e48c"
+        }
+      ]
+    },
+    "panorama": {
+      "aspectRatio": 2.33252131546894,
+      "webp": [
+        {
+          "src": "/images/workshop/workshop-panorama-480.webp",
+          "width": 480,
+          "height": 206,
+          "bytes": 10312,
+          "sha256": "991987cc1506c9b71d2ec3fb918675097533c88e7d9d90cd0aca3c9879039c78"
+        },
+        {
+          "src": "/images/workshop/workshop-panorama-768.webp",
+          "width": 768,
+          "height": 329,
+          "bytes": 21630,
+          "sha256": "f49e108f0e4a28f2a2545cd3a420df6e5918d082b60cf23d1b21279243da0b90"
+        },
+        {
+          "src": "/images/workshop/workshop-panorama-1024.webp",
+          "width": 1024,
+          "height": 439,
+          "bytes": 34266,
+          "sha256": "0fe6070a5b4b746b56d23551362cac1126aa83118d8afc2e32846a8e9bffc79d"
+        },
+        {
+          "src": "/images/workshop/workshop-panorama-1440.webp",
+          "width": 1440,
+          "height": 617,
+          "bytes": 57706,
+          "sha256": "2892e161d67ec8b683ef165e934f7e692fec5774842c26a9bf2a0f4385a00d16"
+        }
+      ],
+      "avif": [
+        {
+          "src": "/images/workshop/workshop-panorama-480.avif",
+          "width": 480,
+          "height": 206,
+          "bytes": 5404,
+          "sha256": "53f9b7efdc18f0007cd3fd5a97cf8922c9ea5235275f4208f921b5ff5531a853"
+        },
+        {
+          "src": "/images/workshop/workshop-panorama-768.avif",
+          "width": 768,
+          "height": 329,
+          "bytes": 11074,
+          "sha256": "beabe2fdce25cf5e45500266eac7e07e1531ea27415065d01e303c9483e3684a"
+        },
+        {
+          "src": "/images/workshop/workshop-panorama-1024.avif",
+          "width": 1024,
+          "height": 439,
+          "bytes": 16819,
+          "sha256": "60685ed97a522d8c41e57c32cca3cd16d195666911577dd9caabeac0b34867c2"
+        },
+        {
+          "src": "/images/workshop/workshop-panorama-1440.avif",
+          "width": 1440,
+          "height": 617,
+          "bytes": 28731,
+          "sha256": "3da4e7d8fcf2514c66215b87bf4831c75ad9f7c88ffbf8adb56bd55406dd4604"
+        }
+      ]
+    },
+    "portrait": {
+      "aspectRatio": 0.75,
+      "webp": [
+        {
+          "src": "/images/workshop/workshop-portrait-480.webp",
+          "width": 480,
+          "height": 640,
+          "bytes": 28464,
+          "sha256": "3538ea6b2d25c277a045c3b8733b3d01ab2f191f02eb855f10e1493477d78c21"
+        },
+        {
+          "src": "/images/workshop/workshop-portrait-768.webp",
+          "width": 768,
+          "height": 1024,
+          "bytes": 56504,
+          "sha256": "d46c61da9a094fa3990cae6d07795935f59f6d006363c5208f8bef355859fe19"
+        },
+        {
+          "src": "/images/workshop/workshop-portrait-1024.webp",
+          "width": 1024,
+          "height": 1365,
+          "bytes": 83594,
+          "sha256": "366bc40b60a9e87bee74fe0a0fb8216259d437f8aa8e0dc07db6624bb09cf096"
+        }
+      ],
+      "avif": [
+        {
+          "src": "/images/workshop/workshop-portrait-480.avif",
+          "width": 480,
+          "height": 640,
+          "bytes": 13992,
+          "sha256": "d6fc36a32f45f657d9d68026e1f2251e8510b458ffc15276dd44a0775f4ac981"
+        },
+        {
+          "src": "/images/workshop/workshop-portrait-768.avif",
+          "width": 768,
+          "height": 1024,
+          "bytes": 27713,
+          "sha256": "cd3cc04d9a0cf3286d98523d0c052ea40f5339b0eaa2231c834188e2e0e800a6"
+        },
+        {
+          "src": "/images/workshop/workshop-portrait-1024.avif",
+          "width": 1024,
+          "height": 1365,
+          "bytes": 41981,
+          "sha256": "56a59c466dd6156747a247b27ca9f69be6582a79fdfaf6f602b003b574315e06"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "recordedAt": "2026-11-08T11:10:16.700Z",
+  "browser": "157.0.4341.42",
+  "url": "http://127.0.0.1:5173",
+  "scope": "Local synthetic staff reception, planned-task and task-scoped-hold workflow only. No owner-portal, physical-device, release, finance or operational acceptance claim.",
+  "authenticatedViewports": [
+    {
+      "width": 280,
+      "height": 653,
+      "name": "compact phone"
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "name": "small phone"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "name": "phone"
+    },
+    {
+      "width": 344,
+      "height": 882,
+      "name": "folded device"
+    },
+    {
+      "width": 673,
+      "height": 841,
+      "name": "unfolded device"
+    },
+    {
+      "width": 540,
+      "height": 720,
+      "name": "large phone landscape"
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "name": "tablet portrait"
+    },
+    {
+      "width": 820,
+      "height": 1180,
+      "name": "large tablet portrait"
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "name": "tablet landscape"
+    },
+    {
+      "width": 1440,
+      "height": 1000,
+      "name": "desktop"
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "name": "wide desktop"
+    },
+    {
+      "width": 2560,
+      "height": 1080,
+      "name": "ultrawide desktop"
+    }
+  ],
+  "checks": [
+    {
+      "name": "Official brand image and favicon load on the neutral sign-in page",
+      "result": "VERIFIED",
+      "at": "2026-11-08T11:10:02.900Z"
+    },
+    {
+      "name": "Individual staff signs in through the local identity provider and VMMS API",
+      "result": "VERIFIED",
+      "at": "2026-11-08T11:10:07.769Z"
+    },
+    {
+      "name": "Opted-in intake draft automatically saves later edits and recovers after refresh",
+      "result": "VERIFIED",
+      "at": "2026-11-08T11:10:09.564Z"
+    },
+    {
+      "name": "Explicit unsubmitted tab draft survives refresh",
+      "result": "VERIFIED",
+      "at": "2026-11-08T11:10:10.438Z"
+    },
+    {
+      "name": "Offline mode preserves form entries and blocks submission",
+      "result": "VERIFIED",
+      "at": "2026-11-08T11:10:10.587Z"
+    },
+    {
+      "name": "Real intake and C02 persist on one work order through refresh",
+      "result": "VERIFIED",
+      "at": "2026-11-08T11:10:12.697Z"
+    },
+    {
+      "name": "A proposed task persists and remains labelled planned after refresh",
+      "result": "VERIFIED",
+      "at": "2026-11-08T11:10:13.604Z"
+    },
+    {
+      "name": "Protective hold is attributable to the selected task",
+      "result": "VERIFIED",
+      "at": "2026-11-08T11:10:14.334Z"
+    },
+    {
+      "name": "Task-scoped hold and unrelated task remain distinct after refresh",
+      "result": "VERIFIED",
+      "at": "2026-11-08T11:10:15.471Z"
+    },
+    {
+      "name": "Authenticated work-order layout fits 12 phone, foldable, tablet and desktop viewports; phone buttons meet 44 pixels",
+      "result": "VERIFIED",
+      "at": "2026-11-08T11:10:16.421Z"
+    },
+    {
+      "name": "Staff workspace actions remain keyboard reachable with visible focus",
+      "result": "VERIFIED",
+      "at": "2026-11-08T11:10:16.512Z"
+    },
+    {
+      "name": "Authenticated workspace respects the reduced-motion preference",
+      "result": "VERIFIED",
+      "at": "2026-11-08T11:10:16.538Z"
+    },
+    {
+      "name": "Sign-out returns to entry and removes accessible VMMS tab drafts",
+      "result": "VERIFIED",
+      "at": "2026-11-08T11:10:16.700Z"
+    },
+    {
+      "name": "No uncaught browser errors during the tested staff workflow",
+      "result": "VERIFIED",
+      "at": "2026-11-08T11:10:16.700Z"
+    }
+  ],
+  "pageErrors": []
+}

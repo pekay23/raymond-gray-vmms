@@ -1,0 +1,14 @@
+[
+  {
+    "key": "master",
+    "file": "Raymond_Gray_VMMS_Master_Functional_Specification.docx",
+    "sha256": "51a99f1a5b2e04a70b4bb246730b31721cf643f2a4c4fe13d6b8d6fb25feee2d",
+    "blocks": 234
+  },
+  {
+    "key": "upgrade",
+    "file": "Raymond_Gray_VMMS_Upgrade_Implementation_Prompt.docx",
+    "sha256": "d413ced5790dfc76968e588cc2defcd5561b6d824479e4a3a36a6048c12496ca",
+    "blocks": 116
+  }
+]

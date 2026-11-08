@@ -1,0 +1,38 @@
+services:
+  # The scan worker must connect with a dedicated LOGIN principal that inherits
+  # vmms_evidence_worker; never reuse vmms_runtime for this process.
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: vmms
+      POSTGRES_USER: vmms_owner
+      POSTGRES_PASSWORD: vmms_local_development_only
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - vmms_postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vmms_owner -d vmms"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: "no"
+
+  evidence-s3mock:
+    image: adobe/s3mock:5.2.2
+    profiles: ["evidence"]
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: vmms-evidence
+    ports:
+      - "127.0.0.1:19090:9090"
+    restart: "no"
+
+  evidence-clamav:
+    image: clamav/clamav:1.4
+    profiles: ["evidence"]
+    ports:
+      - "127.0.0.1:13310:3310"
+    restart: "no"
+
+volumes:
+  vmms_postgres:

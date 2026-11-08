@@ -1,0 +1,586 @@
+{
+  "file": "Raymond_Gray_VMMS_Upgrade_Implementation_Prompt.docx",
+  "sha256": "d413ced5790dfc76968e588cc2defcd5561b6d824479e4a3a36a6048c12496ca",
+  "blocks": [
+    {
+      "id": "upgrade-0001",
+      "kind": "paragraph",
+      "text": "Software Upgrade — Master Implementation Prompt"
+    },
+    {
+      "id": "upgrade-0002",
+      "kind": "paragraph",
+      "text": "Ready-to-use instructions for the software development team or AI coding agent"
+    },
+    {
+      "id": "upgrade-0003",
+      "kind": "table-row",
+      "text": "Document status | Development specification — not an approved operational SOP"
+    },
+    {
+      "id": "upgrade-0004",
+      "kind": "table-row",
+      "text": "System title | EV Service Centre Operations & Quality Management System"
+    },
+    {
+      "id": "upgrade-0005",
+      "kind": "table-row",
+      "text": "Design rule | Audit first → reuse/enhance existing → additive migration → test → controlled release"
+    },
+    {
+      "id": "upgrade-0006",
+      "kind": "paragraph",
+      "text": "0. Assignment and operating constraint"
+    },
+    {
+      "id": "upgrade-0007",
+      "kind": "paragraph",
+      "text": "Upgrade the EXISTING Raymond Gray Vehicle Maintenance Management System to implement the EV Service Centre Operations & Quality Management System (EVSC-OQMS). This is an in-place, gap-based enhancement. Do not rebuild, replace, replatform, duplicate or delete working functionality merely because this specification describes it. Preserve existing customers, vehicles, service history, jobs, invoices, inventory, identifiers, integrations, branding and access patterns unless a documented migration is approved."
+    },
+    {
+      "id": "upgrade-0008",
+      "kind": "paragraph",
+      "text": "The business rules are the authority; the technology stack is not prescribed. Inspect the actual repository, deployed environment, database schema, interfaces and integrations and use the present architecture unless changes are demonstrably necessary. The SOP library is a controlled DRAFT baseline, not approval to automate unsafe activities or impose unapproved financial limits."
+    },
+    {
+      "id": "upgrade-0009",
+      "kind": "paragraph",
+      "text": "1. Inputs to ingest and hierarchy"
+    },
+    {
+      "id": "upgrade-0010",
+      "kind": "paragraph",
+      "text": "Existing live application, source repository, database/schema, migrations, test suite, environment configuration, deployed workflows and integration contracts."
+    },
+    {
+      "id": "upgrade-0011",
+      "kind": "paragraph",
+      "text": "EV Service Centre Operations & Quality Management System draft library: Operations & Quality Manual; SOPs 001–010; governance SOPs EV-GOV-SOP-001–004; supporting technical, warranty, HV, personnel, parts, equipment and finance forms."
+    },
+    {
+      "id": "upgrade-0012",
+      "kind": "paragraph",
+      "text": "Consolidated Master Document Register (105 entries) and Issue 1.0 Readiness Review; use reference reconciliation/aliases rather than inventing duplicate forms."
+    },
+    {
+      "id": "upgrade-0013",
+      "kind": "paragraph",
+      "text": "Existing company-specific configuration: Raymond Gray as software owner; centre/tenant branding, legal operating entity, site, staff and cost centres are configurable."
+    },
+    {
+      "id": "upgrade-0014",
+      "kind": "paragraph",
+      "text": "If a reference or business decision is unresolved, flag it as CONFIGURATION REQUIRED and retain a safe default that blocks only the affected approval—not unrelated lawful work."
+    },
+    {
+      "id": "upgrade-0015",
+      "kind": "paragraph",
+      "text": "2. Mandatory discovery audit — perform before code changes"
+    },
+    {
+      "id": "upgrade-0016",
+      "kind": "paragraph",
+      "text": "Inventory codebase, framework, services, scheduled jobs, APIs, integrations, authentication, hosting, file storage, queues and reporting stack; document dependencies and deployment process."
+    },
+    {
+      "id": "upgrade-0017",
+      "kind": "paragraph",
+      "text": "Map existing tables/entities, primary/foreign keys, tenancy/site boundaries, data quality, indexes, audit history, backup/restore and retention configuration."
+    },
+    {
+      "id": "upgrade-0018",
+      "kind": "paragraph",
+      "text": "Walk the real workflows for customer/vehicle, booking, check-in, job cards, inspections, estimate approvals, technician dispatch, parts, invoices/payments, warranty, staff, asset/tools and reports."
+    },
+    {
+      "id": "upgrade-0019",
+      "kind": "paragraph",
+      "text": "Build a requirement-by-requirement gap matrix: EXISTING & COMPLIANT / EXISTING NEEDS ENHANCEMENT / MISSING / DUPLICATED / REQUIRES DECISION / NOT APPLICABLE, with code screen/table/API evidence."
+    },
+    {
+      "id": "upgrade-0020",
+      "kind": "paragraph",
+      "text": "Identify duplicate UI features, entity models and document templates; choose one canonical object and migration/alias approach."
+    },
+    {
+      "id": "upgrade-0021",
+      "kind": "paragraph",
+      "text": "Perform security and operational risk review: access permissions, customer data exposure, safety gate bypass, irreversible deletes, accounting consistency and concurrency conflicts."
+    },
+    {
+      "id": "upgrade-0022",
+      "kind": "paragraph",
+      "text": "Present an audit report, proposed change set, migration plan, test plan and rollback plan BEFORE implementing any risky schema or workflow change."
+    },
+    {
+      "id": "upgrade-0023",
+      "kind": "paragraph",
+      "text": "3. Implementation rulebook"
+    },
+    {
+      "id": "upgrade-0024",
+      "kind": "paragraph",
+      "text": "Reuse existing modules when they satisfy the requirement. Enhance with additional fields, states, evidence, permissions or events instead of creating a second module."
+    },
+    {
+      "id": "upgrade-0025",
+      "kind": "paragraph",
+      "text": "Use additive, backward-compatible migrations; avoid destructive changes, silent ID changes, overwritten histories or data copy duplication."
+    },
+    {
+      "id": "upgrade-0026",
+      "kind": "paragraph",
+      "text": "Implement named rights and privileges, not unrestricted permissions inferred from role titles. Honour site/tenant restrictions and segregation of duties."
+    },
+    {
+      "id": "upgrade-0027",
+      "kind": "paragraph",
+      "text": "Every key event is timestamped, attributable and append-only in the audit trail; corrections add a new event or version with reason."
+    },
+    {
+      "id": "upgrade-0028",
+      "kind": "paragraph",
+      "text": "Enforce critical checks server-side / in transactionally secure business logic. UI-only validation is insufficient."
+    },
+    {
+      "id": "upgrade-0029",
+      "kind": "paragraph",
+      "text": "Prefer configuration tables for named approval authorities, monetary ceilings, tax, payers, rates, privileges, retention, status rules and document revisions. Do not hard-code unapproved values."
+    },
+    {
+      "id": "upgrade-0030",
+      "kind": "paragraph",
+      "text": "Never mark documents “approved,” personnel “authorised,” equipment “serviceable,” or jobs “released” without signed/verified evidence."
+    },
+    {
+      "id": "upgrade-0031",
+      "kind": "paragraph",
+      "text": "Safety incidents and urgent protective actions may be logged with emergency exceptions; never interpret this as permission to bypass technical release or perform elective repairs."
+    },
+    {
+      "id": "upgrade-0032",
+      "kind": "paragraph",
+      "text": "Design responsive technician, advisor, parts, inspector and management workflows with offline-friendly drafts where the current platform supports them."
+    },
+    {
+      "id": "upgrade-0033",
+      "kind": "paragraph",
+      "text": "4. Target functional workstreams"
+    },
+    {
+      "id": "upgrade-0034",
+      "kind": "table-row",
+      "text": "Workstream | Enhance / add only if missing | Non-negotiable acceptance"
+    },
+    {
+      "id": "upgrade-0035",
+      "kind": "table-row",
+      "text": "A. Customer, vehicle and reception | Existing CRM, VIN records, booking, intake, photos, odometer/SOC, condition, custody, accessories, complaints C01+, recovery linkage; detect duplicate VINs. | G1 reception accepted with timestamp and named advisor; repeat-visit links."
+    },
+    {
+      "id": "upgrade-0036",
+      "kind": "table-row",
+      "text": "B. Integrated work order & diagnosis | One WO with complaint lines, tasks T01+, diagnostic evidence (DTCs, screenshots, versions, manual references), confidence and restrictions; diagnostic consent. | G2 scope/approval gate; no unapproved repair or cost overrun."
+    },
+    {
+      "id": "upgrade-0037",
+      "kind": "table-row",
+      "text": "C. Workshop, task and QA | Technician assignment against privileges, task logs, actual parts/hours, declaration, independent critical inspection, functional/diagnostic verification and unresolved fault disposition. | G3 technician sign-off; G4 independent checks and signed technical release."
+    },
+    {
+      "id": "upgrade-0038",
+      "kind": "table-row",
+      "text": "D. HV, HSE and emergencies | Task classification, competent-person privileges, model-specific procedure references, permits, test instrument suitability, stop work, hazard/incident, damaged battery quarantine and response records. | Block affected HV actions until verified authorisation and permits; no generic instruction to isolate HV."
+    },
+    {
+      "id": "upgrade-0039",
+      "kind": "table-row",
+      "text": "E. Parts, procurement and inventory | Requisition, compatibility evidence, procurement approval, receipt/quarantine, reservation, WO/task issue, serial/batch trace, returns, supplier claims and counts. | No unapproved installation; stock and WO cost reconcile."
+    },
+    {
+      "id": "upgrade-0040",
+      "kind": "table-row",
+      "text": "F. Warranty, repeat repairs and payer | Case ID, warranty representation and evidence, technical cause, payer per cost line, dealership recharge, supplier/insurance recovery, claim ageing, complaint, goodwill and write-off. | Customer obligation and internal payer are independent; costs never silently absorbed."
+    },
+    {
+      "id": "upgrade-0041",
+      "kind": "table-row",
+      "text": "G. Competence and authority | Staff profiles, skill matrix, training, supervised experience, assessor evidence, written technical privilege certificates, expiry/revocation, QA/technical release and financial authority. | Named privileges checked at action time; grade ≠ authority."
+    },
+    {
+      "id": "upgrade-0042",
+      "kind": "table-row",
+      "text": "H. Equipment and facilities | Asset receipt, commissioning, calibration, pre-use checks, planned inspections, quarantine, tool custody, facility punch list and equipment-related job impact. | Block use of unsafe/unverified critical equipment."
+    },
+    {
+      "id": "upgrade-0043",
+      "kind": "table-row",
+      "text": "I. Finance and performance | Estimate/authorisation, job costing, billing, receipts, dealer invoices, receivables, discounts, WIP, labour productivity, quality and management dashboards. | G5 commercial closure only after G4; reconciled payment and cost records."
+    },
+    {
+      "id": "upgrade-0044",
+      "kind": "table-row",
+      "text": "J. Governance & document control | Controlled SOP revisions, approval matrix, records retention, incidents, audits, CAPA, change requests, distribution, staff acknowledgement and management reviews. | Only effective approved documents appear as operational instructions."
+    },
+    {
+      "id": "upgrade-0045",
+      "kind": "paragraph",
+      "text": "5. Canonical workflow and state machine"
+    },
+    {
+      "id": "upgrade-0046",
+      "kind": "paragraph",
+      "text": "Use or map current states to the following conceptual lifecycle without requiring identical labels: BOOKED → ARRIVED/RECEIVED (G1) → TRIAGE → DIAGNOSIS AUTHORISED → DIAGNOSING → ESTIMATE PENDING / APPROVED (G2) → DISPATCHED → IN WORK → TECHNICIAN COMPLETE (G3) → QA PENDING → TECHNICAL RELEASED (G4) → INVOICED → HANDED OVER / CLOSED (G5). Branches: HOLD–SAFETY, HOLD–CUSTOMER APPROVAL, HOLD–PARTS, HOLD–EQUIPMENT, HOLD–COMPETENCY, REWORK, DISPUTED PAYER, CANCELLED. Store transitions with actor, authority, time, reason and evidence."
+    },
+    {
+      "id": "upgrade-0047",
+      "kind": "paragraph",
+      "text": "Gate integrity"
+    },
+    {
+      "id": "upgrade-0048",
+      "kind": "paragraph",
+      "text": "A work order can be created without repair authorisation. Diagnostic authorisation does not authorise parts replacement."
+    },
+    {
+      "id": "upgrade-0049",
+      "kind": "paragraph",
+      "text": "Revised scope, added costs and new risks must suspend affected tasks until additional approval."
+    },
+    {
+      "id": "upgrade-0050",
+      "kind": "paragraph",
+      "text": "G3 sign-off must show what was done; G4 must be separately signed by an eligible release person and include independent checks when required."
+    },
+    {
+      "id": "upgrade-0051",
+      "kind": "paragraph",
+      "text": "G5 cannot complete with an unresolved technical hold or unapproved financial disposition."
+    },
+    {
+      "id": "upgrade-0052",
+      "kind": "paragraph",
+      "text": "Permit safe administrative progress while an unrelated technical task is held; preserve per-task hold semantics."
+    },
+    {
+      "id": "upgrade-0053",
+      "kind": "paragraph",
+      "text": "6. Minimum data contracts"
+    },
+    {
+      "id": "upgrade-0054",
+      "kind": "paragraph",
+      "text": "Reuse equivalent existing entities. Each must have stable identifiers, owner/site scope, creator/updater metadata, and links to the controlling work order or case as appropriate. Avoid duplicate customer or vehicle truth."
+    },
+    {
+      "id": "upgrade-0055",
+      "kind": "paragraph",
+      "text": "Customer / Organisation / Contacts"
+    },
+    {
+      "id": "upgrade-0056",
+      "kind": "paragraph",
+      "text": "Vehicle / VIN / model / variants / ownership"
+    },
+    {
+      "id": "upgrade-0057",
+      "kind": "paragraph",
+      "text": "Booking / Recovery / Intake / Custody"
+    },
+    {
+      "id": "upgrade-0058",
+      "kind": "paragraph",
+      "text": "WorkOrder / Complaint / Task / StatusEvent"
+    },
+    {
+      "id": "upgrade-0059",
+      "kind": "paragraph",
+      "text": "DiagnosticEvidence / Test / Attachment / ProcedureRef"
+    },
+    {
+      "id": "upgrade-0060",
+      "kind": "paragraph",
+      "text": "Estimate / Approval / Consent / Revision"
+    },
+    {
+      "id": "upgrade-0061",
+      "kind": "paragraph",
+      "text": "TechnicianAssignment / TaskCompletion / LabourEntry"
+    },
+    {
+      "id": "upgrade-0062",
+      "kind": "paragraph",
+      "text": "Inspection / CriticalCheck / TechnicalRelease / DefectHold"
+    },
+    {
+      "id": "upgrade-0063",
+      "kind": "paragraph",
+      "text": "HVRiskAssessment / PermitReference / Incident / Quarantine"
+    },
+    {
+      "id": "upgrade-0064",
+      "kind": "paragraph",
+      "text": "Part / StockLot / PurchaseRequest / PO / Receipt / Issue / Return"
+    },
+    {
+      "id": "upgrade-0065",
+      "kind": "paragraph",
+      "text": "WarrantyCase / PayerAllocation / RecoveryClaim / ReworkLink"
+    },
+    {
+      "id": "upgrade-0066",
+      "kind": "paragraph",
+      "text": "Employee / Training / CompetencyEvidence / Privilege / Delegation"
+    },
+    {
+      "id": "upgrade-0067",
+      "kind": "paragraph",
+      "text": "EquipmentAsset / Calibration / PreUseInspection / Maintenance"
+    },
+    {
+      "id": "upgrade-0068",
+      "kind": "paragraph",
+      "text": "Invoice / Payment / Credit / JournalExport / Receivable"
+    },
+    {
+      "id": "upgrade-0069",
+      "kind": "paragraph",
+      "text": "ControlledDocument / Revision / Acknowledgement / AuditFinding / CAPA"
+    },
+    {
+      "id": "upgrade-0070",
+      "kind": "paragraph",
+      "text": "7. API, interface and integration expectations"
+    },
+    {
+      "id": "upgrade-0071",
+      "kind": "paragraph",
+      "text": "Reuse existing authenticated API patterns; expose new actions as services with server-enforced preconditions and idempotent identifiers."
+    },
+    {
+      "id": "upgrade-0072",
+      "kind": "paragraph",
+      "text": "Provide role-appropriate pages: Front Desk, Technician Workbench, Technical Lead, Quality & Release, Parts, Warranty/Payer, Finance, Compliance/Authorisations and Management Dashboard."
+    },
+    {
+      "id": "upgrade-0073",
+      "kind": "paragraph",
+      "text": "Capture attachments with immutable metadata, access rules, file type constraints, malware checks where supported and traceable export."
+    },
+    {
+      "id": "upgrade-0074",
+      "kind": "paragraph",
+      "text": "Keep existing invoice/accounting/payment or notification integrations intact; extend with event-based adapter contracts where needed."
+    },
+    {
+      "id": "upgrade-0075",
+      "kind": "paragraph",
+      "text": "Support generation of an auditable work-order closeout pack (evidence, approvals, parts, tests, QA, release, charges), not only a printable job card."
+    },
+    {
+      "id": "upgrade-0076",
+      "kind": "paragraph",
+      "text": "Provide data export and admin review for audit without exposing protected employee/customer data to unauthorised users."
+    },
+    {
+      "id": "upgrade-0077",
+      "kind": "paragraph",
+      "text": "8. Migration, deployment and safeguards"
+    },
+    {
+      "id": "upgrade-0078",
+      "kind": "paragraph",
+      "text": "Baseline backup and tested restore; capture row counts, record IDs, foreign-key integrity and audit snapshots."
+    },
+    {
+      "id": "upgrade-0079",
+      "kind": "paragraph",
+      "text": "Create backward-compatible schema migrations and migration tests; preserve legacy IDs, links and document references as aliases."
+    },
+    {
+      "id": "upgrade-0080",
+      "kind": "paragraph",
+      "text": "Backfill only deterministically supported values; label all unmappable/unknown historical approvals as UNKNOWN, not retrospectively approved."
+    },
+    {
+      "id": "upgrade-0081",
+      "kind": "paragraph",
+      "text": "Put new gates behind feature flags/configuration for controlled pilot; run existing workflows regression tests."
+    },
+    {
+      "id": "upgrade-0082",
+      "kind": "paragraph",
+      "text": "Migrate one representative site and sample of historical jobs, verify reconciliation and user acceptance; then deploy incrementally."
+    },
+    {
+      "id": "upgrade-0083",
+      "kind": "paragraph",
+      "text": "Create rollback that preserves newly written records or provides a documented forward-recovery path."
+    },
+    {
+      "id": "upgrade-0084",
+      "kind": "paragraph",
+      "text": "Document every migration, release note, user training need, unresolved decision and post-deployment support owner."
+    },
+    {
+      "id": "upgrade-0085",
+      "kind": "paragraph",
+      "text": "9. Tests required for completion"
+    },
+    {
+      "id": "upgrade-0086",
+      "kind": "table-row",
+      "text": "ID | UAT / regression acceptance test"
+    },
+    {
+      "id": "upgrade-0087",
+      "kind": "table-row",
+      "text": "AT-01 | Existing vehicle/service records and invoices remain accessible; no duplicates/ID changes."
+    },
+    {
+      "id": "upgrade-0088",
+      "kind": "table-row",
+      "text": "AT-02 | Second customer complaint creates C02 on same WO, independently diagnosable."
+    },
+    {
+      "id": "upgrade-0089",
+      "kind": "table-row",
+      "text": "AT-03 | Technician cannot perform HV-restricted task without current model/task privilege and permit."
+    },
+    {
+      "id": "upgrade-0090",
+      "kind": "table-row",
+      "text": "AT-04 | Diagnostic authorisation alone cannot authorise a replacement part."
+    },
+    {
+      "id": "upgrade-0091",
+      "kind": "table-row",
+      "text": "AT-05 | Extra cost over approval threshold holds only affected task; revised approval resumes."
+    },
+    {
+      "id": "upgrade-0092",
+      "kind": "table-row",
+      "text": "AT-06 | A technician cannot perform a required independent check on their own critical task."
+    },
+    {
+      "id": "upgrade-0093",
+      "kind": "table-row",
+      "text": "AT-07 | Unresolved intermittent fault routes to disposition and release risk decision."
+    },
+    {
+      "id": "upgrade-0094",
+      "kind": "table-row",
+      "text": "AT-08 | Technical release cannot occur with open safety hold, failed test or missing evidence."
+    },
+    {
+      "id": "upgrade-0095",
+      "kind": "table-row",
+      "text": "AT-09 | No commercial handover without technical release."
+    },
+    {
+      "id": "upgrade-0096",
+      "kind": "table-row",
+      "text": "AT-10 | Free-to-customer dealer warranty work posts dealer payer/recharge with receivable tracking."
+    },
+    {
+      "id": "upgrade-0097",
+      "kind": "table-row",
+      "text": "AT-11 | Supplier recovery is tracked independently from immediate internal payer."
+    },
+    {
+      "id": "upgrade-0098",
+      "kind": "table-row",
+      "text": "AT-12 | Rework links original WO and cause, with authorised payer and measured repeat rate."
+    },
+    {
+      "id": "upgrade-0099",
+      "kind": "table-row",
+      "text": "AT-13 | Part issued by lot/serial for compatible VIN; wrong-variant part blocked/quarantined."
+    },
+    {
+      "id": "upgrade-0100",
+      "kind": "table-row",
+      "text": "AT-14 | Expired calibration / failed lift pre-use check blocks equipment-dependent task."
+    },
+    {
+      "id": "upgrade-0101",
+      "kind": "table-row",
+      "text": "AT-15 | Expired/revoked authority blocks future approval but preserves historical proof."
+    },
+    {
+      "id": "upgrade-0102",
+      "kind": "table-row",
+      "text": "AT-16 | Audit trail records immutable previous/new state, actor, timestamps, reason."
+    },
+    {
+      "id": "upgrade-0103",
+      "kind": "table-row",
+      "text": "AT-17 | Legacy statuses, invoice reports and integrations pass regression tests."
+    },
+    {
+      "id": "upgrade-0104",
+      "kind": "table-row",
+      "text": "AT-18 | Race condition: two users cannot release same WO with conflicting holds."
+    },
+    {
+      "id": "upgrade-0105",
+      "kind": "table-row",
+      "text": "AT-19 | Permission/tenant leakage tests prevent cross-site and unauthorised record access."
+    },
+    {
+      "id": "upgrade-0106",
+      "kind": "table-row",
+      "text": "AT-20 | Backups, restore, deployment and rollback/recovery are exercised."
+    },
+    {
+      "id": "upgrade-0107",
+      "kind": "paragraph",
+      "text": "10. Required developer deliverables and completion definition"
+    },
+    {
+      "id": "upgrade-0108",
+      "kind": "paragraph",
+      "text": "Current-system audit and gap matrix with evidence references, diagram and identified risks."
+    },
+    {
+      "id": "upgrade-0109",
+      "kind": "paragraph",
+      "text": "Prioritised implementation plan and dependency graph; make explicit what is reused, modified, added or deferred."
+    },
+    {
+      "id": "upgrade-0110",
+      "kind": "paragraph",
+      "text": "Schema/data-contract delta and versioned additive migration/restore plan."
+    },
+    {
+      "id": "upgrade-0111",
+      "kind": "paragraph",
+      "text": "Working code, UI/API changes, access policy, feature flags and automated tests."
+    },
+    {
+      "id": "upgrade-0112",
+      "kind": "paragraph",
+      "text": "Field-level mapping to SOP/gate/form references, including canonical/legacy alias reconciliation."
+    },
+    {
+      "id": "upgrade-0113",
+      "kind": "paragraph",
+      "text": "Demo workflows plus UAT evidence for AT-01 through AT-20, with defects and sign-off status."
+    },
+    {
+      "id": "upgrade-0114",
+      "kind": "paragraph",
+      "text": "Admin configuration guide, staff role guides, technical runbook, deployment/rollback instructions and release notes."
+    },
+    {
+      "id": "upgrade-0115",
+      "kind": "paragraph",
+      "text": "Final implementation report specifying which requirements are completed, partially completed, configuration-dependent, or blocked by missing management/technical sign-off."
+    },
+    {
+      "id": "upgrade-0116",
+      "kind": "paragraph",
+      "text": "DEFINITION OF DONE: No requirement is counted complete merely because a screen exists. It must behave correctly in the existing application, preserve historical records, enforce permissions and approval rules in backend logic, pass acceptance tests, and be supported by migration/recovery and user documentation. Issue 1.0 operational approval remains a separate management act."
+    }
+  ]
+}
