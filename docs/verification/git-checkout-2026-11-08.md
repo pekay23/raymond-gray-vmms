@@ -1,7 +1,7 @@
 # Git checkout verification
 
-Date: 8 November 2026  
-Commit checked: `7aae42d` (`Establish VMMS implementation baseline`)  
+Date: 8 November 2026
+Commit checked: `7aae42d` (`Establish VMMS implementation baseline`)
 Status: F-001 clean-checkout acceptance verified.
 
 ## Method and result
