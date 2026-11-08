@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-11-08T11:56:58.253Z",
+  "recordedAt": "2026-11-08T12:17:34.880Z",
   "platform": "win32",
   "node": "v24.22.1",
   "scope": "Local development build and real PostgreSQL API integration; no production, device, restore or staff UAT claim.",
@@ -114,8 +114,12 @@
       "d7305f3e35094dcb78bd45f6e7c40c14dbc783ee579e7a122a442b2848532a23"
     ],
     [
+      "apps/api/test/config.test.ts",
+      "f4b326edeb6a6bad95168654330544e6f422dedcc4372109254d35bd3007f4e8"
+    ],
+    [
       "apps/api/test/evidence.test.ts",
-      "009d645387024f48908475ea6dddcb977b1388bd681b5cc7b74d6ce25250754f"
+      "0f761947be068934cac0ee535de8da95d4ac023319e4516ed63544d65af33f18"
     ],
     [
       "apps/api/test/foundation.test.ts",
@@ -202,8 +206,8 @@
         "run",
         "docs:check"
       ],
-      "startedAt": "2026-11-08T11:55:06.457Z",
-      "finishedAt": "2026-11-08T11:55:08.005Z",
+      "startedAt": "2026-11-08T12:16:22.158Z",
+      "finishedAt": "2026-11-08T12:16:23.860Z",
       "exitCode": 0,
       "evidence": "docs/verification/checks/traceability.log"
     },
@@ -214,8 +218,8 @@
         "run",
         "typecheck"
       ],
-      "startedAt": "2026-11-08T11:55:08.008Z",
-      "finishedAt": "2026-11-08T11:55:47.209Z",
+      "startedAt": "2026-11-08T12:16:23.863Z",
+      "finishedAt": "2026-11-08T12:16:40.741Z",
       "exitCode": 0,
       "evidence": "docs/verification/checks/typecheck.log"
     },
@@ -226,8 +230,8 @@
         "run",
         "build"
       ],
-      "startedAt": "2026-11-08T11:55:47.212Z",
-      "finishedAt": "2026-11-08T11:56:32.499Z",
+      "startedAt": "2026-11-08T12:16:40.742Z",
+      "finishedAt": "2026-11-08T12:17:03.852Z",
       "exitCode": 0,
       "evidence": "docs/verification/checks/build.log"
     },
@@ -237,8 +241,8 @@
         "npm",
         "test"
       ],
-      "startedAt": "2026-11-08T11:56:32.500Z",
-      "finishedAt": "2026-11-08T11:56:58.209Z",
+      "startedAt": "2026-11-08T12:17:03.853Z",
+      "finishedAt": "2026-11-08T12:17:34.833Z",
       "exitCode": 0,
       "evidence": "docs/verification/checks/api-integration.log"
     }

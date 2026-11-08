@@ -29,6 +29,7 @@ const workerUrl = new URL(runtimeUrl);
 workerUrl.pathname = `/${dbName}`; workerUrl.username = workerLogin; workerUrl.password = workerPassword;
 const worker = makePool(workerUrl.toString());
 const siteId = randomUUID(), organisationId = randomUUID(), staffId = randomUUID();
+const otherSiteId = randomUUID(), otherOrganisationId = randomUUID(), otherStaffId = randomUUID();
 const config: Config = {
   DATABASE_URL: testRuntimeUrl.toString(),
   SESSION_SECRET: 'synthetic-test-session-secret-at-least-32',
@@ -87,7 +88,7 @@ const oidc: OidcProvider = {
   async exchangeAuthorizationCode() { return { issuer: config.OIDC_ISSUER, subject: 'not-used' }; },
 };
 
-async function staffHeaders(targetApp = app) {
+async function staffHeaders(targetApp = app, username = 'evidence-test') {
   const jar: Record<string, string> = {};
   const initial = await targetApp.inject({ method: 'GET', url: '/api/v1/session' });
   const initialCookies = initial.headers['set-cookie'];
@@ -102,7 +103,7 @@ async function staffHeaders(targetApp = app) {
   };
   const signIn = await targetApp.inject({
     method: 'POST', url: '/api/v1/session', headers: securityHeaders,
-    payload: { username: 'evidence-test', password: 'Synthetic-evidence-test-password' },
+    payload: { username, password: 'Synthetic-evidence-test-password' },
   });
   assert.equal(signIn.statusCode, 200, signIn.body);
   const signInCookies = signIn.headers['set-cookie'];
@@ -116,18 +117,26 @@ async function staffHeaders(targetApp = app) {
   };
 }
 
-async function uploadPdf(headers: Awaited<ReturnType<typeof staffHeaders>>, name: string, targetApp = app) {
-  const bytes = Buffer.from('%PDF-1.4\nSynthetic work evidence\n%%EOF\n');
+async function createUploadIntent(headers: Awaited<ReturnType<typeof staffHeaders>>, name: string, expectedBytes: number, declaredMediaType = 'application/pdf', targetApp = app, targetSiteId = siteId) {
   const intent = await targetApp.inject({
-    method: 'POST', url: `/api/v1/sites/${siteId}/evidence/intents`, headers: { ...headers, 'idempotency-key': randomUUID() },
-    payload: { purpose: 'attachment', displayName: name, declaredMediaType: 'application/pdf', expectedBytes: bytes.length },
+    method: 'POST', url: `/api/v1/sites/${targetSiteId}/evidence/intents`, headers: { ...headers, 'idempotency-key': randomUUID() },
+    payload: { purpose: 'attachment', displayName: name, declaredMediaType, expectedBytes },
   });
   assert.equal(intent.statusCode, 200, intent.body);
-  const intentId = z.object({ id: z.string().uuid() }).parse(intent.json()).id;
-  const upload = await targetApp.inject({
-    method: 'PUT', url: `/api/v1/sites/${siteId}/evidence/intents/${intentId}/content`,
-    headers: { ...headers, 'content-type': 'application/octet-stream', 'content-length': String(bytes.length) }, payload: bytes,
+  return z.object({ id: z.string().uuid() }).parse(intent.json()).id;
+}
+
+async function submitEvidenceBytes(headers: Awaited<ReturnType<typeof staffHeaders>>, intentId: string, bytes: Buffer, contentLength = bytes.length, targetApp = app, targetSiteId = siteId) {
+  return targetApp.inject({
+    method: 'PUT', url: `/api/v1/sites/${targetSiteId}/evidence/intents/${intentId}/content`,
+    headers: { ...headers, 'content-type': 'application/octet-stream', 'content-length': String(contentLength) }, payload: bytes,
   });
+}
+
+async function uploadPdf(headers: Awaited<ReturnType<typeof staffHeaders>>, name: string, targetApp = app, targetSiteId = siteId) {
+  const bytes = Buffer.from('%PDF-1.4\nSynthetic work evidence\n%%EOF\n');
+  const intentId = await createUploadIntent(headers, name, bytes.length, 'application/pdf', targetApp, targetSiteId);
+  const upload = await submitEvidenceBytes(headers, intentId, bytes, bytes.length, targetApp, targetSiteId);
   assert.equal(upload.statusCode, 202, upload.body);
   return { bytes, intentId, evidenceId: z.object({ evidenceId: z.string().uuid() }).parse(upload.json()).evidenceId };
 }
@@ -142,10 +151,10 @@ before(async () => {
   await owner.query(`CREATE ROLE "${workerLogin}" LOGIN INHERIT PASSWORD '${workerPassword}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS`);
   await owner.query(`GRANT vmms_evidence_worker TO "${workerLogin}"`);
   const password = await hashPassword('Synthetic-evidence-test-password');
-  await dbOwner.query('INSERT INTO organisations(id,name) VALUES($1,$2)', [organisationId, 'Synthetic Evidence Organisation']);
-  await dbOwner.query('INSERT INTO sites(id,organisation_id,code,name) VALUES($1,$2,$3,$4)', [siteId, organisationId, 'EVID', 'Synthetic Evidence Site']);
-  await dbOwner.query('INSERT INTO staff_users(id,username,display_name,password_hash) VALUES($1,$2,$3,$4)', [staffId, 'evidence-test', 'Evidence Tester', password]);
-  await dbOwner.query('INSERT INTO memberships(user_id,site_id,can_write) VALUES($1,$2,true)', [staffId, siteId]);
+  await dbOwner.query('INSERT INTO organisations(id,name) VALUES($1,$2),($3,$4)', [organisationId, 'Synthetic Evidence Organisation', otherOrganisationId, 'Synthetic Other Evidence Organisation']);
+  await dbOwner.query('INSERT INTO sites(id,organisation_id,code,name) VALUES($1,$2,$3,$4),($5,$6,$7,$8)', [siteId, organisationId, 'EVID', 'Synthetic Evidence Site', otherSiteId, otherOrganisationId, 'OTHER', 'Synthetic Other Evidence Site']);
+  await dbOwner.query('INSERT INTO staff_users(id,username,display_name,password_hash) VALUES($1,$2,$3,$4),($5,$6,$7,$4)', [staffId, 'evidence-test', 'Evidence Tester', password, otherStaffId, 'evidence-other-site', 'Other Site Evidence Tester']);
+  await dbOwner.query('INSERT INTO memberships(user_id,site_id,can_write) VALUES($1,$2,true),($3,$4,true)', [staffId, siteId, otherStaffId, otherSiteId]);
   app = await createApp(config, runtime, oidc, services);
 });
 
@@ -184,6 +193,31 @@ test('staff evidence upload is quarantined, scanned, verified, and served with a
   assert.equal(anonymous.statusCode, 401);
   const otherSite = await app.inject({ method: 'GET', url: `/api/v1/sites/${randomUUID()}/evidence/${evidenceId}/download`, headers });
   assert.equal(otherSite.statusCode, 403);
+});
+
+test('authorised staff cannot read evidence from another tenant and membership revocation blocks evidence access', async () => {
+  const ownerHeaders = await staffHeaders();
+  const { evidenceId } = await uploadPdf(ownerHeaders, 'scope-boundary.pdf');
+  assert.equal(await processNextEvidenceScanJob(worker, services), true);
+
+  const otherTenantHeaders = await staffHeaders(app, 'evidence-other-site');
+  const crossTenantRead = await app.inject({ method: 'GET', url: `/api/v1/sites/${otherSiteId}/evidence/${evidenceId}`, headers: otherTenantHeaders });
+  const crossTenantDownload = await app.inject({ method: 'GET', url: `/api/v1/sites/${otherSiteId}/evidence/${evidenceId}/download`, headers: otherTenantHeaders });
+  assert.equal(crossTenantRead.statusCode, 404);
+  assert.equal(crossTenantDownload.statusCode, 404);
+
+  await dbOwner.query('UPDATE memberships SET active=false WHERE user_id=$1 AND site_id=$2', [staffId, siteId]);
+  try {
+    const revokedRead = await app.inject({ method: 'GET', url: `/api/v1/sites/${siteId}/evidence/${evidenceId}`, headers: ownerHeaders });
+    const revokedDownload = await app.inject({ method: 'GET', url: `/api/v1/sites/${siteId}/evidence/${evidenceId}/download`, headers: ownerHeaders });
+    assert.equal(revokedRead.statusCode, 403);
+    assert.equal(revokedDownload.statusCode, 403);
+  } finally {
+    await dbOwner.query('UPDATE memberships SET active=true WHERE user_id=$1 AND site_id=$2', [staffId, siteId]);
+  }
+
+  const audit = await dbOwner.query('SELECT count(*)::int AS count FROM evidence_access_events WHERE evidence_id=$1', [evidenceId]);
+  assert.equal(audit.rows[0].count, 0, 'Denied status and download attempts must not create successful access audit events.');
 });
 
 test('local S3 and malware scanner accept and serve a verified synthetic file', { skip: integratedStorage === null }, async () => {
@@ -227,6 +261,39 @@ test('unavailable and infected scan verdicts never allow evidence download', asy
   } finally {
     scannerMode = 'clean';
   }
+});
+
+test('evidence rejects type mismatch, oversized requests and interrupted uploads without retaining bytes', async () => {
+  const headers = await staffHeaders();
+  const bytes = Buffer.from('%PDF-1.4\nSynthetic rejection fixture\n%%EOF\n');
+  const storedBefore = [...objectMap.keys()].sort();
+  const allowedMediaTypes = services.allowedMediaTypes;
+  services.allowedMediaTypes = new Set([...allowedMediaTypes, 'image/png']);
+  try {
+    const mismatchIntent = await createUploadIntent(headers, 'declared-png-actual-pdf.png', bytes.length, 'image/png');
+    const mismatch = await submitEvidenceBytes(headers, mismatchIntent, bytes);
+    assert.equal(mismatch.statusCode, 415, mismatch.body);
+    assert.equal(mismatch.json().error.code, 'EVIDENCE_TYPE_MISMATCH');
+  } finally {
+    services.allowedMediaTypes = allowedMediaTypes;
+  }
+
+  const oversizedIntent = await app.inject({
+    method: 'POST', url: `/api/v1/sites/${siteId}/evidence/intents`, headers: { ...headers, 'idempotency-key': randomUUID() },
+    payload: { purpose: 'attachment', displayName: 'too-large.pdf', declaredMediaType: 'application/pdf', expectedBytes: services.maxUploadBytes + 1 },
+  });
+  assert.equal(oversizedIntent.statusCode, 413);
+
+  const lengthIntent = await createUploadIntent(headers, 'content-length-mismatch.pdf', bytes.length, 'application/pdf');
+  const lengthMismatch = await submitEvidenceBytes(headers, lengthIntent, bytes, bytes.length + 1);
+  assert.equal(lengthMismatch.statusCode, 413, lengthMismatch.body);
+  assert.equal(lengthMismatch.json().error.code, 'EVIDENCE_SIZE_MISMATCH');
+
+  const interruptedIntent = await createUploadIntent(headers, 'interrupted.pdf', bytes.length + 7, 'application/pdf');
+  const interrupted = await submitEvidenceBytes(headers, interruptedIntent, bytes, bytes.length + 7);
+  assert.equal(interrupted.statusCode, 400, interrupted.body);
+  assert.equal(interrupted.json().error.code, 'EVIDENCE_SIZE_MISMATCH');
+  assert.deepEqual([...objectMap.keys()].sort(), storedBefore, 'Rejected or interrupted uploads must leave no quarantined objects.');
 });
 
 test('worker storage configuration requires its separate object-store identity', () => {

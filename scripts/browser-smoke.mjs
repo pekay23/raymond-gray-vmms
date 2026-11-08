@@ -43,6 +43,39 @@ const authenticatedViewportMatrix = [
   { width: 1920, height: 1080, name: 'wide desktop' },
   { width: 2560, height: 1080, name: 'ultrawide desktop' },
 ];
+async function verifyResponsiveRoute(routeName) {
+  for (const viewport of authenticatedViewportMatrix) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const layout = await page.evaluate(() => {
+      const main = document.querySelector('main');
+      const controls = [...(main?.querySelectorAll('a,button,input,select,textarea') ?? [])]
+        .filter((element) => element.getClientRects().length > 0)
+        .map((element) => {
+          const box = element.getBoundingClientRect();
+          return {
+            name: element.getAttribute('aria-label') || element.textContent?.trim() || element.tagName,
+            left: box.left,
+            right: box.right,
+            height: box.height,
+            isButton: element instanceof HTMLButtonElement,
+          };
+        });
+      return { documentWidth: document.documentElement.scrollWidth, controls };
+    });
+    assert.equal(layout.documentWidth, viewport.width, `${viewport.name} ${routeName} page must not overflow horizontally`);
+    assert(
+      layout.controls.every((control) => control.left >= -1 && control.right <= viewport.width + 1),
+      `${viewport.name} ${routeName} controls must remain inside the viewport: ${JSON.stringify(layout.controls.filter((control) => control.left < -1 || control.right > viewport.width + 1))}`,
+    );
+    if (viewport.width === 390 && viewport.height === 844) {
+      const smallTargets = layout.controls.filter((control) => control.isButton && control.height < 44);
+      assert.deepEqual(smallTargets, [], `${routeName} phone action buttons must meet the 44-pixel minimum: ${JSON.stringify(smallTargets)}`);
+    }
+    if (viewport.width === 390 && viewport.height === 844)
+      await page.screenshot({ path: resolve(output, `${routeName}-phone.png`), fullPage: true });
+  }
+  check(`Authenticated ${routeName} layout fits ${authenticatedViewportMatrix.length} phone, foldable, tablet and desktop viewports; phone buttons meet 44 pixels`);
+}
 
 try {
   await page.goto(url);
@@ -129,37 +162,15 @@ try {
   await page.getByText('Plan a separate visual assessment', { exact: true }).waitFor();
   check('Task-scoped hold and unrelated task remain distinct after refresh');
   await page.screenshot({ path: resolve(output, 'work-order-desktop.png'), fullPage: true });
-  for (const viewport of authenticatedViewportMatrix) {
-    await page.setViewportSize({ width: viewport.width, height: viewport.height });
-    const layout = await page.evaluate(() => {
-      const main = document.querySelector('main');
-      const controls = [...(main?.querySelectorAll('a,button,input,select,textarea') ?? [])]
-        .filter((element) => element.getClientRects().length > 0)
-        .map((element) => {
-          const box = element.getBoundingClientRect();
-          return {
-            name: element.getAttribute('aria-label') || element.textContent?.trim() || element.tagName,
-            left: box.left,
-            right: box.right,
-            height: box.height,
-            isButton: element instanceof HTMLButtonElement,
-          };
-        });
-      return { documentWidth: document.documentElement.scrollWidth, controls };
-    });
-    assert.equal(layout.documentWidth, viewport.width, `${viewport.name} work-order page must not overflow horizontally`);
-    assert(
-      layout.controls.every((control) => control.left >= -1 && control.right <= viewport.width + 1),
-      `${viewport.name} interactive controls must remain inside the viewport: ${JSON.stringify(layout.controls.filter((control) => control.left < -1 || control.right > viewport.width + 1))}`,
-    );
-    if (viewport.width === 390 && viewport.height === 844) {
-      const smallTargets = layout.controls.filter((control) => control.isButton && control.height < 44);
-      assert.deepEqual(smallTargets, [], `Phone action buttons must meet the 44-pixel minimum: ${JSON.stringify(smallTargets)}`);
-    }
-    if (viewport.width === 390 && viewport.height === 844)
-      await page.screenshot({ path: resolve(output, 'work-order-phone.png'), fullPage: true });
-  }
-  check(`Authenticated work-order layout fits ${authenticatedViewportMatrix.length} phone, foldable, tablet and desktop viewports; phone buttons meet 44 pixels`);
+  await verifyResponsiveRoute('work-order');
+  await page.getByRole('link', { name: 'Work orders', exact: true }).first().click();
+  await page.getByRole('heading', { name: /work orders/i }).waitFor();
+  await verifyResponsiveRoute('queue');
+  await page.getByRole('link', { name: 'New intake', exact: true }).first().click();
+  await page.getByRole('heading', { name: 'New vehicle intake', exact: true }).waitFor();
+  await verifyResponsiveRoute('intake');
+  await page.goto(orderUrl);
+  await page.getByRole('button', { name: 'Add concern', exact: true }).waitFor();
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole('button', { name: 'Add concern', exact: true }).focus();
   await page.keyboard.press('Tab');
@@ -197,7 +208,7 @@ try {
   process.exitCode = 1;
   process.stderr.write(`${error.stack}\n`);
 } finally {
-  await writeFile(resolve(output, 'results.json'), JSON.stringify({ recordedAt: new Date().toISOString(), browser: browser.version(), url, scope: 'Local synthetic staff reception, planned-task and task-scoped-hold workflow only. No owner-portal, physical-device, release, finance or operational acceptance claim.', authenticatedViewports: authenticatedViewportMatrix.map(({ width, height, name }) => ({ width, height, name })), checks, pageErrors: errors }, null, 2) + '\n');
+  await writeFile(resolve(output, 'results.json'), JSON.stringify({ recordedAt: new Date().toISOString(), browser: browser.version(), url, scope: 'Local synthetic staff queue, intake and work-order workflow. Responsive layout checks cover all three staff routes; no owner-portal, physical-device, release, finance or operational acceptance claim.', authenticatedViewports: authenticatedViewportMatrix.map(({ width, height, name }) => ({ width, height, name })), checks, pageErrors: errors }, null, 2) + '\n');
   process.stdout.write(`${checks.filter((item) => item.result === 'VERIFIED').length} browser checks verified.\n`);
   await browser.close();
 }

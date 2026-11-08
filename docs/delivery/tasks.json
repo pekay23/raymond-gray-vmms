@@ -1362,14 +1362,15 @@
         "apps/api/src/identity.ts",
         "apps/api/src/oidc-client.ts",
         "apps/api/test/foundation.test.ts",
-        "docs/verification/checks/api-integration.log"
+        "docs/verification/checks/api-integration.log",
+        "apps/api/test/config.test.ts"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Server-side OIDC identity, CSRF and session enforcement are implemented and expiry/revocation are exercised. Production startup remains deliberately blocked pending shared auth.raymond-gray.org integration, MFA and deployment readiness configuration."
+      "statusNote": "Server-side OIDC identity, CSRF and session enforcement are implemented and expired/revoked sessions are exercised; the CI suite now tests the production startup guard. Production remains blocked pending shared auth.raymond-gray.org integration, MFA and deployment readiness configuration."
     },
     {
       "id": "F-005",
@@ -1401,14 +1402,15 @@
         "apps/api/migrations/001_foundation.sql",
         "apps/api/migrations/005_aggregate_event_ledger.sql",
         "apps/api/test/foundation.test.ts",
-        "docs/verification/checks/api-integration.log"
+        "docs/verification/checks/api-integration.log",
+        "apps/api/test/evidence.test.ts"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "tenant_site_rls_proven_for_current_persistence_paths_attachments_and_exports_remain_unimplemented"
+      "statusNote": "Work-order and evidence attachment scope is proven across tenants/sites, including active-membership revocation. Export endpoints and their authorization tests are not implemented yet, so the full acceptance remains open."
     },
     {
       "id": "F-006",
@@ -1476,14 +1478,17 @@
       "evidence": [
         "docs/architecture/evidence-storage.md",
         "docs/architecture/candidates/evidence-a.md",
-        "docs/architecture/candidates/evidence-b.md"
+        "docs/architecture/candidates/evidence-b.md",
+        "apps/api/test/evidence.test.ts",
+        "apps/api/src/evidence.ts",
+        "docs/verification/checks/api-integration.log"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Upload quarantine, scan worker, accepted-object promotion, scoped download, and audit have focused API coverage; configured local S3Mock/ClamAV clean path now passes. Production object-store IAM/KMS/retention, backup/restore rehearsal, scanner operations, and remaining failure-matrix cases are still open."
+      "statusNote": "Upload authorization now proves cross-tenant denial and membership revocation; MIME, size and interrupted-upload rejection are exercised with no retained bytes. Configured local S3Mock/ClamAV clean integration passed earlier. Scanner recovery/concurrency, independent backup restore proof and production IAM/KMS/retention remain open."
     },
     {
       "id": "EVID-001",
@@ -1610,14 +1615,17 @@
       ],
       "evidence": [
         "docs/architecture/evidence-storage.md",
-        "apps/api/test/evidence.test.ts"
+        "apps/api/test/evidence.test.ts",
+        "apps/api/src/app.ts",
+        "apps/api/src/evidence.ts",
+        "docs/verification/checks/api-integration.log"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Scoped status/download routes are in apps/api/src/app.ts and apps/api/src/evidence.ts; the authorized clean download and access audit are tested. Denial, revocation and cross-scope coverage remains open."
+      "statusNote": "Staff evidence authorization, clean-only downloads, no-store streaming, access audit, cross-tenant denial and membership revocation are exercised. The task remains in progress because EVID-001 and EVID-003 are not yet verified."
     },
     {
       "id": "EVID-005",
@@ -1645,14 +1653,15 @@
       ],
       "evidence": [
         "docs/architecture/evidence-storage.md",
-        "apps/api/test/evidence.test.ts"
+        "apps/api/test/evidence.test.ts",
+        "docs/verification/checks/api-integration.log"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Verified synthetic clean upload-to-download with audit, infected/unavailable fail-closed paths, replay denial, anonymous/cross-site download denial, worker DB-role denial, and real local S3Mock plus ClamAV clean integration. MIME signature mismatch, size/interrupted upload, scanner timeout/retry recovery, infected EICAR fixture through real ClamAV, and duplicate-worker concurrency remain open."
+      "statusNote": "PostgreSQL tests reject declared MIME mismatch, over-limit intent, content-length mismatch and interrupted uploads, and assert no rejected objects remain in quarantine. Scan timeout/retry recovery, infected real-ClamAV fixture, duplicate-worker contention, backup/restore reconciliation and production storage controls remain open."
     },
     {
       "id": "EVID-006",
@@ -1708,7 +1717,7 @@
         "upgrade-0032",
         "user-request-2026-11-07"
       ],
-      "status": "in-progress",
+      "status": "verified",
       "acceptance": [
         "Exercise keyboard navigation, focus, touch targets, small-screen and tablet layouts, and reduced motion in the actual application.",
         "Check the public sign-in page and authenticated staff workspace for clipping, horizontal overflow, and component distortion at narrow, tablet, desktop, and foldable viewport ratios."
@@ -1717,14 +1726,17 @@
         "docs/verification/responsive-shell.md: 15 Edge viewport/orientation and 200%/400% zoom checks pass for public sign-in only; keyboard focus and physical-device limitations are recorded",
         "scripts/browser-smoke.mjs",
         "docs/verification/browser/results.json",
-        "docs/verification/responsive-shell.md"
+        "docs/verification/responsive-shell.md",
+        "docs/verification/browser/work-order-phone.png",
+        "docs/verification/browser/queue-phone.png",
+        "docs/verification/browser/intake-phone.png"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Public sign-in passes 15 viewport/orientation layouts and browser zoom. Authenticated work-order smoke passes 12 phone/fold/tablet/desktop viewports with no overflow, 44-pixel phone action targets, keyboard focus and reduced-motion emulation. Harness refuses non-loopback app, OIDC or database URLs. Other routes and physical devices remain open."
+      "statusNote": "Public sign-in passed the documented 15 viewport/orientation and 200/400 percent zoom checks. Authenticated queue, intake and work-order routes now pass all 12 phone/fold/tablet/desktop viewports, 44-pixel phone buttons, visible keyboard focus, reduced-motion emulation and no-overflow checks; phone captures are linked as evidence. Physical hardware remains a release check."
     },
     {
       "id": "F-009",
@@ -1779,21 +1791,27 @@
       "sourceRefs": [
         "master-0177"
       ],
-      "status": "in-progress",
+      "status": "implemented",
       "acceptance": [
         "Document environment names without secrets. CI installs, checks, tests and builds with pinned dependencies and refuses unsafe production defaults."
       ],
       "evidence": [
         "apps/api/test/foundation.test.ts: real PostgreSQL integration entry point for domain, tenancy, command, and rollback behavior",
         "apps/web/scripts/verify-responsive.mjs: repeatable Microsoft Edge responsive public sign-in entry point",
-        "docs/verification/checks/results.json: full local typecheck, build, traceability, and API integration results"
+        "docs/verification/checks/results.json: full local typecheck, build, traceability, and API integration results",
+        ".github/workflows/verify.yml",
+        "package.json",
+        ".env.example",
+        "docs/guides/development.md",
+        "apps/api/test/config.test.ts",
+        "docs/verification/checks/results.json"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "API/PostgreSQL and public sign-in browser verification entry points exist; authenticated end-to-end browser workflows and consolidated task coverage remain incomplete."
+      "statusNote": "The local verification workflow and developer command are documented; GitHub Actions awaits its first remote run."
     },
     {
       "id": "F-011",
@@ -21863,11 +21881,11 @@
     "byStatus": {
       "configuration-required": 17,
       "deferred": 5,
-      "implemented": 3,
-      "in-progress": 17,
+      "implemented": 4,
+      "in-progress": 15,
       "not-applicable": 1,
       "planned": 514,
-      "verified": 13
+      "verified": 14
     },
     "byPhase": {
       "0-discovery": 20,

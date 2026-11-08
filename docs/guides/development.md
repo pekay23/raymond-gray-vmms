@@ -22,6 +22,8 @@ Use a site for which the signed-in person has active membership. The server deri
 
 The requirement JSON and task JSON are canonical. Use `scripts/update-tracker.py` for evidenced status changes, then regenerate the Markdown tracker. Keep planned and verified statuses distinct. The verification runner records its commands, result logs and application source hashes. A check that runs while source changes cannot establish a stable final result.
 
+Run `npm run verify` before handing off a change. It validates requirement/task traceability, typechecks both workspaces, builds both applications, and runs API integration tests against a disposable PostgreSQL database. GitHub Actions runs the same command after installing `package-lock.json`, using a synthetic PostgreSQL service; it does not need production credentials. The browser workflow uses local Keycloak and Microsoft Edge and is run separately with `node scripts/browser-smoke.mjs`.
+
 CodeGraph returns current source and call paths. Graphify supports bounded relationships and impact using local code extraction. Read the [tooling review](../discovery/reference-patterns-and-tooling.md) before changing their flags. Do not include real exports, uploads, secrets or backups in semantic indexing.
 
 Production runbooks, staff manuals and customer instructions are developed with their actual workflows. Do not document a future control as currently available.
