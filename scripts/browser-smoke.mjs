@@ -104,11 +104,36 @@ try {
   await page.reload();
   assert.equal(await page.getByLabel('Customer name', { exact: true }).inputValue(), recoveredName);
   check('Opted-in intake draft automatically saves later edits and recovers after refresh');
-  const scopedDraftKey = await page.evaluate(async () => {
+  const draftScope = await page.evaluate(async () => {
     const response = await fetch('/api/v1/session', { cache: 'no-store' });
     const session = await response.json();
-    return `vmms:draft:v1:${session.user.id}:${session.sites[0].id}`;
+    return {
+      userId: session.user.id,
+      devSite: session.sites.find((site) => site.code === 'DEV'),
+      qaSite: session.sites.find((site) => site.code === 'QA'),
+    };
   });
+  assert(draftScope.devSite && draftScope.qaSite, 'The loopback seed must provide DEV and synthetic QA sites.');
+  const scopedDraftKey = `vmms:draft:v1:${draftScope.userId}:${draftScope.devSite.id}`;
+  const otherSiteDraftKey = `vmms:draft:v1:${draftScope.userId}:${draftScope.qaSite.id}`;
+  const otherAccountDraftKey = `vmms:draft:v1:99999999-9999-4999-8999-999999999999:${draftScope.devSite.id}`;
+  assert.notEqual(await page.evaluate((key) => sessionStorage.getItem(key), scopedDraftKey), null);
+  await page.evaluate(({ otherSiteKey, otherAccountKey }) => {
+    sessionStorage.setItem(otherSiteKey, 'synthetic-other-site-draft');
+    sessionStorage.setItem(otherAccountKey, 'synthetic-other-account-draft');
+  }, { otherSiteKey: otherSiteDraftKey, otherAccountKey: otherAccountDraftKey });
+  await page.getByLabel('Service centre', { exact: true }).selectOption(draftScope.qaSite.id);
+  await page.getByRole('heading', { name: /work orders/i }).waitFor();
+  assert.equal(await page.evaluate((key) => sessionStorage.getItem(key), scopedDraftKey), null);
+  assert.equal(await page.evaluate((key) => sessionStorage.getItem(key), otherSiteDraftKey), null);
+  assert.equal(await page.evaluate((key) => sessionStorage.getItem(key), otherAccountDraftKey), 'synthetic-other-account-draft');
+  await page.getByLabel('Service centre', { exact: true }).selectOption(draftScope.devSite.id);
+  await page.getByRole('heading', { name: /work orders/i }).waitFor();
+  await page.getByRole('link', { name: 'New intake', exact: true }).first().click();
+  await page.getByLabel('Customer name', { exact: true }).waitFor();
+  assert.equal(await page.getByLabel('Customer name', { exact: true }).inputValue(), '');
+  check('Switching sites removes this account’s drafts across sites and preserves other account storage');
+  await page.evaluate((key) => sessionStorage.removeItem(key), otherAccountDraftKey);
   await page.evaluate(({ key, savedAt }) => {
     sessionStorage.setItem(key, JSON.stringify({
       draftId: '11111111-1111-4111-8111-111111111111',

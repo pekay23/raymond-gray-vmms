@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-11-08T12:32:42.917Z",
+  "recordedAt": "2026-11-08T12:43:37.433Z",
   "platform": "win32",
   "node": "v24.22.1",
   "scope": "Local development build and real PostgreSQL API integration; no production, device, restore or staff UAT claim.",
@@ -51,7 +51,7 @@
     ],
     [
       "apps/api/scripts/seed.ts",
-      "38e809fe43ae45630e768778fd9678898479b9264c66c7f997cc12c56d0aa306"
+      "0ccc0939870307c5a28361975b8269cc3344e93b1a7a4d567cde3d0a96a70f7d"
     ],
     [
       "apps/api/src/app.ts",
@@ -206,8 +206,8 @@
         "run",
         "docs:check"
       ],
-      "startedAt": "2026-11-08T12:31:36.583Z",
-      "finishedAt": "2026-11-08T12:31:38.794Z",
+      "startedAt": "2026-11-08T12:42:31.063Z",
+      "finishedAt": "2026-11-08T12:42:33.304Z",
       "exitCode": 0,
       "evidence": "docs/verification/checks/traceability.log"
     },
@@ -218,8 +218,8 @@
         "run",
         "typecheck"
       ],
-      "startedAt": "2026-11-08T12:31:38.796Z",
-      "finishedAt": "2026-11-08T12:31:55.304Z",
+      "startedAt": "2026-11-08T12:42:33.306Z",
+      "finishedAt": "2026-11-08T12:42:50.280Z",
       "exitCode": 0,
       "evidence": "docs/verification/checks/typecheck.log"
     },
@@ -230,8 +230,8 @@
         "run",
         "build"
       ],
-      "startedAt": "2026-11-08T12:31:55.305Z",
-      "finishedAt": "2026-11-08T12:32:19.825Z",
+      "startedAt": "2026-11-08T12:42:50.282Z",
+      "finishedAt": "2026-11-08T12:43:14.945Z",
       "exitCode": 0,
       "evidence": "docs/verification/checks/build.log"
     },
@@ -241,8 +241,8 @@
         "npm",
         "test"
       ],
-      "startedAt": "2026-11-08T12:32:19.827Z",
-      "finishedAt": "2026-11-08T12:32:42.873Z",
+      "startedAt": "2026-11-08T12:43:14.947Z",
+      "finishedAt": "2026-11-08T12:43:37.382Z",
       "exitCode": 0,
       "evidence": "docs/verification/checks/api-integration.log"
     }

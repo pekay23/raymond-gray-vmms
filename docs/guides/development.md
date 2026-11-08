@@ -12,7 +12,7 @@ The integration suite creates a uniquely named `vmms_test_...` database with the
 
 Web sign-in redirects to the shared OIDC provider using an authorization code, PKCE S256, one-time state and nonce, plus a browser-bound short-lived transaction. Only an explicitly mapped active VMMS staff identity receives a VMMS session. The local test app exposes password login only under `NODE_ENV=test`. The browser still receives a host-only VMMS session and CSRF cookie; mutations send the CSRF token in `X-CSRFToken`, preserve the same-origin `Origin`, and business commands require a UUID `Idempotency-Key`.
 
-For local OIDC smoke testing, start Keycloak from `C:\Projects\raymond-gray-auth`, register its loopback-only VMMS client, provision the disposable test user, run `npm run dev:seed`, then `npm run dev:link-auth`. See the [OIDC integration design](../architecture/oidc-vmms-integration.md). Do not use the synthetic local user or its credential outside development.
+For local OIDC smoke testing, start Keycloak from `C:\Projects\raymond-gray-auth`, register its loopback-only VMMS client, provision the disposable test user, run `npm run dev:seed`, then `npm run dev:link-auth`. The seed creates synthetic DEV and QA sites for membership-switch browser checks and refuses non-loopback migration databases. See the [OIDC integration design](../architecture/oidc-vmms-integration.md). Do not use the synthetic local user or its credential outside development.
 
 Updates include `expectedVersion`. Do not retry a changed payload with the previous key or turn a rejected command into an accepted UI state.
 

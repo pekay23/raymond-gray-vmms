@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-11-08T12:34:46.299Z",
+  "recordedAt": "2026-11-08T12:41:05.539Z",
   "browser": "157.0.4341.42",
   "url": "http://127.0.0.1:5173",
   "scope": "Local synthetic staff queue, intake and work-order workflow. Responsive layout checks cover all three staff routes; no owner-portal, physical-device, release, finance or operational acceptance claim.",
@@ -69,87 +69,92 @@
     {
       "name": "Official brand image and favicon load on the neutral sign-in page",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:30.374Z"
+      "at": "2026-11-08T12:40:48.838Z"
     },
     {
       "name": "Individual staff signs in through the local identity provider and VMMS API",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:34.483Z"
+      "at": "2026-11-08T12:40:52.321Z"
     },
     {
       "name": "Opted-in intake draft automatically saves later edits and recovers after refresh",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:35.759Z"
+      "at": "2026-11-08T12:40:53.957Z"
+    },
+    {
+      "name": "Switching sites removes this account’s drafts across sites and preserves other account storage",
+      "result": "VERIFIED",
+      "at": "2026-11-08T12:40:54.532Z"
     },
     {
       "name": "An expired intake draft is removed, not recovered or submitted",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:36.258Z"
+      "at": "2026-11-08T12:40:54.998Z"
     },
     {
       "name": "Explicit unsubmitted tab draft survives refresh",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:37.191Z"
+      "at": "2026-11-08T12:40:56.135Z"
     },
     {
       "name": "Offline mode preserves form entries and blocks submission",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:37.301Z"
+      "at": "2026-11-08T12:40:56.284Z"
     },
     {
       "name": "Real intake and C02 persist on one work order through refresh",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:38.906Z"
+      "at": "2026-11-08T12:40:58.158Z"
     },
     {
       "name": "A proposed task persists and remains labelled planned after refresh",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:39.842Z"
+      "at": "2026-11-08T12:40:59.272Z"
     },
     {
       "name": "Protective hold is attributable to the selected task",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:40.758Z"
+      "at": "2026-11-08T12:40:59.786Z"
     },
     {
       "name": "Task-scoped hold and unrelated task remain distinct after refresh",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:41.696Z"
+      "at": "2026-11-08T12:41:00.730Z"
     },
     {
       "name": "Authenticated work-order layout fits 12 phone, foldable, tablet and desktop viewports; phone buttons meet 44 pixels",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:42.955Z"
+      "at": "2026-11-08T12:41:01.700Z"
     },
     {
       "name": "Authenticated queue layout fits 12 phone, foldable, tablet and desktop viewports; phone buttons meet 44 pixels",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:43.995Z"
+      "at": "2026-11-08T12:41:03.012Z"
     },
     {
       "name": "Authenticated intake layout fits 12 phone, foldable, tablet and desktop viewports; phone buttons meet 44 pixels",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:45.261Z"
+      "at": "2026-11-08T12:41:04.004Z"
     },
     {
       "name": "Staff workspace actions remain keyboard reachable with visible focus",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:46.042Z"
+      "at": "2026-11-08T12:41:05.040Z"
     },
     {
       "name": "Authenticated workspace respects the reduced-motion preference",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:46.073Z"
+      "at": "2026-11-08T12:41:05.079Z"
     },
     {
       "name": "Sign-out returns to entry and removes accessible VMMS tab drafts",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:46.299Z"
+      "at": "2026-11-08T12:41:05.539Z"
     },
     {
       "name": "No uncaught browser errors during the tested staff workflow",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:34:46.299Z"
+      "at": "2026-11-08T12:41:05.539Z"
     }
   ],
   "pageErrors": []

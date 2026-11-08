@@ -1841,14 +1841,15 @@
         "docs/architecture/platform-strategy.md",
         "apps/web/src/drafts.ts (eight-hour maximum age for session-scoped intake drafts)",
         "scripts/browser-smoke.mjs (expired draft removal scenario)",
-        "docs/verification/browser/results.json (17 local browser checks; draft expiry included)"
+        "docs/verification/browser/results.json (17 local browser checks; draft expiry included)",
+        "docs/verification/browser/results.json (18 local browser checks; cross-site draft cleanup included)"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Opt-in tab-scoped intake recovery, eight-hour expiry, malformed-draft cleanup and sign-out/site-switch cleanup are implemented; local browser checks verify refresh recovery, expired-draft deletion, online-only submission and sign-out cleanup. The eight-hour lifetime remains a proposed policy pending REV-026 review; evidence-entry recovery and account/site-switch browser scenarios remain open."
+      "statusNote": "Opt-in tab-scoped intake recovery, eight-hour expiry, malformed-draft cleanup, sign-out and cross-site cleanup are implemented and browser-verified. The switch test proves clearing is limited to the active account namespace, but does not sign in as a second identity. The eight-hour lifetime remains a proposed policy pending REV-026 review; evidence-entry recovery remains open."
     },
     {
       "id": "BUILD-BR-01",
@@ -16433,14 +16434,15 @@
       "evidence": [
         "docs/verification/browser/results.json",
         "scripts/browser-smoke.mjs (expired draft deletion and no-recovery scenario)",
-        "docs/verification/browser/results.json (17 local browser checks; draft expiry included)"
+        "docs/verification/browser/results.json (17 local browser checks; draft expiry included)",
+        "docs/verification/browser/results.json (18 local browser checks; cross-site draft cleanup included)"
       ],
       "owner": {
         "role": "verification-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Browser evidence covers interrupted intake recovery, online-only submission, sign-out cleanup and expiry. Session-restore and account/site-switch browser scenarios remain open."
+      "statusNote": "Browser checks verify interrupted intake recovery, expired-draft deletion, online-only submission, sign-out cleanup, and switching between seeded DEV/QA sites while preserving another account namespace. A second authenticated account and evidence-entry recovery flow are not yet exercised."
     },
     {
       "id": "P-005",
