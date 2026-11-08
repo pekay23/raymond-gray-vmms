@@ -1,0 +1,242 @@
+{
+  "recordedAt": "2026-11-08T11:45:11.590Z",
+  "platform": "win32",
+  "node": "v24.22.1",
+  "scope": "Local development build and real PostgreSQL API integration; no production, device, restore or staff UAT claim.",
+  "changedDuringChecks": false,
+  "sourceHashes": [
+    [
+      "apps/api/migrations/001_foundation.sql",
+      "75123cb8510d118683de6dc86b3975fa106391d956827588a9eb432c491356ab"
+    ],
+    [
+      "apps/api/migrations/002_membership_lock.sql",
+      "2b303c7acf4d5b2ae30ecdca84ee2d0c17378fb0d1a4da1c24000dd05b721c39"
+    ],
+    [
+      "apps/api/migrations/003_shared_identity.sql",
+      "5e2363cf41df45810515e99bacdfe1c72a1a3485eb7bdeb247a4dd9d91e18227"
+    ],
+    [
+      "apps/api/migrations/004_identity_provider_credentials.sql",
+      "3d61551bb5d911182c3e4daee87fcf28d891470ea8173d5845dd66cef39a8ccc"
+    ],
+    [
+      "apps/api/migrations/005_aggregate_event_ledger.sql",
+      "fcb4efa43a843e784ba9107d8f4cead207186f516b26aa7d3baf5cc02d7aa331"
+    ],
+    [
+      "apps/api/migrations/006_vehicle_owner_access.sql",
+      "90c741c41a83ca7735e976fdb8b41ac0720fe02e70c879f0dd52ffe64d88d83d"
+    ],
+    [
+      "apps/api/migrations/007_evidence_storage.sql",
+      "33fad9da97580d4b57d3bd228a1ac3663d3afa42cfd19704ca998e4cab15634e"
+    ],
+    [
+      "apps/api/package.json",
+      "1af52cec1f12a0a8dcd465e7669b03dad3efa0d9e3f882e335cf9eea05f5c43b"
+    ],
+    [
+      "apps/api/scripts/check-oidc-provider.ts",
+      "33d9fc264eebcb23c422fbd7c54b9d62fe28eed2deae63389fa57f8d13296ca9"
+    ],
+    [
+      "apps/api/scripts/link-local-identity.ts",
+      "b55258c6ccfbf3f926a9a42f14a40c99dd49019a5af61175c972f980e1d68534"
+    ],
+    [
+      "apps/api/scripts/migrate.ts",
+      "e1eb7445624a94c90ce743eaf25649c7a51bfb8656e20b6a75098763d158b88c"
+    ],
+    [
+      "apps/api/scripts/seed.ts",
+      "38e809fe43ae45630e768778fd9678898479b9264c66c7f997cc12c56d0aa306"
+    ],
+    [
+      "apps/api/src/app.ts",
+      "25cd137ce9c3cf07f40044a368b44bf3b8a214d4a7d4a9c800a4e8e90de6f4c1"
+    ],
+    [
+      "apps/api/src/business-csrf.ts",
+      "58da601137e3534706872ac0223203d45e6419d763d3ecb17729513f4b9d20ca"
+    ],
+    [
+      "apps/api/src/commands.ts",
+      "043aa195282dd5a47383f888e9dbdd75c49c1fa233fb56b622d3816daa1f2534"
+    ],
+    [
+      "apps/api/src/config.ts",
+      "5c4d025f6c8d23598a58821e7150cbef3b27d67919bb97e2ba6faf88437e171f"
+    ],
+    [
+      "apps/api/src/db.ts",
+      "b025b3db38069c3b8d3cd115ed3ec39eae1a8607edee793ad86c952f3241559e"
+    ],
+    [
+      "apps/api/src/errors.ts",
+      "00cb3c36a5f6c21377c2e2fb825350ca2fb0a72e92025024e52d2371ef7a2fdf"
+    ],
+    [
+      "apps/api/src/evidence-worker.ts",
+      "544132f421bd0f212e3f441adb818605bc80f6c19d3eb89b0a2cfab0095136e7"
+    ],
+    [
+      "apps/api/src/evidence.ts",
+      "c88a8e88808b982661dcbab12f1bd767dbaa94233463de618cd5d28c0de81983"
+    ],
+    [
+      "apps/api/src/identity.ts",
+      "ef3287311ffa63bc785b0cd4571ef3bfff6ba55c54fa1777acf934b848145c70"
+    ],
+    [
+      "apps/api/src/oidc-client.ts",
+      "b5c22c33aed6d61af128aabb0acb6cf994a49c3210a581acd15ae5540524e947"
+    ],
+    [
+      "apps/api/src/oidc-login.ts",
+      "45688b075d32d6a8b684935c9892d9639b910906e493af9101e4fa9bca705c3e"
+    ],
+    [
+      "apps/api/src/owner-access.ts",
+      "effac2a0de99ecbf06f06a1ca641eb2a661b43f329b0f5db00a76315ac6d87e0"
+    ],
+    [
+      "apps/api/src/schemas.ts",
+      "c2f93da6e5028a5328275eaf7b956fda875874eb763d3ad265f634e44e0b802d"
+    ],
+    [
+      "apps/api/src/server.ts",
+      "06a3b70f828b16e3201efa2100e382d52b2885d8532a16629120e4d675449164"
+    ],
+    [
+      "apps/api/src/workshop.ts",
+      "d7305f3e35094dcb78bd45f6e7c40c14dbc783ee579e7a122a442b2848532a23"
+    ],
+    [
+      "apps/api/test/evidence.test.ts",
+      "009d645387024f48908475ea6dddcb977b1388bd681b5cc7b74d6ce25250754f"
+    ],
+    [
+      "apps/api/test/foundation.test.ts",
+      "a2e53d4a0e015a4a834c1c4258f6179697fd7c0db94f7200d8273bfaa12a4831"
+    ],
+    [
+      "apps/api/test/migration-upgrade.test.ts",
+      "1ff8415762b96747f3fa81ef3cfeaf8db7c68001431f2d7a92b8abb9a437b58f"
+    ],
+    [
+      "apps/api/tsconfig.json",
+      "efce9bcae625923fb71c34950bbe03a9dc79351e1a05356479bbff1c0f62054c"
+    ],
+    [
+      "apps/web/package.json",
+      "cee998455cc1c3d4245f3546c9dadae22d330dcdd0f679c1e81ff66931c99399"
+    ],
+    [
+      "apps/web/scripts/build-images.mjs",
+      "7f0f2760ddeba619dd620ac31fc4ca7b20b078829cfdaaa8d6e81a5ba6bbebaa"
+    ],
+    [
+      "apps/web/scripts/verify-responsive.mjs",
+      "13ab788cec6942155d7c4c1c70889ee2045510ffe33430184306b0f8b0bd97ae"
+    ],
+    [
+      "apps/web/src/api.ts",
+      "c7f56d457d031a65ca248dcc9308f2e762d38314607156a85375a16e7852e64a"
+    ],
+    [
+      "apps/web/src/drafts.ts",
+      "05ece4a70db2fa7732356f580a7e92735473be996692b4f6469a131b48088bec"
+    ],
+    [
+      "apps/web/src/generated/workshop-images.json",
+      "9ef9739dcb710e980743a1e37e3d596ea212c97153434cfea4c517a127ec9207"
+    ],
+    [
+      "apps/web/src/main.tsx",
+      "6bf9df553b9050ebbea6f594894f60b37c19c0e559aabcbc3bfd69ad2c9c7952"
+    ],
+    [
+      "apps/web/src/pages/intake.tsx",
+      "1251bf2e3be398b297f2586495e09b520b4ba6d4dfabb56a8eb055767df913e0"
+    ],
+    [
+      "apps/web/src/pages/reception.tsx",
+      "1c6e84a7637926e0b0574e3780d4fd78287dc6d386243598099f2813242a68b3"
+    ],
+    [
+      "apps/web/src/pages/work-order.tsx",
+      "bdeee70909760d511216933c0c6c3e60d2fe0914851ea35b37bdccff7b9d61f3"
+    ],
+    [
+      "apps/web/src/ui.tsx",
+      "42898dd5963a32e4c44f1bc65c7377f20279bd509f63c7ab06eaf13b05f362a4"
+    ],
+    [
+      "apps/web/src/workshop-picture.tsx",
+      "792675b419f07fea08a263551f6990d45b14dc72ee8b1af977da9d1757c741f5"
+    ],
+    [
+      "apps/web/src/workspace.tsx",
+      "68ba4f649e382d5276b2855dfb853a94c37aa14e092806d80fafe99aa9f2c3e5"
+    ],
+    [
+      "apps/web/tsconfig.json",
+      "79c64c21bb7833a132c282a2a86e29ff91ccc4b3173d8495c5751216c31a0fcf"
+    ],
+    [
+      "apps/web/vite.config.ts",
+      "70d09f02acdb76363b86e5d0fa147bc550cb2923ddf98c5787c7592961350617"
+    ]
+  ],
+  "results": [
+    {
+      "name": "traceability",
+      "command": [
+        "npm",
+        "run",
+        "docs:check"
+      ],
+      "startedAt": "2026-11-08T11:43:51.569Z",
+      "finishedAt": "2026-11-08T11:43:53.612Z",
+      "exitCode": 0,
+      "evidence": "docs/verification/checks/traceability.log"
+    },
+    {
+      "name": "typecheck",
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "startedAt": "2026-11-08T11:43:53.614Z",
+      "finishedAt": "2026-11-08T11:44:12.539Z",
+      "exitCode": 0,
+      "evidence": "docs/verification/checks/typecheck.log"
+    },
+    {
+      "name": "build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "startedAt": "2026-11-08T11:44:12.540Z",
+      "finishedAt": "2026-11-08T11:44:49.633Z",
+      "exitCode": 0,
+      "evidence": "docs/verification/checks/build.log"
+    },
+    {
+      "name": "api-integration",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "startedAt": "2026-11-08T11:44:49.635Z",
+      "finishedAt": "2026-11-08T11:45:11.546Z",
+      "exitCode": 0,
+      "evidence": "docs/verification/checks/api-integration.log"
+    }
+  ]
+}

@@ -16,7 +16,7 @@ Copied the source tree into a new temporary directory without the repository's `
 
 ## Open verification items
 
-- A clean Git checkout cannot be tested until this repository has a commit to check out; all other F-001 acceptance checks now pass from a clean source copy.
+- At the time of this source-copy run the repository had no commit, so Git checkout could not yet be tested. That remaining check is now covered by the dedicated [Git checkout verification](git-checkout-2026-11-08.md).
 - The JavaScript bundle-size variance is explained by the process environment: `NODE_ENV=development` produced 715,892 bytes and a development-mode chunk warning; setting `NODE_ENV=production` in the same clean install produced 474,320 bytes and the exact same SHA-256 as the primary worktree. The installed package trees also matched across all 173 distinct package/version entries. Release verification must run with `NODE_ENV=production`.
 - A production-mode verification initially exposed an asynchronous database-fixture teardown failure in `migration-upgrade.test.ts`. The fixture used `DROP DATABASE ... WITH (FORCE)` immediately after closing its pool, which could terminate a late connection and fail the test runner. The teardown now uses a normal `DROP DATABASE` after `pool.end()`; the focused migration test and the full clean-install verification pass with this fix.
 - Actual production environment, remote identity, deployment, data recovery and physical-device startup remain outside this local check.

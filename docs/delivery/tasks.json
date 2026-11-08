@@ -1235,7 +1235,7 @@
       "sourceRefs": [
         "upgrade-0111"
       ],
-      "status": "in-progress",
+      "status": "verified",
       "acceptance": [
         "A clean checkout installs from the lockfile and runs the documented dev, build, typecheck and verification scripts."
       ],
@@ -1246,14 +1246,16 @@
         "docs/verification/checks/results.json",
         "docs/verification/clean-workspace-2026-11-08.md",
         "docs/verification/clean-install-2026-11-08/results.json",
-        "apps/api/test/migration-upgrade.test.ts"
+        "apps/api/test/migration-upgrade.test.ts",
+        "docs/verification/git-checkout-2026-11-08.md",
+        "docs/verification/git-checkout-2026-11-08/results.json"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "A clean source copy installs from package-lock.json and passes docs validation, typechecks, production builds and full PostgreSQL verification (28 pass, one optional storage integration skip); API/web dev servers also start and return HTTP 200 on isolated loopback ports. Production bundle hash matches the main worktree. The migration-test teardown race found during the first repeat run is fixed and full verification passes. A literal clean Git checkout remains unverified because the repository has no commits."
+      "statusNote": "Commit 7aae42d cloned into a clean temporary checkout. npm ci installed from the lockfile; docs, API/web typechecks, production builds and full PostgreSQL verification passed (28 pass, zero fail, one optional storage integration skip). API/web dev commands started on isolated loopback ports and both endpoints returned HTTP 200. No .env secrets were included in the clone."
     },
     {
       "id": "F-002",
@@ -21852,10 +21854,10 @@
       "configuration-required": 16,
       "deferred": 5,
       "implemented": 3,
-      "in-progress": 22,
+      "in-progress": 21,
       "not-applicable": 1,
       "planned": 515,
-      "verified": 8
+      "verified": 9
     },
     "byPhase": {
       "0-discovery": 20,

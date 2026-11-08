@@ -15,10 +15,10 @@ The product goal remains open until the specification, approved rollout scope, o
 | Tasks including epics | configuration-required | 16 |
 | Tasks including epics | deferred | 5 |
 | Tasks including epics | implemented | 3 |
-| Tasks including epics | in-progress | 22 |
+| Tasks including epics | in-progress | 21 |
 | Tasks including epics | not-applicable | 1 |
 | Tasks including epics | planned | 515 |
-| Tasks including epics | verified | 8 |
+| Tasks including epics | verified | 9 |
 
 ## 0-discovery
 
@@ -50,7 +50,7 @@ The product goal remains open until the specification, approved rollout scope, o
 | ID | Task | Status | Dependencies | Evidence |
 | --- | --- | --- | --- | --- |
 | E01 | Identity, tenancy and persistence foundation | planned |  |  |
-| F-001 | Create reproducible repository workspace and package scripts | in-progress | D-005 | package.json, package-lock.json, scripts/verify.mjs, docs/verification/checks/results.json, docs/verification/clean-workspace-2026-11-08.md, docs/verification/clean-install-2026-11-08/results.json, apps/api/test/migration-upgrade.test.ts |
+| F-001 | Create reproducible repository workspace and package scripts | verified | D-005 | package.json, package-lock.json, scripts/verify.mjs, docs/verification/checks/results.json, docs/verification/clean-workspace-2026-11-08.md, docs/verification/clean-install-2026-11-08/results.json, apps/api/test/migration-upgrade.test.ts, docs/verification/git-checkout-2026-11-08.md, docs/verification/git-checkout-2026-11-08/results.json |
 | F-002 | Define canonical domain and authenticated command contracts | in-progress | F-001 | docs/architecture/initial-api-contract.md, docs/architecture/aggregate-command-contract.md, apps/api/src/commands.ts, docs/verification/checks/api-integration.log |
 | F-003 | Create database migrations and integrity constraints | in-progress | F-002 | apps/api/migrations/005_aggregate_event_ledger.sql, apps/api/test/migration-upgrade.test.ts, apps/api/test/foundation.test.ts, docs/verification/checks/api-integration.log |
 | F-004 | Implement authentication adapter and secure session boundary | planned | F-003, D-007 |  |
