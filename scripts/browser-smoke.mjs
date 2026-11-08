@@ -104,6 +104,31 @@ try {
   await page.reload();
   assert.equal(await page.getByLabel('Customer name', { exact: true }).inputValue(), recoveredName);
   check('Opted-in intake draft automatically saves later edits and recovers after refresh');
+  const scopedDraftKey = await page.evaluate(async () => {
+    const response = await fetch('/api/v1/session', { cache: 'no-store' });
+    const session = await response.json();
+    return `vmms:draft:v1:${session.user.id}:${session.sites[0].id}`;
+  });
+  await page.evaluate(({ key, savedAt }) => {
+    sessionStorage.setItem(key, JSON.stringify({
+      draftId: '11111111-1111-4111-8111-111111111111',
+      commandId: '22222222-2222-4222-8222-222222222222',
+      fields: {
+        customerName: 'Expired synthetic customer', phone: '+233200000000', email: '',
+        vin: 'RGVM0000000000001', registration: 'QA-EXPIRED', make: 'Synthetic',
+        model: 'Expired', odometerKm: '1', socPercent: '', complaint: 'Expired draft',
+      },
+      savedAt,
+    }));
+  }, { key: scopedDraftKey, savedAt: new Date(Date.now() - 9 * 60 * 60 * 1000).toISOString() });
+  await page.reload();
+  await page.getByRole('alert').getByText(/saved draft expired and was removed/i).waitFor();
+  assert.equal(await page.getByLabel('Customer name', { exact: true }).inputValue(), '');
+  assert.equal(await page.evaluate((key) => sessionStorage.getItem(key), scopedDraftKey), null);
+  check('An expired intake draft is removed, not recovered or submitted');
+  await page.getByLabel('Customer name', { exact: true }).fill(recoveredName);
+  await page.getByLabel('Phone number', { exact: true }).fill('+233200000000');
+  await page.getByLabel('Vehicle identification number', { exact: true }).fill(vin);
   await page.getByLabel('Registration', { exact: true }).fill(registration);
   await page.getByLabel('Make', { exact: true }).fill('Development');
   await page.getByLabel('Model', { exact: true }).fill('EV demonstrator');

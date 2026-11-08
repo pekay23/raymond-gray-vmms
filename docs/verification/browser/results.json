@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-11-08T12:06:07.145Z",
+  "recordedAt": "2026-11-08T12:34:46.299Z",
   "browser": "157.0.4341.42",
   "url": "http://127.0.0.1:5173",
   "scope": "Local synthetic staff queue, intake and work-order workflow. Responsive layout checks cover all three staff routes; no owner-portal, physical-device, release, finance or operational acceptance claim.",
@@ -69,82 +69,87 @@
     {
       "name": "Official brand image and favicon load on the neutral sign-in page",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:05:52.177Z"
+      "at": "2026-11-08T12:34:30.374Z"
     },
     {
       "name": "Individual staff signs in through the local identity provider and VMMS API",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:05:56.803Z"
+      "at": "2026-11-08T12:34:34.483Z"
     },
     {
       "name": "Opted-in intake draft automatically saves later edits and recovers after refresh",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:05:58.129Z"
+      "at": "2026-11-08T12:34:35.759Z"
+    },
+    {
+      "name": "An expired intake draft is removed, not recovered or submitted",
+      "result": "VERIFIED",
+      "at": "2026-11-08T12:34:36.258Z"
     },
     {
       "name": "Explicit unsubmitted tab draft survives refresh",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:05:59.136Z"
+      "at": "2026-11-08T12:34:37.191Z"
     },
     {
       "name": "Offline mode preserves form entries and blocks submission",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:05:59.254Z"
+      "at": "2026-11-08T12:34:37.301Z"
     },
     {
       "name": "Real intake and C02 persist on one work order through refresh",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:06:00.680Z"
+      "at": "2026-11-08T12:34:38.906Z"
     },
     {
       "name": "A proposed task persists and remains labelled planned after refresh",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:06:01.666Z"
+      "at": "2026-11-08T12:34:39.842Z"
     },
     {
       "name": "Protective hold is attributable to the selected task",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:06:02.214Z"
+      "at": "2026-11-08T12:34:40.758Z"
     },
     {
       "name": "Task-scoped hold and unrelated task remain distinct after refresh",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:06:03.150Z"
+      "at": "2026-11-08T12:34:41.696Z"
     },
     {
       "name": "Authenticated work-order layout fits 12 phone, foldable, tablet and desktop viewports; phone buttons meet 44 pixels",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:06:04.043Z"
+      "at": "2026-11-08T12:34:42.955Z"
     },
     {
       "name": "Authenticated queue layout fits 12 phone, foldable, tablet and desktop viewports; phone buttons meet 44 pixels",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:06:05.048Z"
+      "at": "2026-11-08T12:34:43.995Z"
     },
     {
       "name": "Authenticated intake layout fits 12 phone, foldable, tablet and desktop viewports; phone buttons meet 44 pixels",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:06:06.004Z"
+      "at": "2026-11-08T12:34:45.261Z"
     },
     {
       "name": "Staff workspace actions remain keyboard reachable with visible focus",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:06:06.890Z"
+      "at": "2026-11-08T12:34:46.042Z"
     },
     {
       "name": "Authenticated workspace respects the reduced-motion preference",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:06:06.919Z"
+      "at": "2026-11-08T12:34:46.073Z"
     },
     {
       "name": "Sign-out returns to entry and removes accessible VMMS tab drafts",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:06:07.144Z"
+      "at": "2026-11-08T12:34:46.299Z"
     },
     {
       "name": "No uncaught browser errors during the tested staff workflow",
       "result": "VERIFIED",
-      "at": "2026-11-08T12:06:07.145Z"
+      "at": "2026-11-08T12:34:46.299Z"
     }
   ],
   "pageErrors": []

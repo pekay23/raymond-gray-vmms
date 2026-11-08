@@ -1838,14 +1838,17 @@
         "scripts/browser-smoke.mjs",
         "docs/verification/browser/results.json",
         "apps/web/src/pages/intake.tsx",
-        "docs/architecture/platform-strategy.md"
+        "docs/architecture/platform-strategy.md",
+        "apps/web/src/drafts.ts (eight-hour maximum age for session-scoped intake drafts)",
+        "scripts/browser-smoke.mjs (expired draft removal scenario)",
+        "docs/verification/browser/results.json (17 local browser checks; draft expiry included)"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Opt-in session-scoped intake draft autosave and recovery after refresh are verified in the authenticated loopback browser workflow. Drafts remain sessionStorage per person/site until shared-device policy review; retention approval, session-restore behavior, site-switch scenario and evidence-entry recovery remain open."
+      "statusNote": "Opt-in tab-scoped intake recovery, eight-hour expiry, malformed-draft cleanup and sign-out/site-switch cleanup are implemented; local browser checks verify refresh recovery, expired-draft deletion, online-only submission and sign-out cleanup. The eight-hour lifetime remains a proposed policy pending REV-026 review; evidence-entry recovery and account/site-switch browser scenarios remain open."
     },
     {
       "id": "BUILD-BR-01",
@@ -16428,14 +16431,16 @@
         "Offline approval/posting/release remains denied; reconnect retries retain command IDs and surface version conflict."
       ],
       "evidence": [
-        "docs/verification/browser/results.json"
+        "docs/verification/browser/results.json",
+        "scripts/browser-smoke.mjs (expired draft deletion and no-recovery scenario)",
+        "docs/verification/browser/results.json (17 local browser checks; draft expiry included)"
       ],
       "owner": {
         "role": "verification-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Browser evidence covers interrupted intake recovery, online-only submission and sign-out cleanup. Evidence-entry recovery, expiry/session-restore behavior and account/site-switch browser scenarios remain open."
+      "statusNote": "Browser evidence covers interrupted intake recovery, online-only submission, sign-out cleanup and expiry. Session-restore and account/site-switch browser scenarios remain open."
     },
     {
       "id": "P-005",
@@ -21776,19 +21781,22 @@
       "sourceRefs": [
         "user-hosting-choice-2026-11-08"
       ],
-      "status": "planned",
+      "status": "in-progress",
       "acceptance": [
         "Build a service matrix for VMMS, platform, remote support, vehicle services and shared auth.",
         "Run a synthetic VMMS Workers/Hyperdrive compatibility spike for Fastify, pg, transactions/RLS and uploads.",
         "Check each Next.js framework adapter, Node/native packages, image pipeline, caching, background work and OIDC.",
         "Record cost, region, rollback and provider-specific risks; do not change production DNS."
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/architecture/hosting-strategy.md (repository-backed service matrix; runtime/build compatibility spikes remain open)"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
-      "blockedBy": []
+      "blockedBy": [],
+      "statusNote": "source_audit_complete_runtime_and_provider_spikes_open"
     },
     {
       "id": "HOST-002",

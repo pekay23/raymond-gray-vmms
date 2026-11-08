@@ -77,7 +77,7 @@ Audit and signed decisions deny update/delete to the runtime role. Corrections a
 
 An upload intent is not accepted evidence. Finalization checks object identity, checksum, size, permitted content, malware result and record scope. Only accepted private evidence can satisfy a gate. Access is short-lived and authorised per record. Object-store writes and SQL cannot be one transaction, so explicit pending, rejected and accepted states handle interrupted uploads. The [evidence storage design](evidence-storage.md) defines the stream, quarantine, scan-worker, access-audit and backup boundary.
 
-Saved local drafts are account/site-bound proposals with visible storage state, expiry policy, retry command IDs and sign-out cleanup. Default to session-only content until the shared-device persistence policy is approved. An optional deliberate device save must warn about shared hardware. The service worker caches static assets only; it must not replay arbitrary API mutations. The [platform strategy](platform-strategy.md) governs later native and sync work.
+Saved local drafts are account/site-bound proposals with visible storage state, retry command IDs and sign-out cleanup. Intake recovery is opt-in and tab-scoped; the current implementation expires data eight hours after its last save. That lifetime is a proposed shared-device policy pending owner review in [REV-026](../decisions/review-register.md). The service worker caches static assets only; it must not replay arbitrary API mutations. The [platform strategy](platform-strategy.md) governs later native and sync work.
 
 ## Synthesis decision
 

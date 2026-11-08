@@ -29,9 +29,10 @@ const draftSchema = z.object({
   draftId: z.string().uuid(),
   commandId: z.string().uuid(),
   fields: intakeFieldsSchema,
-  savedAt: z.string(),
+  savedAt: z.iso.datetime(),
 });
 export type IntakeDraft = z.infer<typeof draftSchema>;
+export const INTAKE_DRAFT_MAX_AGE_MS = 8 * 60 * 60 * 1000;
 const prefix = "vmms:draft:v1:";
 const key = (userId: string, siteId: string) => `${prefix}${userId}:${siteId}`;
 
@@ -43,11 +44,22 @@ export function loadDraft(
     const raw = sessionStorage.getItem(key(userId, siteId));
     if (!raw) return { draft: null, error: null };
     const parsed = draftSchema.safeParse(JSON.parse(raw));
-    if (!parsed.success)
+    if (!parsed.success) {
+      sessionStorage.removeItem(key(userId, siteId));
       return {
         draft: null,
         error: "The saved tab draft could not be read. Start a new draft.",
       };
+    }
+    const savedAt = Date.parse(parsed.data.savedAt);
+    const now = Date.now();
+    if (now - savedAt >= INTAKE_DRAFT_MAX_AGE_MS || savedAt > now + 60_000) {
+      sessionStorage.removeItem(key(userId, siteId));
+      return {
+        draft: null,
+        error: "The saved draft expired and was removed. Start a new draft.",
+      };
+    }
     return { draft: parsed.data, error: null };
   } catch {
     return {

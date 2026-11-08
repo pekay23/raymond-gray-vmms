@@ -15,9 +15,9 @@ The product goal remains open until the specification, approved rollout scope, o
 | Tasks including epics | configuration-required | 17 |
 | Tasks including epics | deferred | 5 |
 | Tasks including epics | implemented | 4 |
-| Tasks including epics | in-progress | 15 |
+| Tasks including epics | in-progress | 16 |
 | Tasks including epics | not-applicable | 1 |
-| Tasks including epics | planned | 514 |
+| Tasks including epics | planned | 513 |
 | Tasks including epics | verified | 14 |
 
 ## 0-discovery
@@ -66,7 +66,7 @@ The product goal remains open until the specification, approved rollout scope, o
 | F-008 | Build responsive shell and accessible controls | verified | F-001 | docs/verification/responsive-shell.md: 15 Edge viewport/orientation and 200%/400% zoom checks pass for public sign-in only; keyboard focus and physical-device limitations are recorded, scripts/browser-smoke.mjs, docs/verification/browser/results.json, docs/verification/responsive-shell.md, docs/verification/browser/work-order-phone.png, docs/verification/browser/queue-phone.png, docs/verification/browser/intake-phone.png |
 | F-009 | Create domain, database and browser verification entry points | verified | F-001, F-003 | apps/api/test/foundation.test.ts: real PostgreSQL integration entry point for domain, tenancy, command, and rollback behavior, apps/web/scripts/verify-responsive.mjs: repeatable Microsoft Edge responsive public sign-in entry point, docs/verification/checks/results.json: local typecheck, build, traceability, and API integration results, scripts/browser-smoke.mjs, docs/verification/browser/results.json, apps/api/test/foundation.test.ts, docs/verification/checks/results.json |
 | F-010 | Configure CI and secret-safe development environment | implemented | F-009 | apps/api/test/foundation.test.ts: real PostgreSQL integration entry point for domain, tenancy, command, and rollback behavior, apps/web/scripts/verify-responsive.mjs: repeatable Microsoft Edge responsive public sign-in entry point, docs/verification/checks/results.json: full local typecheck, build, traceability, and API integration results, .github/workflows/verify.yml, package.json, .env.example, docs/guides/development.md, apps/api/test/config.test.ts, docs/verification/checks/results.json |
-| F-011 | Implement saved drafts with explicit recovery state | in-progress | F-008, F-005 | scripts/browser-smoke.mjs, docs/verification/browser/results.json, apps/web/src/pages/intake.tsx, docs/architecture/platform-strategy.md |
+| F-011 | Implement saved drafts with explicit recovery state | in-progress | F-008, F-005 | scripts/browser-smoke.mjs, docs/verification/browser/results.json, apps/web/src/pages/intake.tsx, docs/architecture/platform-strategy.md, apps/web/src/drafts.ts (eight-hour maximum age for session-scoped intake drafts), scripts/browser-smoke.mjs (expired draft removal scenario), docs/verification/browser/results.json (17 local browser checks; draft expiry included) |
 | BUILD-BR-01 | One controlling work order per visit | planned | F-002, F-009, F-003, F-005, F-006 |  |
 | CHECK-BR-01 | Verify One controlling work order per visit | planned | BUILD-BR-01 |  |
 | BUILD-BR-13 | Append or version historical records | planned | F-002, F-009, F-003, F-005, F-006 |  |
@@ -211,7 +211,7 @@ The product goal remains open until the specification, approved rollout scope, o
 | CHECK-R-M-0166 | Verify Technical lead review workbench | planned | BUILD-R-M-0166 |  |
 | BUILD-R-M-0184 | Traceable diagnostic uploads and indexed metadata | planned | F-002, F-009, F-003, F-005, F-006, BUILD-R-M-0130, BUILD-R-M-0137 |  |
 | CHECK-R-M-0184 | Verify Traceable diagnostic uploads and indexed metadata | planned | BUILD-R-M-0184 |  |
-| P-004 | Verify interrupted draft recovery and personal-data expiry | in-progress | F-011 | docs/verification/browser/results.json |
+| P-004 | Verify interrupted draft recovery and personal-data expiry | in-progress | F-011 | docs/verification/browser/results.json, scripts/browser-smoke.mjs (expired draft deletion and no-recovery scenario), docs/verification/browser/results.json (17 local browser checks; draft expiry included) |
 | E16 | Approved vehicle-owner launch portal | planned |  |  |
 | CUST-001 | Define owner identity and publication contracts | in-progress | F-002, D-007 | docs/architecture/vehicle-owner-access.md |
 | CUST-002 | Implement owner relationship lifecycle commands | in-progress | CUST-001, F-003, F-005, F-006, F-007 | apps/api/test/foundation.test.ts: PostgreSQL lifecycle, authorization, replay, expiry and rollback integration tests, docs/architecture/vehicle-owner-access.md: site-local implementation boundary and operational launch gates |
@@ -568,7 +568,7 @@ The product goal remains open until the specification, approved rollout scope, o
 | CHECK-USER-020 | Review launch authentication methods | planned | AUTH-010 |  |
 | CHECK-USER-021 | Review responsive art direction and browser evidence | planned | RESP-004, RESP-005 |  |
 | IDP-006 | Prove production identity operations and recovery | planned | IDP-005 |  |
-| HOST-001 | Run the per-service Cloudflare and Vercel compatibility review | planned |  |  |
+| HOST-001 | Run the per-service Cloudflare and Vercel compatibility review | in-progress |  | docs/architecture/hosting-strategy.md (repository-backed service matrix; runtime/build compatibility spikes remain open) |
 | HOST-002 | Review concrete staging hosting and recovery plan | planned | HOST-001 |  |
 
 ## 7-platforms
