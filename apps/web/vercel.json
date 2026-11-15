@@ -39,8 +39,8 @@
   ],
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "source": "/api/v1/(.*)",
+      "destination": "https://api.raymond-gray.org/api/v1/$1"
     },
     {
       "source": "/(.*)",
