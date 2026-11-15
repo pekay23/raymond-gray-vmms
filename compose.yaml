@@ -22,16 +22,16 @@ services:
     image: adobe/s3mock:5.2.2
     profiles: ["evidence"]
     environment:
-      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: vmms-evidence
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: ${VMMS_EVIDENCE_FIXTURE_BUCKET:-vmms-test-evidence}
     ports:
-      - "127.0.0.1:19090:9090"
+      - "127.0.0.1:${VMMS_EVIDENCE_FIXTURE_S3_PORT:-19091}:9090"
     restart: "no"
 
   evidence-clamav:
     image: clamav/clamav:1.4
     profiles: ["evidence"]
     ports:
-      - "127.0.0.1:13310:3310"
+      - "127.0.0.1:${VMMS_EVIDENCE_FIXTURE_CLAMAV_PORT:-13310}:3310"
     restart: "no"
 
 volumes:

@@ -1,0 +1,84 @@
+# Raymond Gray after-sales service journey
+
+Status: proposed end-to-end workflow based on the owner's directions. This document joins the existing lifecycle and business rules into one operator view. It does not grant technical, inspection, release, financial or document-control authority. Open decisions remain in the [review register](../decisions/review-register.md).
+
+## One vehicle history, one job per visit
+
+Keep one canonical vehicle record and a dated history. Sales delivery, PDI, service requests, workshop visits, work orders, tasks, inspections, invoices and collection records link to that vehicle by stable IDs. Keep the source and certainty of each fact visible. A purchaser at delivery is not automatically the current owner, service client or payer.
+
+For each service visit, keep these people/organizations distinct and explicitly selected:
+
+- **Service client:** the person or organization responsible for paying or guaranteeing payment.
+- **Vehicle owner:** the verified owner, or a source-reported owner until verification is recorded.
+- **Visit contact:** the caller, driver or representative handling this visit.
+- **Staff:** the named person acting in the system, tied to their current site membership and role placement.
+
+A name, email, phone number, VIN or registration match must never create or merge these relationships automatically.
+
+## End-to-end flow
+
+```mermaid
+flowchart TD
+  A[Sales records delivery and approved PDI facts] --> B[Vehicle history]
+  B --> C[Sales, owner or customer reports a concern]
+  C --> D[Service Advisor records a service request and next contact]
+  D --> E{Vehicle and service client confirmed?}
+  E -- No --> F[Requests and callbacks queue]
+  F --> D
+  E -- Yes --> G[Vehicle arrives; Advisor records reception and custody]
+  G --> H[Operations reviews and assigns a qualified team lead]
+  H --> I[Team lead plans work and hands tasks to supervisors]
+  I --> J[Supervisor assigns work to direct reports]
+  J --> K[Technicians update each task and raise blockers or requests]
+  K --> L[Supervisor verifies and signs off completed technical work]
+  L --> M[Team Lead records final release and moves vehicle to collection zone]
+  M --> N[Head of Service Centre inspects and records final sign-off]
+  N --> O[Service Advisor prepares invoice and updates the customer]
+  O --> P[Payment or approved showroom guarantee is recorded]
+  P --> Q[Advisor records collection or paid delivery handover]
+```
+
+The owner clarified the order on 13 November 2026: the Supervisor records technical completion; the Team Lead records final release and places the vehicle in the collection zone; the Head of Service Centre then inspects and records the required sign-off; only after that may the Service Advisor update the customer. The Advisor also checks cleanliness, prepares and verifies the invoice, records payment or an approved showroom guarantee, then completes collection or paid delivery. This sequence is resolved under `REV-046`; the commands remain unavailable until the signed authority schedule, applicable SOPs, evidence rules and commercial policies are approved.
+
+## What the current application supports
+
+- Staff sign-in, site-scoped role access, site-aware session data and saved intake drafts.
+- The role-aware Today page shows the current user's visible overdue and due-today callbacks from the existing request filters. It shows a short action, concern, reported vehicle and site-local due time, then links to the original request with its filter preserved; callback updates remain in Requests.
+- Vehicle reception intake with a selected paying client, separately reported owner and visit contact, vehicle details, complaints, warranty-at-entry, odometer, battery charge and custody facts.
+- One work order per visit, additional complaints, proposed work tasks, diagnostic observations, Operations review, qualified team-lead assignment, team planning and supervisor handoff/allocation.
+- Sales delivery and PDI observations are recorded with source provenance and linked into same-site vehicle history. One initial delivery per site/vehicle is enforced, and the Sales screen selects an existing delivery before adding PDI notes. The current history screen and API allow Head of Service Centre, Sales Representative and PDI Observer placements; sales workbook rows remain staged until owner review. Whether Service Advisors and workshop roles need a limited history view is pending under `REV-049`.
+- Service requests capture caller details and callbacks, can be linked to a confirmed job, and retain contact/status history.
+- Assigned workers can acknowledge tasks and record progress, blockers, comments or requests. The current Supervisor can read a paginated, audited, read-only feed for active direct reports on the handed-off plan; none of these entries authorises work or signs off a repair.
+- Work-order evidence handling, controlled staff documents, site work queues, staff messages and purpose-built work-order/Head reports.
+
+The current work-order print summary is not a structured execution history. It cannot yet present completed repair actions as an attributable timeline. The [service work-history and report contract](service-work-history-and-reports.md) tracks this gap. Until that work is implemented, do not describe progress comments or the summary as a complete daily service report.
+
+The service reception form is for a vehicle arriving at the workshop. It is not an inbound phone-call form. Planned work and supervisor allocation are not technician completion. No report may present an action as approved, signed off, released, invoiced or paid merely because its narrative says it happened.
+
+## Work that remains to build
+
+- Correction/review workflows for imported sales and delivery facts, the approved backlog importer, and staff acceptance of the sales-to-service data.
+- Supervisor technical sign-off, Team Lead release, the Head's final inspection/review, advisor customer updates, invoice review, payment/guarantee, collection and delivery as separately authorized steps.
+- An append-only work-history entry for attributed tests, findings and actions, followed by a purpose-built Daily Service Report that keeps those entries separate from completion, inspection, release and payment decisions.
+- A simpler role-aware screen path that keeps the next action, current owner, due time, evidence needed and block reason visible on the same job. Keep staff/team/document/report administration in secondary navigation. On dense screens, independently scrolling job sections are allowed; do not let sidebars or actions disappear at narrow widths.
+
+The [service request and callback contract](service-requests-and-callbacks.md) defines the request record, follow-up queue and conversion to reception. Task and verification IDs are linked from this page's [implementation tracker](../delivery/implementation-tracker.md). Existing safety and commercial tasks remain the authority for their respective controls.
+
+## Screen model
+
+Keep the existing Raymond Gray branding and workshop imagery. Use a short primary staff path:
+
+1. **Today**: role-specific assigned work, requests needing contact and overdue callbacks.
+2. **Requests**: new enquiries, confirmation gaps and follow-ups.
+3. **Jobs**: workshop queue and the full job timeline.
+4. **Vehicles**: sales/PDI history and service history, subject to role access.
+
+Team, procedures, reports and account administration stay in role-aware secondary areas. A user should not need to open several separate workspaces to understand who owns a job or what must happen next. This is an information-architecture proposal; it does not authorize a new visual direction.
+
+## Release conditions
+
+1. Add approved role permissions and signed server grants for each transition; titles alone do not authorize it.
+2. Load the owner-provided SOPs and authority schedule. Until then, G1 through G5 remain fail-closed where their prerequisites are unknown.
+3. Implement the accepted `REV-046` transition order only after the signed authority schedule, SOPs, evidence rules and commercial policies are approved.
+4. Verify the full journey with real PostgreSQL, a browser for each role, denied transitions, stale/replayed commands, responsive layouts and approved report outputs.
+5. Import the maintenance backlog only after the source inventory and status mapping are approved. Historical completion labels do not satisfy current technical sign-off.

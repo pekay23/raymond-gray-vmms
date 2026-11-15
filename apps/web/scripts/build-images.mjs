@@ -12,6 +12,7 @@ const outputDirectory = resolve(publicDirectory, "images/workshop");
 const manifestPath = resolve(root, "src/generated/workshop-images.json");
 const settings = {
   widths: [480, 768, 1024, 1440],
+  includeSourceWidth: true,
   webp: { quality: 78, effort: 5 },
   avif: { quality: 48, effort: 5 },
   sharp: sharp.versions.sharp,
@@ -48,7 +49,7 @@ await mkdir(outputDirectory, { recursive: true });
 await mkdir(resolve(root, "src/generated"), { recursive: true });
 const manifest = { schemaVersion: 1, signature, settings, inputs, variants: {} };
 for (const input of inputs) {
-  const widths = settings.widths.filter((width) => width <= input.width);
+  const widths = [...new Set([...settings.widths.filter((width) => width <= input.width), input.width])].sort((left, right) => left - right);
   if (widths.length === 0) widths.push(input.width);
   const result = { aspectRatio: input.width / input.height, webp: [], avif: [] };
   for (const width of widths) {

@@ -13,6 +13,88 @@ def read_json(path: str):
     return json.loads((ROOT / path).read_text(encoding="utf-8-sig"))
 
 
+def validate_counts(requirements_doc, source_ids):
+    requirements = requirements_doc["requirements"]
+    coverage = requirements_doc["sourceCoverage"]
+    counts = requirements_doc.get("counts", {})
+    actual = {
+        "requirements": len(requirements),
+        "sourceBlocks": len(source_ids),
+        "mappedSourceBlocks": sum(bool(item["requirementIds"]) for item in coverage),
+        "contextBlocks": sum(not item["requirementIds"] for item in coverage),
+        "byModule": dict(sorted(Counter(item["module"] for item in requirements).items())),
+        "byStatus": dict(sorted(Counter(item["status"] for item in requirements).items())),
+    }
+    return [
+        f"requirements.json counts.{key} is stale (stored {counts.get(key)!r}, actual {value!r})"
+        for key, value in actual.items()
+        if counts.get(key) != value
+    ]
+
+
+def validate_task_counts(tasks_doc):
+    tasks = tasks_doc["tasks"]
+    counts = tasks_doc.get("counts", {})
+    actual = {
+        "tasks": len(tasks),
+        "epics": sum(task.get("kind") == "epic" for task in tasks),
+        "byStatus": dict(sorted(Counter(task["status"] for task in tasks).items())),
+        "byPhase": dict(sorted(Counter(task["phase"] for task in tasks).items())),
+    }
+    return [
+        f"tasks.json counts.{key} is stale (stored {counts.get(key)!r}, actual {value!r})"
+        for key, value in actual.items()
+        if counts.get(key) != value
+    ]
+
+
+def validate_requirement_tasks(requirements_doc, tasks_doc):
+    requirements = requirements_doc["requirements"]
+    tasks = tasks_doc["tasks"]
+    errors = []
+    by_requirement = {
+        requirement["id"]: [
+            task for task in tasks if requirement["id"] in task["requirementIds"]
+        ]
+        for requirement in requirements
+    }
+    for requirement in requirements:
+        requirement_id = requirement["id"]
+        linked = by_requirement[requirement_id]
+        if not linked:
+            errors.append(f"{requirement_id}: no linked implementation or decision task")
+        if not requirement.get("configurationSoftwareRequired"):
+            continue
+        implementations = [task for task in linked if task.get("workType") == "implementation"]
+        verifications = [task for task in linked if task.get("workType") == "verification"]
+        if not implementations:
+            errors.append(f"{requirement_id}: software configuration requires a BUILD implementation task")
+        if not verifications:
+            errors.append(f"{requirement_id}: software configuration requires a CHECK verification task")
+        if implementations and verifications and not any(
+            implementation["id"] in verification["dependencies"]
+            for implementation in implementations
+            for verification in verifications
+        ):
+            errors.append(f"{requirement_id}: CHECK task must depend on its BUILD task")
+    return errors
+
+
+def validate_source_links(requirements_doc):
+    requirements = {item["id"]: item for item in requirements_doc["requirements"]}
+    coverage = {item["sourceRef"]: set(item["requirementIds"]) for item in requirements_doc["sourceCoverage"]}
+    errors = []
+    for requirement in requirements.values():
+        for source_ref in requirement["sourceRefs"]:
+            if source_ref.startswith(("master-", "upgrade-")) and requirement["id"] not in coverage.get(source_ref, set()):
+                errors.append(f"{requirement['id']}: source link {source_ref} is not reciprocal")
+    for source_ref, requirement_ids in coverage.items():
+        for requirement_id in requirement_ids:
+            if source_ref not in requirements.get(requirement_id, {}).get("sourceRefs", []):
+                errors.append(f"{source_ref}: requirement link {requirement_id} is not reciprocal")
+    return errors
+
+
 def validate():
     requirements_doc = read_json("docs/requirements/requirements.json")
     tasks_doc = read_json("docs/delivery/tasks.json")
@@ -28,6 +110,8 @@ def validate():
     source_ids = set()
     for key in ("master", "upgrade"):
         source_ids.update(b["id"] for b in read_json(f"docs/sources/{key}.json")["blocks"])
+    errors.extend(validate_counts(requirements_doc, source_ids))
+    errors.extend(validate_task_counts(tasks_doc))
     covered = set()
     for item in requirements_doc["sourceCoverage"]:
         ref = item["sourceRef"]
@@ -49,11 +133,15 @@ def validate():
             errors.append(f"{requirement['id']}: completion without evidence")
         if not requirement["acceptance"]:
             errors.append(f"{requirement['id']}: no acceptance criteria")
+    errors.extend(validate_requirement_tasks(requirements_doc, tasks_doc))
+    errors.extend(validate_source_links(requirements_doc))
     for task in tasks:
         if any(r not in req_ids for r in task["requirementIds"]):
             errors.append(f"{task['id']}: unknown requirement")
         if any(d not in task_ids for d in task["dependencies"]):
             errors.append(f"{task['id']}: unknown dependency")
+        if any(target not in task_ids for target in task.get("verificationTargets", [])):
+            errors.append(f"{task['id']}: unknown verification target")
         if task.get("parentId") and task["parentId"] not in task_ids:
             errors.append(f"{task['id']}: unknown parent")
         if task["status"] in ("done", "completed", "verified") and not task["evidence"]:
@@ -97,10 +185,11 @@ def validate_completion(requirements_doc, tasks_doc):
 
     def ancestors(task_id, seen=None):
         seen = set() if seen is None else seen
-        for dependency in tasks.get(task_id, {}).get("dependencies", []):
-            if dependency not in seen:
-                seen.add(dependency)
-                ancestors(dependency, seen)
+        task = tasks.get(task_id, {})
+        for related in [*task.get("dependencies", []), *task.get("verificationTargets", [])]:
+            if related not in seen:
+                seen.add(related)
+                ancestors(related, seen)
         return seen
 
     for item in list(tasks.values()) + list(requirements.values()):

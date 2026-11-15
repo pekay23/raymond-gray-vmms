@@ -1,5 +1,0 @@
-
-> raymond-gray-vmms@0.1.0 docs:check
-> python scripts/project-status.py
-
-{"requirements": 237, "tasks": 570, "sourceBlocks": 350, "validation": "passed"}

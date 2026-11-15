@@ -1,0 +1,25 @@
+# Owned disposable PostgreSQL for local role rehearsal. Never use this project
+# name or volume for VMMS development, QA, staging, or production data.
+services:
+  postgres:
+    image: postgres:18.1
+    restart: "no"
+    environment:
+      POSTGRES_DB: ${VMMS_ROLE_DATABASE:?Generate the per-instance rehearsal configuration first}
+      POSTGRES_USER: ${VMMS_ROLE_DATABASE_USER:?Generate the per-instance rehearsal configuration first}
+      POSTGRES_PASSWORD: ${VMMS_ROLE_DATABASE_PASSWORD:?Generate the per-instance rehearsal configuration first}
+    ports:
+      - "127.0.0.1:${VMMS_ROLE_DATABASE_PORT:?Generate a loopback-only local port}:${VMMS_ROLE_DATABASE_INTERNAL_PORT:-5432}"
+    volumes:
+      - role_rehearsal_data:/var/lib/postgresql
+    labels:
+      org.raymond-gray.vmms.role-rehearsal: "${VMMS_ROLE_FIXTURE_INSTANCE:?Generate the per-instance rehearsal configuration first}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  role_rehearsal_data:
+    name: ${VMMS_ROLE_DATABASE_VOLUME:?Generate a unique volume name per rehearsal instance}

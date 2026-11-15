@@ -1,6 +1,6 @@
 # VMMS requirement reference
 
-This inventory translates the two supplied specifications and current user directions into 228 requirements and a dependency-based tracker of 499 tasks. It records scope and acceptance conditions. Its initial statuses do not claim that the product is implemented or tested.
+This inventory translates the supplied specifications and current user directions into traceable requirements and a dependency-based task tracker. The JSON files are canonical; the generated implementation tracker reports current totals and statuses. Captured scope and initial acceptance criteria do not, by themselves, claim that the product is implemented or tested.
 
 ## Authority
 
@@ -28,7 +28,7 @@ The [requirement inventory](requirements.json) is the canonical requirement reco
 | `R-U-0071` | Compatible upgrade detail with its own acceptance conditions |
 | `BR-01` through `BR-16` | Explicit backend business rules |
 | `AT-01` through `AT-20` | The supplied acceptance scenarios |
-| `USER-001` through `USER-016` | Current user directions and clarifications |
+| `USER-*` | Current user directions and clarifications |
 | `HIST-01` through `HIST-11` | Historical backlog import requirements |
 | `E00` through `E15` | Delivery epics |
 | `BUILD-` and `CHECK-` task prefixes | Separate implementation and acceptance verification |
@@ -41,24 +41,7 @@ Each task includes its phase, epic, dependencies, requirement and source links, 
 
 ## Functional coverage
 
-| Module | Requirements |
-| --- | ---: |
-| M01 Governance and quality | 7 |
-| M02 Reception and advisory | 9 |
-| M03 Diagnosis and planning | 18 |
-| M04 Execution, QA and release | 19 |
-| M05 HV safety and emergencies | 12 |
-| M06 Parts and procurement | 10 |
-| M07 Warranty and payer responsibility | 17 |
-| M08 Personnel and authority | 15 |
-| M09 Equipment and facilities | 7 |
-| M10 Finance and reporting | 24 |
-| Core contracts and state | 17 |
-| Security | 10 |
-| Operations and historical import | 26 |
-| Platforms | 5 |
-| Delivery and verification | 21 |
-| Management configuration | 11 |
+The current requirement totals by module and status are maintained in the canonical [`requirements.json`](requirements.json) `counts` object. `python scripts/project-status.py` verifies those counts against the requirement, source-coverage and status records before generating the tracker.
 
 ## Acceptance applicability
 

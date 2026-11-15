@@ -20,10 +20,26 @@ export type StaffCommand<T> = {
   targetAggregateId: string;
   payload: unknown;
   responseSchema: ZodType<T>;
+  lockSerializationRoots: (client: PoolClient) => Promise<void>;
   authorize: (client: PoolClient, membership: {canWrite:boolean}) => Promise<void>;
+  beforeApply?: () => Promise<void>;
   apply: (client: PoolClient) => Promise<CommandMutation>;
   project: (client: PoolClient, mutation: CommandMutation) => Promise<T>;
 };
+
+export async function lockAdvisoryRoots(client: PoolClient, roots: string[]) {
+  for (const root of [...new Set(roots)].sort()) {
+    await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [root]);
+  }
+}
+
+export async function lockWorkOrderRoot(client: PoolClient, scope: Scope, workOrderId: string) {
+  const found = await client.query(
+    'SELECT id FROM work_orders WHERE organisation_id=$1 AND site_id=$2 AND id=$3 FOR UPDATE',
+    [scope.organisationId, scope.siteId, workOrderId],
+  );
+  if (!found.rowCount) throw new ApiError(404, 'NOT_FOUND', 'The requested record was not found.');
+}
 
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
@@ -36,10 +52,11 @@ function canonical(value: unknown): string {
 export async function runStaffCommand<T>(pool: Database, command: StaffCommand<T>): Promise<T> {
   const commandId = uuid.parse(command.commandId);
   return scoped(pool,command.scope,async client => {
-    // Lock current membership and evaluate domain authority before any replay.
+    // Lock membership and target roots before current authority and any replay.
     const current = await client.query('SELECT public.lock_membership($1,$2) AS can_write',[command.scope.actorId,command.scope.siteId]);
     const membership = (current.rows[0] as {can_write:boolean|null}|undefined)?.can_write;
     if (membership === undefined || membership === null) throw new ApiError(403,'SITE_FORBIDDEN','You do not have active access to this site.');
+    await command.lockSerializationRoots(client);
     await command.authorize(client,{canWrite:membership});
     const fingerprint = createHash('sha256').update(canonical({operation:command.operation,target:command.targetAggregateId,payload:command.payload})).digest('hex');
     await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`${command.scope.organisationId}:${command.scope.siteId}:${command.scope.actorId}:${commandId}`]);
@@ -50,6 +67,7 @@ export async function runStaffCommand<T>(pool: Database, command: StaffCommand<T
       return command.responseSchema.parse(receipt.response);
     }
 
+    await command.beforeApply?.();
     const mutation = await command.apply(client);
     const eventId = randomUUID();
     await client.query(

@@ -3,8 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "workspaces": ["apps/*"],
-  "engines": { "node": ">=24 <27" },
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=24 <27"
+  },
   "scripts": {
     "dev:web": "npm run dev --workspace @vmms/web",
     "dev:api": "npm run dev --workspace @vmms/api",
@@ -12,10 +16,39 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "verify": "node scripts/verify.mjs",
+    "verify:browser-smoke": "node scripts/browser-smoke.mjs",
+    "verify:owner-session-expiry-browser": "node scripts/owner-session-expiry-browser.mjs",
+    "historical:templates:check": "python scripts/check-historical-import-templates.py",
+    "historical:templates:test": "python scripts/test_historical_import_templates.py",
+    "historical:stage:test": "python scripts/test_historical_import_staging.py",
+    "sales:stage": "python scripts/stage-monthly-sales-report.py",
+    "sales:stage:test": "python scripts/test-monthly-sales-staging.py",
+    "sales:db:stage": "node scripts/stage-monthly-sales-db.mjs",
+    "evidence:backup:test": "python scripts/test_evidence_backup.py",
+    "evidence:backup:drill": "node scripts/evidence-backup-drill.mjs",
     "docs:check": "python scripts/project-status.py",
     "docs:generate": "python scripts/project-status.py --write",
+    "docs:test": "python scripts/test-traceability.py",
     "verify:responsive": "npm run verify:responsive --workspace @vmms/web",
+    "verify:cloudflare-api-spike": "npm run cloudflare:spike:run --workspace @vmms/api",
+    "verify:cloudflare-real-api-proxy": "npm run cloudflare:build --workspace @vmms/web && node --import tsx scripts/cloudflare-real-api-proxy.mjs",
+    "verify:queue-pagination-browser": "node --import tsx scripts/queue-pagination-browser.mjs --run",
+    "verify:evidence-browser-recovery": "node --import tsx scripts/evidence-browser-recovery.mjs --run",
+    "verify:evidence-browser-real": "node scripts/evidence-browser-real-services.mjs",
+    "verify:work-plan-browser": "node --import tsx scripts/work-plan-browser.mjs --run",
+    "verify:workforce-browser": "node scripts/workforce-browser.mjs",
+    "verify:head-overview-browser": "node scripts/head-overview-browser.mjs",
+    "verify:messages-browser": "node scripts/messages-browser.mjs",
+    "verify:my-assigned-tasks-browser": "node scripts/my-assigned-tasks-browser.mjs",
+    "verify:staff-account-browser": "node scripts/staff-account-browser.mjs",
+    "verify:role-fixture-logins": "node scripts/local-role-fixtures/verify-logins.mjs",
+    "verify:owner-role-fixture": "node scripts/local-role-fixtures/verify-owner-claim.mjs",
+    "verify:draft-migration": "node --import tsx scripts/draft-migration-check.mjs",
     "db:migrate": "npm run db:migrate --workspace @vmms/api",
-    "dev:seed": "npm run dev:seed --workspace @vmms/api"
+    "dev:seed": "npm run dev:seed --workspace @vmms/api",
+    "dev:link-auth": "npm run dev:link-auth --workspace @vmms/api",
+    "dev:seed-browser-switch": "npm run dev:seed-browser-switch --workspace @vmms/api",
+    "verify:service-requests-browser": "node --import tsx scripts/service-requests-real-browser.mjs --run",
+    "verify:sales-deliveries-browser": "node --import tsx scripts/sales-deliveries-real-browser.mjs --run"
   }
 }

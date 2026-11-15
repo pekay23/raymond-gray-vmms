@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-08",
+  "updatedAt": "2026-11-14",
   "authority": {
     "first": "Current user directions including USER-001 greenfield, USER-002 empty prototype, USER-015 backlog and USER-019 owner launch access",
     "second": "docs/sources/master.md",
@@ -201,7 +201,9 @@
         "VR-BR-02"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/verification/checks/shared-auth-theme-2026-11-11.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -1099,7 +1101,10 @@
         "VR-HIST-01"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/discovery/service-advisor-backlog-inventory.md",
+        "Restricted local workbook staging extraction: source SHA-256 ea314667b8f26a49aa38ee12d6027f71acaf4f63b83e4ae5da1ea0a72e94692f; 43 source rows reconciled, no operational writes"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -1108,7 +1113,7 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -1219,7 +1224,9 @@
         "VR-HIST-03"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/verification/checks/historical-template-package-verification-2026-11-09.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -1228,13 +1235,14 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "verified",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "Versioned template and field-mapping package meets HIST-03 acceptance and passed its checker and format tests. Verification is only for the synthetic template contract; it does not approve source permissions or business mappings and does not import the historical backlog."
     },
     {
       "id": "HIST-04",
@@ -1459,7 +1467,9 @@
         "VR-HIST-07"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/verification/checks/historical-import-staging-2026-11-09.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -1468,13 +1478,14 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "A private local CSV staging validator preserves and hashes a raw source snapshot, validates the current source and relationship rules, and quarantines invalid or ambiguous rows. Only explicitly supplied org/site partition labels are used; no access authorization or operational records are created. Supported transformation rules are limited and monetary rows stay quarantined until approved currency metadata exists."
     },
     {
       "id": "HIST-08",
@@ -1519,7 +1530,11 @@
         "VR-HIST-08"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/verification/checks/historical-import-staging-2026-11-09.md",
+        "docs/verification/checks/historical-status-mapping-approval-2026-11-11.md",
+        "docs/verification/checks/results.json"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -1528,13 +1543,14 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "Synthetic validation requires a reviewed approved status map before resolving source status. Pending/rejected statuses stay quarantined, raw values are retained, and row issues include stable codes and plain-language messages. Real inventory, mapping approvals, target reconciliation, currency precision, batch approval, commit/recovery and business acceptance remain open."
     },
     {
       "id": "HIST-09",
@@ -1860,7 +1876,8 @@
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "configurationSoftwareRequired": true
     },
     {
       "id": "R-M-0010",
@@ -2032,7 +2049,9 @@
         "VR-R-M-0012"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/architecture/technical-completion-and-release.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -2041,7 +2060,7 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -2216,7 +2235,12 @@
         "VR-R-M-0015"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/architecture/diagnostic-capture.md: capture-only contract prepared; implementation and verification remain open",
+        "docs/verification/checks/diagnostic-capture-form-2026-11-09.md",
+        "docs/verification/checks/diagnostic-evidence-association-2026-11-12.md",
+        "docs/verification/checks/results.json: 14-stage local verification passed; API 93 passed, 0 failed, 1 optional skip"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -2225,13 +2249,14 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "Inconclusive diagnosis and residual risk remain explicit through persistence and reload. Full evidence-first diagnosis and release acceptance still depends on approved evidence and downstream authority policies."
     },
     {
       "id": "R-M-0016",
@@ -2302,7 +2327,8 @@
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "configurationSoftwareRequired": true
     },
     {
       "id": "R-M-0017",
@@ -2311,7 +2337,8 @@
       "module": "PLATFORMS",
       "sourceRefs": [
         "master-0017",
-        "upgrade-0032"
+        "upgrade-0032",
+        "user-request-2026-11-09-pagination"
       ],
       "sourceText": [
         {
@@ -2321,6 +2348,10 @@
         {
           "id": "upgrade-0032",
           "text": "Design responsive technician, advisor, parts, inspector and management workflows with offline-friendly drafts where the current platform supports them."
+        },
+        {
+          "id": "user-request-2026-11-09-pagination",
+          "text": "Work-order tables need pagination so staff can move through filtered results."
         }
       ],
       "sopMapping": {
@@ -2333,7 +2364,8 @@
       },
       "acceptance": [
         "Satisfy the complete fields and behaviour in master-0017: Responsive, accessible and usable workshop experience; minimal duplicate entry, role-specific task queues.",
-        "Exercise the permitted action and relevant incomplete or denied action. Verify canonical records and attributable evidence."
+        "Exercise the permitted action and relevant incomplete or denied action. Verify canonical records and attributable evidence.",
+        "The work-order queue presents a page-size control, visible result range and total, and Previous/Next controls; pagination composes with search and role queue filters while remaining scoped to the authenticated site and actor."
       ],
       "existingEvidence": {
         "classification": "UNKNOWN",
@@ -2348,7 +2380,13 @@
         "VR-R-M-0017"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/verification/checks/role-queues-2026-11-09.md",
+        "docs/verification/checks/queue-pagination-and-sidebar-2026-11-09.md",
+        "docs/verification/checks/queue-pagination-browser-2026-11-09.md",
+        "docs/verification/checks/role-queue-zoom-2026-11-11.md",
+        "docs/verification/checks/accessible-workflows-2026-11-12.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -2357,13 +2395,14 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "Responsive, session-scoped queues are locally verified for implemented workflow stages. Fresh 12 November local browser checks cover workforce, Head overview/report, messages and Operator pages; the real PostgreSQL work-plan run covers Operations, team-lead, and supervisor queues, forms, focus, error links, 11 viewports and native 200%/400% zoom. Remaining role workflows, production identity, full requirement acceptance, screen-reader combinations, staff UAT and physical-device behavior remain open."
     },
     {
       "id": "R-M-0018",
@@ -3141,7 +3180,8 @@
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "configurationSoftwareRequired": true
     },
     {
       "id": "R-M-0035",
@@ -3188,7 +3228,12 @@
       "verificationCaseIds": [
         "VR-R-M-0035"
       ],
-      "configurationDependencies": [],
+      "configurationDependencies": [
+        "Controlled SOP-001 revision and readiness review (REV-008).",
+        "Named person authorised to perform and accept check-in; evidence required for customer consent and identity/owner verification.",
+        "Approved custody acknowledgement meaning, signature method, exceptions and retention policy (REV-008/011).",
+        "Approved safety triage roles, criteria, unsafe-vehicle disposition and hold trigger (REV-009)."
+      ],
       "evidence": [],
       "owner": {
         "role": "implementation-agent",
@@ -3204,7 +3249,8 @@
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "One controlling work order and partial G1 fact/evidence capture exist. G1 acceptance remains pending; observation capture does not establish customer consent, custody acceptance, safety clearance, or permission to repair. Configuration dependencies are tracked in REV-008, REV-009 and REV-011."
     },
     {
       "id": "R-M-0036",
@@ -3278,7 +3324,12 @@
       "sourceRefs": [
         "master-0037",
         "upgrade-0037",
-        "upgrade-0050"
+        "upgrade-0050",
+        "upgrade-0052",
+        "master-0013",
+        "upgrade-0038",
+        "upgrade-0048",
+        "upgrade-0049"
       ],
       "sourceText": [
         {
@@ -3292,6 +3343,26 @@
         {
           "id": "upgrade-0050",
           "text": "G3 sign-off must show what was done; G4 must be separately signed by an eligible release person and include independent checks when required."
+        },
+        {
+          "id": "upgrade-0052",
+          "text": "Permit safe administrative progress while an unrelated technical task is held; preserve per-task hold semantics."
+        },
+        {
+          "id": "master-0013",
+          "text": "Segregation: roles coordinate activities; separately assessed and signed privileges determine technical/financial authority."
+        },
+        {
+          "id": "upgrade-0038",
+          "text": "D. HV, HSE and emergencies | Task classification, competent-person privileges, model-specific procedure references, permits, test instrument suitability, stop work, hazard/incident, damaged battery quarantine and response records. | Block affected HV actions until verified authorisation and permits; no generic instruction to isolate HV."
+        },
+        {
+          "id": "upgrade-0048",
+          "text": "A work order can be created without repair authorisation. Diagnostic authorisation does not authorise parts replacement."
+        },
+        {
+          "id": "upgrade-0049",
+          "text": "Revised scope, added costs and new risks must suspend affected tasks until additional approval."
         }
       ],
       "sopMapping": {
@@ -3304,7 +3375,9 @@
       },
       "acceptance": [
         "Satisfy the complete fields and behaviour in master-0037: G3 — Execute | Current technician privilege, task instructions, labour, parts, tests and technician declaration | Blocks task completion without required evidence; records deviations",
-        "Exercise the permitted action and relevant incomplete or denied action. Verify canonical records and attributable evidence."
+        "Exercise the permitted action and relevant incomplete or denied action. Verify canonical records and attributable evidence.",
+        "Require a current, effective signed task-execution authority grant separately from accepted competence for each assigned technician and task; snapshot both decisions with exact scope.",
+        "Where effective task classification requires HSE evidence, enforce the approved applicable references and records; unknown required configuration cannot be treated as complete."
       ],
       "existingEvidence": {
         "classification": "UNKNOWN",
@@ -3322,8 +3395,12 @@
       "verificationCaseIds": [
         "VR-R-M-0037"
       ],
-      "configurationDependencies": [],
-      "evidence": [],
+      "configurationDependencies": [
+        "Approved controlled SOP library and readiness review; named technical and release authority schedule; applicable inspection matrix. Do not enable completion or release until confirmed."
+      ],
+      "evidence": [
+        "docs/architecture/technical-completion-and-release.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -3332,7 +3409,7 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -3348,7 +3425,14 @@
       "sourceRefs": [
         "master-0038",
         "upgrade-0037",
-        "upgrade-0050"
+        "upgrade-0050",
+        "master-0136",
+        "upgrade-0038",
+        "upgrade-0052",
+        "master-0013",
+        "master-0039",
+        "upgrade-0048",
+        "upgrade-0049"
       ],
       "sourceText": [
         {
@@ -3362,6 +3446,34 @@
         {
           "id": "upgrade-0050",
           "text": "G3 sign-off must show what was done; G4 must be separately signed by an eligible release person and include independent checks when required."
+        },
+        {
+          "id": "master-0136",
+          "text": "Inspection/Release | inspection criteria, inspector, results, release actor, time, residual faults | WO, Task, Hold, Test"
+        },
+        {
+          "id": "upgrade-0038",
+          "text": "D. HV, HSE and emergencies | Task classification, competent-person privileges, model-specific procedure references, permits, test instrument suitability, stop work, hazard/incident, damaged battery quarantine and response records. | Block affected HV actions until verified authorisation and permits; no generic instruction to isolate HV."
+        },
+        {
+          "id": "upgrade-0052",
+          "text": "Permit safe administrative progress while an unrelated technical task is held; preserve per-task hold semantics."
+        },
+        {
+          "id": "master-0013",
+          "text": "Segregation: roles coordinate activities; separately assessed and signed privileges determine technical/financial authority."
+        },
+        {
+          "id": "master-0039",
+          "text": "G5 — Commercial closure | Invoice, named payer allocations, payment/recharge or credit terms, handover acknowledgement | No customer handover before G4; retain outstanding receivables properly"
+        },
+        {
+          "id": "upgrade-0048",
+          "text": "A work order can be created without repair authorisation. Diagnostic authorisation does not authorise parts replacement."
+        },
+        {
+          "id": "upgrade-0049",
+          "text": "Revised scope, added costs and new risks must suspend affected tasks until additional approval."
         }
       ],
       "sopMapping": {
@@ -3374,7 +3486,9 @@
       },
       "acceptance": [
         "Satisfy the complete fields and behaviour in master-0038: G4 — QA/release | Critical inspection, functional verification, outstanding faults, risk disposition, release signatory | No release if open safety hold, failed inspection or missing independent check",
-        "Exercise the permitted action and relevant incomplete or denied action. Verify canonical records and attributable evidence."
+        "Exercise the permitted action and relevant incomplete or denied action. Verify canonical records and attributable evidence.",
+        "Keep independent QA eligibility and team-lead release-signatory authority separately checked and snapshotted wherever the approved inspection policy requires independence.",
+        "Record the reason, effective policy revision, check/fault evidence and collection-zone custody transition atomically; unresolved policy stays fail-closed."
       ],
       "existingEvidence": {
         "classification": "UNKNOWN",
@@ -3392,8 +3506,12 @@
       "verificationCaseIds": [
         "VR-R-M-0038"
       ],
-      "configurationDependencies": [],
-      "evidence": [],
+      "configurationDependencies": [
+        "Approved controlled SOP library and readiness review; named technical and release authority schedule; applicable inspection matrix. Do not enable completion or release until confirmed."
+      ],
+      "evidence": [
+        "docs/architecture/technical-completion-and-release.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -3402,7 +3520,7 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -3823,7 +3941,7 @@
         "references": [],
         "note": "Attach source audit evidence before classifying prototype capability. No live-data compliance claim is made."
       },
-      "plannedImplementation": "Controlled document revisions, assigned approval workflows, incidents, audits and CAPA. Implement the fields, links and behaviour in master-0048.",
+      "plannedImplementation": "Read-only current-effective staff library and protected download first; complete revision workflow, governance grants, approvals, acknowledgements and CAPA after the owner supplies the SOP register and authority matrix.",
       "migration": "No data migration from the prototype portal is required, per USER-002. The separate historical maintenance backlog is handled by HIST-01 through HIST-11 and USER-015 after inventory. Preserve external source identifiers, evidence provenance and UNKNOWN authority semantics.",
       "serverControl": "Check assigned approver, revision and effective state, site policy and independent CAPA verification. Append signed changes.",
       "uatCaseIds": [
@@ -3835,7 +3953,10 @@
       "configurationDependencies": [
         "Approved controlled library and applicable named authority. Resolve exact revision and grant before operational use."
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/architecture/controlled-document-library.md",
+        "docs/verification/checks/controlled-document-library-2026-11-11.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -3844,7 +3965,7 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -4160,7 +4281,7 @@
         ],
         "note": "Source audit identifies limited or unproven canonical identity, traceability, persistence/evidence and offline controls. Reference-only classification; new implementation remains planned."
       },
-      "plannedImplementation": "Customer, vehicle, appointment, intake, custody and communication records. Implement the fields, links and behaviour in master-0054.",
+      "plannedImplementation": "Customer and vehicle identity, repeat-visit linkage and same-site vehicle history are partially implemented. Complete customer/person/organisation/contact records, variant/powertrain history, ownership changes and communications preferences after required policy decisions.",
       "migration": "No data migration from the prototype portal is required, per USER-002. The separate historical maintenance backlog is handled by HIST-01 through HIST-11 and USER-015 after inventory. Preserve external source identifiers, evidence provenance and UNKNOWN authority semantics.",
       "serverControl": "Check tenant/site, VIN and controlling visit uniqueness, intake evidence and attributable customer consent. Preserve custody events.",
       "uatCaseIds": [
@@ -4170,7 +4291,12 @@
         "VR-R-M-0054"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/architecture/customer-and-repeat-visits.md",
+        "docs/architecture/vehicle-identity-and-history.md",
+        "apps/api/test/foundation.test.ts",
+        "docs/verification/browser/results.json"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -4179,7 +4305,7 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -4303,7 +4429,12 @@
       "verificationCaseIds": [
         "VR-R-M-0056"
       ],
-      "configurationDependencies": [],
+      "configurationDependencies": [
+        "Controlled SOP-001 revision and readiness review with the approved vehicle walkaround checklist (REV-008).",
+        "Approved custody acknowledgement/signature method, exceptions and retention policy; do not infer from a free-text custody observation (REV-008).",
+        "Approved minimum intake fields and powertrain-specific measurements; define when SOC or fuel is required (REV-008).",
+        "Named safety triage roles, criteria and disposition of an unsafe vehicle (REV-009)."
+      ],
       "evidence": [],
       "owner": {
         "role": "implementation-agent",
@@ -4319,7 +4450,8 @@
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "Attributed text observations support condition, damage, accessories, keys, fuel, custody and safety; same-target accepted evidence can be linked. They do not implement the approved walkaround checklist, custody signature or G1 acceptance. These remain configuration-dependent under REV-008/009."
     },
     {
       "id": "R-M-0057",
@@ -4566,7 +4698,10 @@
         "VR-R-M-0061"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/architecture/diagnostic-capture.md: capture-only contract prepared; implementation and verification remain open",
+        "docs/verification/checks/diagnostic-capture-form-2026-11-09.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -4575,13 +4710,14 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "Structured diagnostic capture is verified in the browser. Clean same-work-order evidence association is verified by a real-PostgreSQL API regression. Consent/dispatch authority, estimates, repair approval and release remain unimplemented or unverified."
     },
     {
       "id": "R-M-0062",
@@ -4832,7 +4968,14 @@
         "VR-R-M-0066"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/architecture/task-labour-tracking-v1.md",
+        "apps/api/src/work-order-task-work-entries.ts",
+        "docs/verification/task-labour-tracking-2026-11-14.md",
+        "apps/api/migrations/074_work_order_task_labor_sessions.sql",
+        "apps/api/src/work-order-task-labor.ts",
+        "apps/web/src/pages/my-assigned-tasks.tsx"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -4841,13 +4984,14 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "Server-timed task labour is implemented and verified. Checklist lifecycle, work-instruction revision links, parts and nonconformance remain open."
     },
     {
       "id": "R-M-0067",
@@ -7084,7 +7228,8 @@
       "module": "M10",
       "sourceRefs": [
         "master-0107",
-        "upgrade-0043"
+        "upgrade-0043",
+        "user-request-2026-11-10-purpose-built-reports"
       ],
       "sourceText": [
         {
@@ -7094,6 +7239,10 @@
         {
           "id": "upgrade-0043",
           "text": "I. Finance and performance | Estimate/authorisation, job costing, billing, receipts, dealer invoices, receivables, discounts, WIP, labour productivity, quality and management dashboards. | G5 commercial closure only after G4; reconciled payment and cost records."
+        },
+        {
+          "id": "user-request-2026-11-10-purpose-built-reports",
+          "text": "Print and generated reports must be purpose-built templates containing the relevant information for the selected report. Different report types need distinct layouts; do not screenshot or print the live page or reuse one generic layout for all reports."
         }
       ],
       "sopMapping": {
@@ -7106,6 +7255,7 @@
       },
       "acceptance": [
         "Satisfy the complete fields and behaviour in master-0107: Weekly operations review and monthly manager scorecard with drill-down to source records, definitional metadata and export.",
+        "Render each approved scorecard or report from its own purpose-specific, versioned template with only the relevant authorized data and selected filters; never screenshot the live application page or force unrelated reports into one generic layout.",
         "Exercise the permitted action and relevant incomplete or denied action. Verify canonical records and attributable evidence."
       ],
       "existingEvidence": {
@@ -7113,7 +7263,7 @@
         "references": [],
         "note": "Attach source audit evidence before classifying prototype capability. No live-data compliance claim is made."
       },
-      "plannedImplementation": "Versioned rate configuration, job costs, payer receivables, settlement and defined metrics. Implement the fields, links and behaviour in master-0107.",
+      "plannedImplementation": "Versioned rate configuration, job costs, payer receivables, settlement and defined metrics. Add a reviewed report catalog with purpose-specific templates, fields, filters and drill-downs; implement only after report audiences and access policy are approved.",
       "migration": "No data migration from the prototype portal is required, per USER-002. The separate historical maintenance backlog is handled by HIST-01 through HIST-11 and USER-015 after inventory. Preserve external source identifiers, evidence provenance and UNKNOWN authority semantics.",
       "serverControl": "Check approved rate/tax revision, payer, technical release and financial posting integrity. Derive metrics from eligible source records.",
       "uatCaseIds": [],
@@ -7127,8 +7277,8 @@
         "person": null
       },
       "decision": {
-        "status": "not-required",
-        "reference": null
+        "status": "resolved-for-build",
+        "reference": "user-request-2026-11-10-purpose-built-reports"
       },
       "status": "planned",
       "gapTreatment": {
@@ -7245,7 +7395,7 @@
         ],
         "note": "Source audit identifies limited or unproven canonical identity, traceability, persistence/evidence and offline controls. Reference-only classification; new implementation remains planned."
       },
-      "plannedImplementation": "Customer, vehicle, appointment, intake, custody and communication records. Implement the fields, links and behaviour in master-0129.",
+      "plannedImplementation": "Organisation-unique VIN, optional variant and powertrain identity attributes, and site-scoped visit-history projection. Preserve no-owner inference and keep cross-site history and identity correction authority pending review.",
       "migration": "No data migration from the prototype portal is required, per USER-002. The separate historical maintenance backlog is handled by HIST-01 through HIST-11 and USER-015 after inventory. Preserve external source identifiers, evidence provenance and UNKNOWN authority semantics.",
       "serverControl": "Check tenant/site, VIN and controlling visit uniqueness, intake evidence and attributable customer consent. Preserve custody events.",
       "uatCaseIds": [
@@ -7255,7 +7405,12 @@
         "VR-R-M-0129"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/architecture/vehicle-identity-and-history.md",
+        "apps/api/migrations/016_vehicle_variant_powertrain.sql",
+        "apps/api/test/foundation.test.ts",
+        "docs/verification/browser/results.json"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -7264,7 +7419,7 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -7321,7 +7476,9 @@
         "VR-R-M-0130"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/verification/checks/canonical-work-order-gap-review-2026-11-09.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -7330,13 +7487,14 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "The canonical intake and work-order foundation is present. Closeout, accepted custody, estimates, technical release and invoice links remain incomplete; no placeholder authority or commercial records were added."
     },
     {
       "id": "R-M-0131",
@@ -7437,7 +7595,7 @@
         "references": [],
         "note": "Attach source audit evidence before classifying prototype capability. No live-data compliance claim is made."
       },
-      "plannedImplementation": "Competence evidence, scoped signed grants, training and historical authority snapshots. Implement the fields, links and behaviour in master-0132.",
+      "plannedImplementation": "Partially implemented: empty-by-default scoped grant and qualification registries plus action-time Operations/assignment snapshots. Complete master-0132 fields and links with typed scope/threshold snapshots, verifiable signed grant evidence and action-specific links to estimate, task, finance and QA decisions.",
       "migration": "No data migration from the prototype portal is required, per USER-002. The separate historical maintenance backlog is handled by HIST-01 through HIST-11 and USER-015 after inventory. Preserve external source identifiers, evidence provenance and UNKNOWN authority semantics.",
       "serverControl": "Check named actor, action, tenant/site/model/task scope, validity, supervision and revocation at action time. Snapshot the grant.",
       "uatCaseIds": [
@@ -7450,7 +7608,15 @@
       "configurationDependencies": [
         "Approved controlled library and applicable named authority. Resolve exact revision and grant before operational use."
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/architecture/staff-authority-and-qualification.md",
+        "docs/architecture/authority-decision-contract.md",
+        "docs/verification/authority-decision-contract-2026-11-14.md",
+        "apps/api/migrations/019_staff_authority_qualifications.sql",
+        "apps/api/migrations/024_work_order_authority_decision_snapshots.sql",
+        "apps/api/src/workshop.ts",
+        "apps/api/test/foundation.test.ts"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -7459,7 +7625,7 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -7762,7 +7928,7 @@
         "references": [],
         "note": "Attach source audit evidence before classifying prototype capability. No live-data compliance claim is made."
       },
-      "plannedImplementation": "Competence evidence, scoped signed grants, training and historical authority snapshots. Implement the fields, links and behaviour in master-0137.",
+      "plannedImplementation": "Competence evidence, scoped signed grants, training and historical authority snapshots. The initial empty-by-default registry now records powertrain, model, system and task-class scope plus restrictions. Assignment checks require the matching powertrain scope and reject unevaluated restrictions. Add controlled provisioning, restriction evaluation, model/system/task enforcement, training evidence, historical snapshots and G3/G4 action-time checks before full acceptance.",
       "migration": "No data migration from the prototype portal is required, per USER-002. The separate historical maintenance backlog is handled by HIST-01 through HIST-11 and USER-015 after inventory. Preserve external source identifiers, evidence provenance and UNKNOWN authority semantics.",
       "serverControl": "Check named actor, action, tenant/site/model/task scope, validity, supervision and revocation at action time. Snapshot the grant.",
       "uatCaseIds": [
@@ -7775,7 +7941,14 @@
       "configurationDependencies": [
         "Approved controlled library and applicable named authority. Resolve exact revision and grant before operational use."
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/architecture/staff-authority-and-qualification.md",
+        "apps/api/migrations/019_staff_authority_qualifications.sql",
+        "apps/api/migrations/023_qualification_scope_contract.sql",
+        "apps/api/src/workshop.ts",
+        "apps/api/test/foundation.test.ts",
+        "docs/architecture/technical-completion-and-release.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -7784,7 +7957,8 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
+      "statusNote": "Qualification scope storage and fail-closed powertrain/restriction checks are implemented. No operational grants or qualifications are seeded; the full competence and training contract remains incomplete pending governance provisioning and model/system/task-specific enforcement.",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -8170,7 +8344,8 @@
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "configurationSoftwareRequired": true
     },
     {
       "id": "R-M-0148",
@@ -9077,7 +9252,11 @@
         "VR-R-M-0165"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/verification/checks/my-assigned-tasks-2026-11-11.md",
+        "docs/verification/browser/my-assigned-tasks.json",
+        "apps/api/test/foundation.test.ts"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -9086,13 +9265,14 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "Only the read-only current-assignee task queue is being implemented and verified under BUILD-R-M-0165-READ-001 and CHECK-R-M-0165-READ-001. The complete requirement remains open for approved instructions, pre-task safety and privilege checks, diagnostic capture, parts, actual time, technician declarations, inspection and authorized sign-off."
     },
     {
       "id": "R-M-0166",
@@ -9660,7 +9840,19 @@
         "VR-R-M-0175"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "apps/api/migrations/031_sensitive_read_audit.sql",
+        "apps/api/src/work-order-reads.ts",
+        "apps/api/test/foundation.test.ts",
+        "docs/verification/checks/sensitive-read-audit-2026-11-09.md",
+        "docs/verification/checks/sensitive-queue-and-lookup-audit-2026-11-09.md",
+        "apps/api/migrations/040_owner_vehicle_read_audit.sql",
+        "docs/architecture/owner-vehicle-read-audit.md",
+        "docs/verification/checks/owner-vehicle-read-audit-2026-11-10.md",
+        "apps/api/migrations/040_owner_vehicle_read_audit.sql",
+        "docs/architecture/owner-vehicle-read-audit.md",
+        "docs/verification/checks/owner-vehicle-read-audit-2026-11-10.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -9669,13 +9861,14 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "Added transactional, metadata-only audit for staff queue and VIN/client/party lookups. The overall requirement remains open for owner/other sensitive reads, export/review (REV-027), critical safety/approval/finance change review, retention, production security and UAT."
     },
     {
       "id": "R-M-0176",
@@ -9727,7 +9920,10 @@
         "VR-R-M-0176"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/verification/evidence-backup-verifier.md",
+        "docs/delivery/tasks.json"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -9736,13 +9932,14 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "Backup and restore verification work has started. Existing evidence storage does not yet have an approved independent production destination or a real restore drill."
     },
     {
       "id": "R-M-0177",
@@ -9943,7 +10140,8 @@
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "configurationSoftwareRequired": true
     },
     {
       "id": "R-M-0180",
@@ -9996,7 +10194,13 @@
         "VR-R-M-0180"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/verification/evidence-backup-verifier.md",
+        "docs/delivery/tasks.json",
+        "scripts/evidence-backup-drill.mjs",
+        "scripts/verify-evidence-backup.py",
+        "docs/verification/checks/evidence-backup-restore-drill-2026-11-09.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -10005,13 +10209,14 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "Local synthetic PostgreSQL and S3Mock restore evidence verifies one isolated migration, database dump/restore, evidence-object copy, catalog reconciliation and hashes. Provider-backed backup/restore, approved RPO/RTO and retention targets, production-like staging, monitoring, named operations ownership and staff acceptance remain open."
     },
     {
       "id": "R-M-0181",
@@ -10019,12 +10224,17 @@
       "kind": "functional",
       "module": "PLATFORMS",
       "sourceRefs": [
-        "master-0181"
+        "master-0181",
+        "user-request-2026-11-10-purpose-built-reports"
       ],
       "sourceText": [
         {
           "id": "master-0181",
           "text": "Provide accessibility, localization for Ghana cedi and other currencies, correct timezone handling and reliable printable outputs."
+        },
+        {
+          "id": "user-request-2026-11-10-purpose-built-reports",
+          "text": "Print and generated reports must be purpose-built templates containing the relevant information for the selected report. Different report types need distinct layouts; do not screenshot or print the live page or reuse one generic layout for all reports."
         }
       ],
       "sopMapping": {
@@ -10037,6 +10247,9 @@
       },
       "acceptance": [
         "Satisfy the complete fields and behaviour in master-0181: Provide accessibility, localization for Ghana cedi and other currencies, correct timezone handling and reliable printable outputs.",
+        "Interpret local date/time inputs for callback and observed work using the service-centre timezone, not the browser timezone; preserve an unchanged correction instant and reject ambiguous or nonexistent new local times.",
+        "Build print output from accessible, selectable text in a purpose-specific template with report-appropriate sections, pagination and page breaks; never screenshot the current page.",
+        "Give each approved report type a distinct layout and relevant field set; verify each output with its own representative fixture, including empty and multi-page results.",
         "Exercise the permitted action and relevant incomplete or denied action. Verify canonical records and attributable evidence."
       ],
       "existingEvidence": {
@@ -10052,22 +10265,54 @@
         "VR-R-M-0181"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/verification/checks/work-plan-browser-ui-2026-11-09.md",
+        "docs/verification/browser-work-plan/results.json",
+        "apps/web/src/pages/print-work-order.tsx",
+        "docs/verification/checks/automated-accessibility-scan-2026-11-09.md",
+        "scripts/work-plan-browser.mjs",
+        "docs/verification/checks/print-report-layout-2026-11-10.md",
+        "docs/verification/browser-work-plan/work-order-summary-pagination-first.png",
+        "docs/verification/browser-work-plan/work-order-summary-pagination-last.png",
+        "apps/web/src/formatting.ts",
+        "apps/web/src/formatting.test.ts",
+        "apps/web/src/ui.tsx",
+        "apps/web/src/pages/messages.tsx",
+        "apps/web/src/pages/head-overview.tsx",
+        "apps/web/package.json",
+        "docs/architecture/localization.md",
+        "docs/verification/checks/localization-formatting-2026-11-11.md",
+        "docs/verification/checks/head-overview-report-2026-11-11.md",
+        "docs/verification/browser/head-overview-browser-results.json",
+        "docs/verification/checks/accessible-workflows-2026-11-12.md",
+        "apps/api/migrations/048_site_time_zone.sql",
+        "apps/api/src/identity.ts",
+        "apps/web/src/api.ts",
+        "apps/api/test/foundation.test.ts",
+        "apps/api/package.json",
+        "docs/verification/site-timezone-display-2026-11-13.md",
+        "docs/verification/checks/site-time-zone-projection-2026-11-12.md",
+        "apps/web/src/pages/print-task-progress-report.tsx",
+        "docs/architecture/data-export-and-reporting.md",
+        "docs/verification/task-progress-report-2026-11-13.md",
+        "docs/verification/task-progress-report-2026-11-13/results.json"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "decision": {
-        "status": "not-required",
-        "reference": null
+        "status": "resolved-for-build",
+        "reference": "user-request-2026-11-10-purpose-built-reports"
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "Three purpose-built report templates now have separate layouts: work-order summary, Head overview, and internal task progress. The 13 November report runs verified report-specific output, pagination, WCAG, responsive widths, privacy boundaries, and role denial using synthetic data. Ghana-first shared date/time and explicit ISO currency formatting are implemented and tested; business-screen timestamps now use the authenticated site's timezone. A later extended browser rerun hit a disposable PostgreSQL idle-in-transaction timeout and is recorded as incomplete. Site-timezone configuration approval, finance policy, the approved report catalogue and exports, complete accessibility, PDF assistive-technology review and staff UAT remain open."
     },
     {
       "id": "R-M-0183",
@@ -11729,7 +11974,9 @@
         "VR-R-U-0046"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/architecture/technical-completion-and-release.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -11738,7 +11985,7 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -11848,7 +12095,12 @@
         "VR-R-U-0073"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "apps/api/test/evidence.test.ts",
+        "docs/verification/evidence-backup-verifier.md",
+        "docs/delivery/tasks.json",
+        "docs/verification/checks/evidence-local-storage-integration-2026-11-09.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -11857,13 +12109,14 @@
         "status": "not-required",
         "reference": null
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "Local PostgreSQL/S3Mock/ClamAV integration now passes without skips for the configured clean/infected path. Production provider, retention and backup/restore coverage remain unverified."
     },
     {
       "id": "R-U-0075",
@@ -12367,7 +12620,10 @@
         "VR-USER-003"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/verification/checks/responsive-authenticated-accessible-names-2026-11-09.md",
+        "docs/verification/browser/results.json"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -12376,13 +12632,14 @@
         "status": "resolved-for-build",
         "reference": "USER-003"
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "Prototype evidence informs selective reuse, not new-system completion. UNKNOWN capability stays unknown until supported by a specific audit reference."
-      }
+      },
+      "statusNote": "The responsive web implementation and local browser behavior are verified; native packaging is deferred. The delivery sequence is satisfied in the build, but VMMS has not been deployed to the production hostname, and production acceptance, staff UAT and actual site-device coverage remain outstanding."
     },
     {
       "id": "USER-004",
@@ -12407,7 +12664,8 @@
         "note": "The controlled SOP library, master register and readiness review were referenced but not supplied. Exact forms, fields and revisions require reconciliation."
       },
       "acceptance": [
-        "Implement saved draft recovery for interrupted intake and evidence entry. Keep final approvals, authority checks, financial posting and release online. Evaluate local-site continuity only after measuring a demonstrated need."
+        "Implement saved draft recovery for interrupted intake and evidence entry. Keep final approvals, authority checks, financial posting and release online. Evaluate local-site continuity only after measuring a demonstrated need.",
+        "Restore or require explicit reconfirmation for previously selected client and vehicle records after a draft is recovered; never silently turn a prior existing-record selection into a new record."
       ],
       "existingEvidence": {
         "classification": "EXISTING NEEDS ENHANCEMENT",
@@ -12424,7 +12682,22 @@
         "VR-USER-004"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "apps/web/src/pages/intake.tsx",
+        "apps/web/src/work-order-evidence.tsx",
+        "apps/web/src/drafts.ts",
+        "apps/api/test/evidence.test.ts",
+        "scripts/browser-smoke.mjs",
+        "docs/verification/browser/results.json",
+        "apps/api/test/support/evidence-browser-runtime.ts",
+        "scripts/evidence-browser-recovery.mjs",
+        "docs/verification/browser-evidence-recovery/results.json",
+        "docs/verification/evidence-browser-recovery-design.md",
+        "docs/verification/checks/draft-migration-2026-11-09.md",
+        "docs/verification/checks/draft-retention-and-scope-2026-11-11.md",
+        "docs/verification/checks/saved-draft-recovery-2026-11-11.md",
+        "apps/web/src/drafts.test.ts"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -12433,7 +12706,8 @@
         "status": "resolved-for-build",
         "reference": "USER-004"
       },
-      "status": "planned",
+      "status": "in-progress",
+      "statusNote": "Fresh 62-check Edge smoke verifies autosave/reload, current-site revalidation of selected client, vehicle, owner and visit contact, legacy review gates, offline submission denial, interrupted evidence-upload recovery and sign-out cleanup. Four Axe scans reported no violations and the browser recorded no page errors. API/PostgreSQL tests separately cover authenticated site rules and cross-site denial. The end-to-end no-release-from-draft assertion remains open until a release command exists; cross-device recovery, production identity/storage, retention approval and staff UAT are separate limits. See docs/verification/checks/saved-draft-recovery-2026-11-11.md.",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -12583,7 +12857,7 @@
         "references": [],
         "note": "Attach source audit evidence before classifying prototype capability. No live-data compliance claim is made."
       },
-      "plannedImplementation": "Traceability, dependency-based tasks, verification evidence, staff guidance and acceptance. Implement the fields, links and behaviour in user-request-2026-11-07.",
+      "plannedImplementation": "Implemented: docs/README.md is the contributor entry route and the docs tree contains architecture, contracts, implementation plans, decisions, requirements, tracker, guides and verification evidence.",
       "migration": "No data migration from the prototype portal is required, per USER-002. The separate historical maintenance backlog is handled by HIST-01 through HIST-11 and USER-015 after inventory. Preserve external source identifiers, evidence provenance and UNKNOWN authority semantics.",
       "serverControl": "Check required evidence and unresolved decisions at release. Reject unverified completion claims in delivery tooling.",
       "uatCaseIds": [],
@@ -12591,7 +12865,13 @@
         "VR-USER-007"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/README.md",
+        "docs/architecture/system-design.md",
+        "docs/delivery/implementation-plan.md",
+        "docs/delivery/run-plan.md",
+        "docs/verification/source-of-truth-and-tracker-2026-11-14.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -12600,7 +12880,7 @@
         "status": "resolved-for-build",
         "reference": "USER-007"
       },
-      "status": "planned",
+      "status": "verified",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -12638,7 +12918,7 @@
         "references": [],
         "note": "Attach source audit evidence before classifying prototype capability. No live-data compliance claim is made."
       },
-      "plannedImplementation": "Traceability, dependency-based tasks, verification evidence, staff guidance and acceptance. Implement the fields, links and behaviour in user-request-2026-11-07.",
+      "plannedImplementation": "Implemented: 684 canonical task records and the generated human-readable tracker record implementation, import, test, documentation, operation, dependencies, linked requirements, owners, status and evidence.",
       "migration": "No data migration from the prototype portal is required, per USER-002. The separate historical maintenance backlog is handled by HIST-01 through HIST-11 and USER-015 after inventory. Preserve external source identifiers, evidence provenance and UNKNOWN authority semantics.",
       "serverControl": "Check required evidence and unresolved decisions at release. Reject unverified completion claims in delivery tooling.",
       "uatCaseIds": [],
@@ -12646,7 +12926,13 @@
         "VR-USER-008"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/delivery/tasks.json",
+        "docs/delivery/implementation-tracker.md",
+        "docs/verification/source-of-truth-and-tracker-2026-11-14.md",
+        "scripts/project-status.py",
+        "scripts/test-traceability.py"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -12655,7 +12941,7 @@
         "status": "resolved-for-build",
         "reference": "USER-008"
       },
-      "status": "planned",
+      "status": "verified",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -12693,7 +12979,7 @@
         "references": [],
         "note": "Attach source audit evidence before classifying prototype capability. No live-data compliance claim is made."
       },
-      "plannedImplementation": "Traceability, dependency-based tasks, verification evidence, staff guidance and acceptance. Implement the fields, links and behaviour in user-request-2026-11-07.",
+      "plannedImplementation": "Ongoing: retain the full conversation goal until requirement and rollout gates have evidence; distinguish implementation from deployment, owner/management configuration, staff acceptance and operational approval.",
       "migration": "No data migration from the prototype portal is required, per USER-002. The separate historical maintenance backlog is handled by HIST-01 through HIST-11 and USER-015 after inventory. Preserve external source identifiers, evidence provenance and UNKNOWN authority semantics.",
       "serverControl": "Check required evidence and unresolved decisions at release. Reject unverified completion claims in delivery tooling.",
       "uatCaseIds": [],
@@ -12701,7 +12987,11 @@
         "VR-USER-009"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/delivery/run-plan.md",
+        "docs/delivery/implementation-plan.md",
+        "docs/verification/source-of-truth-and-tracker-2026-11-14.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -12710,7 +13000,7 @@
         "status": "resolved-for-build",
         "reference": "USER-009"
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -12858,7 +13148,7 @@
         "references": [],
         "note": "Attach source audit evidence before classifying prototype capability. No live-data compliance claim is made."
       },
-      "plannedImplementation": "Traceability, dependency-based tasks, verification evidence, staff guidance and acceptance. Implement the fields, links and behaviour in user-request-2026-11-07.",
+      "plannedImplementation": "Implemented for local discovery: CodeGraph-first lookup is required where indexed; Graphify code-only update/query, privacy, cost, and refresh limits are documented and exercised without model-backed extraction.",
       "migration": "No data migration from the prototype portal is required, per USER-002. The separate historical maintenance backlog is handled by HIST-01 through HIST-11 and USER-015 after inventory. Preserve external source identifiers, evidence provenance and UNKNOWN authority semantics.",
       "serverControl": "Check required evidence and unresolved decisions at release. Reject unverified completion claims in delivery tooling.",
       "uatCaseIds": [],
@@ -12866,7 +13156,11 @@
         "VR-USER-012"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "AGENTS.md",
+        "docs/discovery/reference-patterns-and-tooling.md",
+        "docs/verification/source-of-truth-and-tracker-2026-11-14.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -12875,7 +13169,7 @@
         "status": "resolved-for-build",
         "reference": "USER-012"
       },
-      "status": "planned",
+      "status": "verified",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -12970,7 +13264,7 @@
         "references": [],
         "note": "Attach source audit evidence before classifying prototype capability. No live-data compliance claim is made."
       },
-      "plannedImplementation": "Traceability, dependency-based tasks, verification evidence, staff guidance and acceptance. Implement the fields, links and behaviour in user-request-2026-11-07.",
+      "plannedImplementation": "Implemented: the master specification and compatible upgrade prompt are preserved with hashes, all 350 extracted source blocks map through the requirement inventory, and user directions take precedence over reference systems and draft SOPs.",
       "migration": "No data migration from the prototype portal is required, per USER-002. The separate historical maintenance backlog is handled by HIST-01 through HIST-11 and USER-015 after inventory. Preserve external source identifiers, evidence provenance and UNKNOWN authority semantics.",
       "serverControl": "Check required evidence and unresolved decisions at release. Reject unverified completion claims in delivery tooling.",
       "uatCaseIds": [],
@@ -12978,7 +13272,15 @@
         "VR-USER-014"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/README.md",
+        "docs/sources/manifest.json",
+        "docs/sources/master.md",
+        "docs/sources/upgrade.md",
+        "docs/requirements/requirements.json",
+        "docs/verification/source-of-truth-and-tracker-2026-11-14.md",
+        "scripts/test-traceability.py"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -12987,7 +13289,7 @@
         "status": "resolved-for-build",
         "reference": "USER-014"
       },
-      "status": "planned",
+      "status": "verified",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -13007,6 +13309,10 @@
         {
           "id": "user-historical-backlog",
           "text": "Build a staged historical import workflow now. Execute real imports after inventory of clients, their customers, vehicles, work and completion statuses. Preserve provenance and unknown authority; reconcile every accepted batch."
+        },
+        {
+          "id": "user-advisor-workbook-2026-11-08",
+          "text": "A service-advisor workbook is available as a partial backlog source. Inventory its fields and quality, but defer importing records until the full source set, role mappings and completion-status mapping are reviewed."
         }
       ],
       "sopMapping": {
@@ -13025,7 +13331,7 @@
         "references": [],
         "note": "Attach source audit evidence before classifying prototype capability. No live-data compliance claim is made."
       },
-      "plannedImplementation": "Backup restore, staging, controlled deployment, future import contracts and recovery evidence. Implement the fields, links and behaviour in user-historical-backlog.",
+      "plannedImplementation": "Versioned import templates exist and the service-advisor workbook has a privacy-preserving partial inventory. Complete the source inventory, role/status mapping, staging importer, dry-run reconciliation, named batch approval and separately authorised real import.",
       "migration": "No data migration from the prototype portal is required, per USER-002. The separate historical maintenance backlog is handled by HIST-01 through HIST-11 and USER-015 after inventory. Preserve external source identifiers, evidence provenance and UNKNOWN authority semantics.",
       "serverControl": "Use audited operational commands and evidence-producing scripts. Preserve accepted writes during restore and recovery.",
       "uatCaseIds": [],
@@ -13033,7 +13339,11 @@
         "VR-USER-015"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/discovery/service-advisor-backlog-inventory.md",
+        "docs/architecture/historical-import.md",
+        "docs/import/historical/v1/README.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -13042,7 +13352,7 @@
         "status": "resolved-for-build",
         "reference": "USER-015"
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -14644,7 +14954,14 @@
         "VR-USER-019"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/architecture/vehicle-owner-access.md",
+        "apps/api/migrations/029_owner_vehicle_list.sql",
+        "apps/api/src/owner-data.ts",
+        "apps/api/test/foundation.test.ts",
+        "apps/web/src/workspace.tsx",
+        "docs/verification/checks/owner-vehicle-list-2026-11-09.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -14653,7 +14970,7 @@
         "status": "resolved-for-build",
         "reference": "USER-019"
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -14706,7 +15023,9 @@
         "VR-USER-020"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "docs/verification/checks/shared-auth-theme-2026-11-11.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -14715,7 +15034,8 @@
         "status": "resolved-for-build",
         "reference": "USER-020"
       },
-      "status": "planned",
+      "status": "in-progress",
+      "statusNote": "The shared identity provider now has a local responsive Raymond Gray sign-in theme. Existing Keycloak password and passkey flows are preserved; Google federation, full credential-linking/recovery tests, approved-owner browser coverage, physical passkeys and production security operations remain incomplete. See docs/verification/checks/shared-auth-theme-2026-11-11.md.",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -14766,7 +15086,20 @@
         "VR-USER-021"
       ],
       "configurationDependencies": [],
-      "evidence": [],
+      "evidence": [
+        "apps/web/public/images/workshop/",
+        "apps/web/src/workshop-picture.tsx",
+        "apps/web/scripts/verify-responsive.mjs",
+        "scripts/browser-smoke.mjs",
+        "docs/verification/checks/responsive-authenticated-accessible-names-2026-11-09.md",
+        "apps/web/scripts/build-images.mjs",
+        "apps/web/scripts/build-brand-images.mjs",
+        "apps/web/src/generated/brand-images.json",
+        "docs/architecture/visual-assets.md",
+        "docs/verification/checks/responsive-image-audit-2026-11-10.json",
+        "docs/verification/browser/responsive-image-audit/",
+        "docs/verification/checks/shared-auth-theme-2026-11-11.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -14775,7 +15108,8 @@
         "status": "resolved-for-build",
         "reference": "USER-021"
       },
-      "status": "planned",
+      "status": "in-progress",
+      "statusNote": "Local Edge evidence measures actual responsive workshop/logo response bytes and decoded image dimensions, verifies the complete car/logo composition, and records zero layout shift across 17 emulated viewport profiles including DPR 2, the authenticated no-site staff logo state, and staff/owner native 200% and 400% zoom. Full requirement remains in progress for expanded text, remaining workflows and sign-in methods, throttled-network profiles, folding hardware, physical devices, cross-OS assistive technology and staff UAT.",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -14871,7 +15205,7 @@
         "references": [
           "docs/architecture/authentication.md"
         ],
-        "note": "Prototype review informs the migration plan; no production identity service is deployed."
+        "note": "Prototype review informs the migration plan; production deployment, issuer, DNS and VMMS client registration are not independently verified."
       },
       "plannedImplementation": "Build the standalone service, then integrate and verify each relying party in sequenced tasks.",
       "migration": "The existing platform is a prototype with no real user records to migrate. Preserve local product identity/access records and establish issuer/subject mappings under a controlled integration.",
@@ -14883,7 +15217,12 @@
       "configurationDependencies": [
         "Production identity host, Google OAuth client, and secret store are owner-review dependencies."
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/verification/checks/oidc-protocol-denials-2026-11-09.md: local VMMS relying-party protocol and ID-token signature-denial verification; production and remaining provider methods still open.",
+        "docs/verification/oidc-local-2026-11-14.md: local Keycloak callback, mapped VMMS session, logout and post-logout denial; production remains unverified.",
+        "docs/verification/checks/auth-role-fixture-2026-11-14-recheck.md: all 14 synthetic staff identities receive the expected local site/role session, with Operator/Head boundary checks.",
+        "docs/verification/oidc-rp-logout-2026-11-14.md: local API/PostgreSQL sign-out and one-use callback transaction verified; Keycloak client registration and provider browser round-trip remain open."
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -14892,7 +15231,7 @@
         "status": "recorded-for-owner-review",
         "reference": "DEC-AUTH-001"
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -14933,7 +15272,7 @@
         ],
         "note": "Current vendor capabilities were reviewed; no service has been deployed or migrated."
       },
-      "plannedImplementation": "Run per-service compatibility, cost, region, backup and rollback checks. Obtain owner review of production hosting and DNS changes.",
+      "plannedImplementation": "Use Cloudflare Workers for the web edge with a fixed same-origin proxy to a restricted Node API candidate. Keep the API on a conventional Node container because the local Fastify Worker spike is incompatible; complete remote private-ingress, database pooling, storage/scanner, provider operations and rollback evidence before production review.",
       "migration": "No production workload has been moved. Keep local runtime and deployment contracts provider-neutral while evaluating adapters.",
       "serverControl": "Keep secrets in the selected provider secret manager and database origins private; test connection pooling, backup and restore.",
       "uatCaseIds": [],
@@ -14943,7 +15282,15 @@
       "configurationDependencies": [
         "Owner decision on hosting budget, availability objectives and operations ownership."
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/verification/checks/cloudflare-frontend-preview-2026-11-11.md",
+        "docs/verification/checks/cloudflare-api-worker-spike-2026-11-11.md",
+        "docs/verification/checks/cloudflare-same-origin-proxy-2026-11-11.md",
+        "scripts/cloudflare-real-api-proxy.mjs",
+        "docs/verification/checks/cloudflare-real-api-proxy-2026-11-12.md",
+        "docs/verification/checks/cloudflare-proxy-failure-cleanup-2026-11-12.md",
+        "docs/verification/checks/results.json"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -14952,7 +15299,7 @@
         "status": "recorded-for-owner-review",
         "reference": "DEC-HOST-001"
       },
-      "status": "planned",
+      "status": "in-progress",
       "gapTreatment": {
         "implementationMode": "new-system",
         "decisionReference": "USER-001",
@@ -15016,6 +15363,1450 @@
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "No unapproved visual changes are applied in this phase."
       }
+    },
+    {
+      "id": "USER-026",
+      "title": "Separate the paying client, vehicle owner and visit contact",
+      "kind": "user-direction",
+      "module": "OPERATIONS",
+      "sourceRefs": [
+        "user-service-operations-2026-11-08"
+      ],
+      "sourceText": [
+        {
+          "id": "user-service-operations-2026-11-08",
+          "text": "The client is the party who pays and may be a showroom. Record the vehicle owner separately from the client and separately from the visit contact. Exclude sales-representative and client-satisfaction fields from the VMMS workflow."
+        }
+      ],
+      "sopMapping": {
+        "references": [
+          "SOP-001"
+        ],
+        "status": "library-not-provided",
+        "evidence": [],
+        "note": "Exact intake fields, identity evidence and retention depend on the controlled SOP library and pending privacy policy."
+      },
+      "acceptance": [
+        "Store and display the paying client, reported vehicle owner and visit contact as distinct explicit roles.",
+        "Allow the client to be an organisation and the visit contact to be a person.",
+        "Do not infer role equality, ownership, approval authority or owner-portal access from names, contact details, VIN or party matching.",
+        "Keep legacy role assignments unknown when their source does not establish the role.",
+        "Exclude sales-representative and client-satisfaction fields from operational records, screens and reports."
+      ],
+      "existingEvidence": {
+        "classification": "PARTIAL",
+        "references": [
+          "apps/api/migrations/017_party_roles.sql",
+          "apps/api/test/foundation.test.ts"
+        ],
+        "note": "The initial role-separation slice persists client, reported owner and visit contact separately. Party reuse/search and cross-site visibility remain open."
+      },
+      "plannedImplementation": "Use one canonical person/organisation party registry; persist the client on the booking, the visit contact on the visit, and vehicle-owner reports in a separate versioned relationship history.",
+      "migration": "Keep source rows and historical relationships traceable. Do not infer owner or client roles during historical imports.",
+      "serverControl": "Enforce tenant and selected-site visibility. Keep owner portal authorization in the separate evidence-backed owner-access module.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [],
+      "configurationDependencies": [
+        "Controlled intake fields and retention policy",
+        "Cross-site party visibility policy"
+      ],
+      "evidence": [
+        "docs/architecture/work-order-lifecycle-and-booking.md",
+        "apps/api/migrations/017_party_roles.sql",
+        "apps/api/src/workshop.ts",
+        "apps/web/src/pages/intake.tsx",
+        "apps/api/test/foundation.test.ts",
+        "apps/api/migrations/018_client_booking_references.sql"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-build",
+        "reference": "user-service-operations-2026-11-08"
+      },
+      "status": "in-progress",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/discovery/legacy-portal-audit.md",
+        "note": "Do not preserve the prototype's ambiguous customer/owner/contact identity as the target model."
+      },
+      "statusNote": "Same-site explicit reuse now covers payer, reported owner and visit contact; API/PostgreSQL and browser workflow evidence is recorded. Requirement remains in progress for the wider identity/history, owner-policy and communications-preference scope."
+    },
+    {
+      "id": "USER-027",
+      "title": "Enforce operations assignment and independent job handoffs",
+      "kind": "user-direction",
+      "module": "OPERATIONS",
+      "sourceRefs": [
+        "user-service-operations-2026-11-08"
+      ],
+      "sourceText": [
+        {
+          "id": "user-service-operations-2026-11-08",
+          "text": "Operations admins review new jobs and assign an EV or ICE team lead. The lead prepares a work plan and assigns a supervisor. Only the supervisor signs technical completion. The team lead signs final release and moves the vehicle to the collection zone. The service advisor prepares and checks the invoice and manages client handover."
+        }
+      ],
+      "sopMapping": {
+        "references": [
+          "SOP-001",
+          "SOP-002",
+          "SOP-003"
+        ],
+        "status": "library-not-provided",
+        "evidence": [],
+        "note": "The controlled operating procedures and named authority schedule are not available."
+      },
+      "acceptance": [
+        "Record operations review and the eligible team-lead assignment as separate transitions.",
+        "Record the team lead's plan and supervisor handoff.",
+        "Permit only the assigned, eligible supervisor to sign G3 technical completion.",
+        "Permit only an eligible team lead to sign G4 technical release and move the vehicle to the collection zone.",
+        "Generate the resolved/completed timestamp on the server from the supervisor's signed completion event.",
+        "Keep invoice preparation, invoice review, customer handover and physical vehicle departure separate from G3/G4."
+      ],
+      "existingEvidence": {
+        "classification": "UNKNOWN",
+        "references": [],
+        "note": "Current acceptance screens do not implement the full operations-to-handover lifecycle."
+      },
+      "plannedImplementation": "Implementation in progress: separate audited Operations review and qualified team-lead assignment commands are implemented; structured work plans, G3 completion, G4 release, collection-zone handoff, invoice and departure controls remain.",
+      "migration": "Historical free-text assignment and completion fields do not create current assignments or signed approvals.",
+      "serverControl": "Use named grants and action-time eligibility checks. Admin membership does not bypass safety, technical, QA or finance constraints.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [],
+      "configurationDependencies": [
+        "Named operations admins, team leads, supervisors and substitutes",
+        "Eligibility and technical privilege schedule",
+        "Controlled SOP library"
+      ],
+      "evidence": [
+        "docs/architecture/work-order-lifecycle-and-booking.md",
+        "docs/architecture/operations-review-and-assignment.md",
+        "apps/api/migrations/025_operations_review_before_assignment.sql",
+        "apps/api/src/workshop.ts",
+        "apps/api/src/app.ts",
+        "apps/api/test/foundation.test.ts",
+        "apps/web/src/pages/work-order.tsx",
+        "scripts/browser-smoke.mjs",
+        "docs/verification/checks/operations-review-and-responsive-2026-11-08.md",
+        "docs/architecture/technical-completion-and-release.md",
+        "docs/verification/checks/work-plan-browser-ui-2026-11-09.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-build",
+        "reference": "user-service-operations-2026-11-08"
+      },
+      "status": "in-progress",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/discovery/legacy-portal-audit.md",
+        "note": "Enforce the new workflow without inheriting prototype role assumptions."
+      },
+      "statusNote": "PostgreSQL and browser evidence now verifies separate Operations review and qualified lead assignment, plan-gated supervisor handoff, and assigned-lead draft persistence. Supervisor G3 completion, team-lead G4 release, collection-zone, invoice and physical-departure controls remain unimplemented or unverified; status remains in progress."
+    },
+    {
+      "id": "USER-028",
+      "title": "Generate client-sequenced powertrain booking references",
+      "kind": "user-direction",
+      "module": "OPERATIONS",
+      "sourceRefs": [
+        "user-service-operations-2026-11-08"
+      ],
+      "sourceText": [
+        {
+          "id": "user-service-operations-2026-11-08",
+          "text": "Generate Raymond Gray booking references using EV, HYB or ICE, a client code, a sequence that shows the client's booking count, and W when the booking is warranty work. Ignore old booking numbers."
+        }
+      ],
+      "sopMapping": {
+        "references": [],
+        "status": "not-applicable",
+        "evidence": [],
+        "note": "Booking-reference generation is a technical identifier policy."
+      },
+      "acceptance": [
+        "Generate a unique, immutable reference in the form <powertrain>-<client-code>-<client-sequence>[W].",
+        "Allocate sequence values atomically and never reuse a committed value.",
+        "Keep client code, powertrain, sequence and warranty decision in separate authoritative fields; never derive workflow authority from the formatted reference.",
+        "Do not import legacy booking numbers as current VMMS references."
+      ],
+      "existingEvidence": {
+        "classification": "UNKNOWN",
+        "references": [],
+        "note": "Current references do not implement the newly requested format."
+      },
+      "plannedImplementation": "Add a transactional per-client allocator and immutable booking-reference snapshot. Owner decision REV-030 resolves sequence scope across all powertrains and defines W as warranty confirmed at booking creation. Implementation remains open.",
+      "migration": "Legacy numbers remain source identifiers only when an approved historical import needs to preserve them.",
+      "serverControl": "Validate the selected client's configured code and confirmed propulsion class. Enforce uniqueness in PostgreSQL under concurrent intake.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [],
+      "configurationDependencies": [
+        "Stable unique client code",
+        "Configured unique client codes",
+        "Approved warranty evidence rule"
+      ],
+      "evidence": [
+        "docs/architecture/work-order-lifecycle-and-booking.md",
+        "apps/api/migrations/018_client_booking_references.sql",
+        "apps/api/test/foundation.test.ts",
+        "docs/verification/browser/results.json",
+        "docs/verification/checks/plain-language-party-labels-2026-11-09.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "decision": {
+        "status": "recorded-for-owner-review",
+        "reference": "REV-030"
+      },
+      "status": "verified",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/discovery/legacy-portal-audit.md",
+        "note": "Do not use a generated reference as proof of warranty coverage or client liability."
+      },
+      "statusNote": "Booking-reference generation and immutable snapshots have PostgreSQL/API evidence for all powertrain classes, warranty-at-creation W semantics and concurrent client-wide sequence allocation. Cancellation/void behavior is not implemented; no-reuse-after-cancellation and operational UAT remain open."
+    },
+    {
+      "id": "USER-029",
+      "title": "Block vehicle departure without settlement or an authorised guarantee",
+      "kind": "user-direction",
+      "module": "FINANCE",
+      "sourceRefs": [
+        "user-service-operations-2026-11-08"
+      ],
+      "sourceText": [
+        {
+          "id": "user-service-operations-2026-11-08",
+          "text": "No vehicle leaves the workshop until the client has paid or the showroom guarantees payment. A paid delivery service may be used when recorded."
+        }
+      ],
+      "sopMapping": {
+        "references": [
+          "SOP-003",
+          "SOP-007"
+        ],
+        "status": "library-not-provided",
+        "evidence": [],
+        "note": "Finance and handover procedures, guarantee authority and evidence rules are not supplied."
+      },
+      "acceptance": [
+        "Block collection and delivery while a blocking technical/quality hold exists or G4 release is absent.",
+        "Block physical vehicle departure unless payment is reconciled or an authorised showroom guarantee covers the amount due.",
+        "Record guarantee client, covered amount, evidence, approving actor, time and any expiry or reconciliation.",
+        "Record invoice review, collection or paid delivery, client handover and vehicle departure as separate auditable transitions.",
+        "Do not accept a free-text payment note or unverified screenshot as reconciled payment."
+      ],
+      "existingEvidence": {
+        "classification": "UNKNOWN",
+        "references": [],
+        "note": "The current implementation has no invoice, payment, guarantee or vehicle-departure command."
+      },
+      "plannedImplementation": "Add the commercial close and dispatch gate after invoice, payment reconciliation and guarantee authority are configured.",
+      "migration": "Historical cost data does not create invoices, payer allocation or payment receipts.",
+      "serverControl": "Require action-specific finance and handover grants; commit payment/guarantee evidence and dispatch decision atomically.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [],
+      "configurationDependencies": [
+        "Finance authority schedule and rate/tax policy",
+        "Payment-provider and reconciliation contract",
+        "Showroom guarantee authority and evidence",
+        "Delivery fee and acceptance policy"
+      ],
+      "evidence": [
+        "docs/architecture/work-order-lifecycle-and-booking.md",
+        "docs/decisions/review-register.md#rev-032"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-build",
+        "reference": "user-service-operations-2026-11-08"
+      },
+      "status": "planned",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/discovery/legacy-portal-audit.md",
+        "note": "Keep departure closed until named grant and settlement evidence are configured and tested."
+      }
+    },
+    {
+      "id": "USER-030",
+      "title": "Remove synthetic records from the operational rollout before pilot",
+      "kind": "user-direction",
+      "module": "OPERATIONS",
+      "sourceRefs": [
+        "user-live-data-and-test-cleanup-2026-11-08"
+      ],
+      "sourceText": [
+        {
+          "id": "user-live-data-and-test-cleanup-2026-11-08",
+          "text": "Use the actual live data in the supplied service-advisor workbook to run and test the system. When testing is done, remove all synthetic data from the system and maintain only the live records."
+        }
+      ],
+      "sopMapping": {
+        "references": [
+          "SOP-003",
+          "SOP-007"
+        ],
+        "status": "library-not-provided",
+        "evidence": [],
+        "note": "Operational retention and test-data handling rules are not supplied; obtain review before pilot cleanup."
+      },
+      "acceptance": [
+        "After owner-approved field and status mappings exist, run actual source records through the restricted import preview and representative system workflows; do not use synthetic records as a substitute for the real backlog validation.",
+        "Before operational pilot, inventory the exact target environment, tenants, accounts and records; distinguish synthetic test/seed records from owner-approved live or historical records.",
+        "Produce a reviewed allowlist and before/after counts for every proposed removal. Preserve all approved live records, source identifiers, audit history, attachments, financial records and referential integrity.",
+        "Remove or disable synthetic operational records and test identities only through an audited, recoverable procedure; retain synthetic fixtures only in isolated development/test environments.",
+        "Verify from the operational database and user-facing application that no synthetic customer/work-order data remains and approved live records remain accessible.",
+        "Do not execute cleanup against any environment until the exact target, record set, backup and recovery evidence have been reviewed and explicitly approved."
+      ],
+      "existingEvidence": {
+        "classification": "NOT VERIFIED",
+        "references": [],
+        "note": "Local browser smoke and dev seeds create synthetic records; no operational environment cleanup has been performed."
+      },
+      "plannedImplementation": "Implement environment labels, deterministic test-data ownership and a reviewed pre-pilot cleanup/reconciliation procedure.",
+      "migration": "Keep the actual workbook in restricted staging until source and relationship mappings are approved. Never mix source claims with synthetic authority or operational test fixtures.",
+      "serverControl": "Limit cleanup commands to exact reviewed identifiers and a non-production dry run; record before/after counts, operator, environment, approvals and recovery reference.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [
+        "VR-USER-030"
+      ],
+      "configurationDependencies": [
+        "Pilot environment and business-record owner approval",
+        "Verified backup and recovery procedure",
+        "Complete list of approved real records"
+      ],
+      "evidence": [
+        "docs/discovery/service-advisor-backlog-inventory.md",
+        "docs/verification/checks/historical-workbook-staging-2026-11-08.md"
+      ],
+      "owner": {
+        "role": "business-record-owner",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-build",
+        "reference": "user-live-data-and-test-cleanup-2026-11-08"
+      },
+      "status": "planned",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/discovery/legacy-portal-audit.md",
+        "note": "Do not perform external or irreversible cleanup without review of the exact environment and allowlisted records."
+      }
+    },
+    {
+      "id": "USER-031",
+      "title": "Use clear, plain language in labels and descriptions",
+      "kind": "user-direction",
+      "module": "PLATFORMS",
+      "sourceRefs": [
+        "user-request-2026-11-09-plain-language"
+      ],
+      "sourceText": [
+        {
+          "id": "user-request-2026-11-09-plain-language",
+          "text": "Screen labels and descriptions should be concise, simple and understandable to anyone authorised to use the system, without unnecessary jargon. Display wording may differ from the supplied Excel workbook."
+        }
+      ],
+      "sopMapping": {
+        "references": [],
+        "status": "not-applicable",
+        "evidence": [],
+        "note": "This is a product language and accessibility requirement, not an operating procedure."
+      },
+      "acceptance": [
+        "Use short familiar words for visible headings, buttons, field labels, statuses and descriptions; explain specialist terms when staff first need them.",
+        "Keep paying client, vehicle owner and visit contact distinct in data and screen wording; label every displayed value with its actual meaning.",
+        "Use product language rather than copying workbook column labels; preserve raw source labels only for import provenance.",
+        "Keep internal API and database names separate from user-facing text and retain necessary safety or payment meaning without softening authority.",
+        "Check accessibility names, narrow layouts and browser zoom as part of the wording review."
+      ],
+      "existingEvidence": {
+        "classification": "PARTIAL",
+        "references": [
+          "docs/guides/plain-language-interface.md"
+        ],
+        "note": "A few incorrect or jargon-heavy labels are corrected; a complete user-facing language audit and owner review of proposed wording remain."
+      },
+      "plannedImplementation": "Apply the plain-language interface guide to staff and approved-owner screens without renaming internal fields or altering policy meaning.",
+      "migration": "No database migration. Preserve source workbook terms only in raw import provenance and mappings.",
+      "serverControl": "Display text never changes server permissions, authoritative status, party roles or source record meaning.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [
+        "VR-USER-031"
+      ],
+      "configurationDependencies": [],
+      "evidence": [
+        "docs/guides/plain-language-interface.md",
+        "apps/web/src/pages/intake.tsx",
+        "apps/web/src/pages/reception.tsx",
+        "docs/verification/checks/plain-language-party-labels-2026-11-09.md",
+        "docs/verification/plain-language-work-order-search-2026-11-14.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-build",
+        "reference": "user-request-2026-11-09-plain-language"
+      },
+      "status": "in-progress",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/discovery/legacy-portal-audit.md",
+        "note": "Apply approved plain-language direction while keeping proposed individual labels open for owner review."
+      },
+      "statusNote": "Paying client, vehicle owner and visit contact labels have been separated and verified with distinct synthetic data. Work-order search wording now explains its accepted references and provides a plain accessible name; web tests (35), typecheck and build pass. The local browser smoke passed all 65 checks, including that accessible name and placeholder, four WCAG scans, responsive profiles and 200%/400% reflow. Full screen-language review, manual screen-reader coverage and owner review of proposed terms remain."
+    },
+    {
+      "id": "USER-032",
+      "title": "Limit the VMMS Operator to account administration",
+      "kind": "user-direction",
+      "module": "SECURITY",
+      "sourceRefs": [
+        "user-operator-account-boundary-2026-11-09"
+      ],
+      "sourceText": [
+        {
+          "id": "user-operator-account-boundary-2026-11-09",
+          "text": "The top-level VMMS Operator creates and manages accounts for other roles. The owner later clarified that the Head of Service Centre / Operations Admin remains a separate operational role and can assign staff to existing roles. No named-person accounts are created yet. The Operator cannot grant technical, inspection, release or financial sign-off authority or change approved policies."
+        }
+      ],
+      "sopMapping": {
+        "references": [],
+        "status": "not-applicable",
+        "evidence": [],
+        "note": "This is an account administration and authorization boundary, not an operational SOP."
+      },
+      "acceptance": [
+        "Provide a VMMS Operator account-administration role that can create, update, suspend and review VMMS user accounts through an audited workflow.",
+        "Keep the Operator separate from Head of Service Centre / Operations Admin. The Operator handles identity account lifecycle; the Head assigns staff to existing effective role profiles.",
+        "Deny self-elevation, delegation of Operator or identity-provider administrator access, role permission changes, policy changes, and any creation or modification of technical, inspection, release, governance or financial sign-off grants.",
+        "Keep authentication identities in the shared identity service and VMMS memberships and role placements in VMMS; do not expose identity-provider administration credentials or APIs to the browser.",
+        "Record the acting Operator, target account, site, changed account state, time and outcome in an append-only audit trail; protect account queries by organisation/site scope.",
+        "Keep named-person accounts uncreated until the approved provisioning flow is ready and the Operator provisions them. Define and verify a separate controlled initial Operator bootstrap before production launch."
+      ],
+      "existingEvidence": {
+        "classification": "REQUIRES IMPLEMENTATION",
+        "references": [
+          "docs/architecture/operator-account-administration.md",
+          "docs/architecture/shared-identity.md",
+          "docs/decisions/review-register.md"
+        ],
+        "note": "The account boundary is documented; no provisioning interface or security enforcement evidence is claimed."
+      },
+      "plannedImplementation": "Add a server-enforced VMMS Operator account lifecycle workflow using the shared identity provisioning contract. Keep staff role assignment in the Head of Service Centre / Operations Admin workforce workflow, and keep role-policy governance and signed operational grants separately controlled.",
+      "migration": "No named-person accounts are seeded. Existing prototype has no records to migrate. The historical service backlog is a separate later import.",
+      "serverControl": "Require an active VMMS Operator account-administration capability and current site scope for every command. Enforce fixed role allowlists, self-elevation denial, separation from operational grants and identity-provider administration, and atomic audit events.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [
+        "VR-USER-032"
+      ],
+      "configurationDependencies": [
+        "REV-015",
+        "REV-040"
+      ],
+      "evidence": [
+        "docs/architecture/shared-identity.md",
+        "docs/decisions/review-register.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-build",
+        "reference": "REV-040"
+      },
+      "status": "planned",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/discovery/legacy-portal-audit.md",
+        "note": "The portal is reference-only. Preserve the approved account boundary and implement it in the new VMMS."
+      },
+      "statusNote": "Owner approved a separate Operator account-administration role and Head of Service Centre / Operations Admin role. Operator manages account lifecycle; Head may assign existing role profiles. Shared auth provisioning, audit, bootstrap and security verification remain open."
+    },
+    {
+      "id": "USER-033",
+      "title": "Keep approved procedures in a staff-only digital library",
+      "kind": "user-direction",
+      "module": "SECURITY",
+      "sourceRefs": [
+        "user-staff-procedure-library-2026-11-09"
+      ],
+      "sourceText": [
+        {
+          "id": "user-staff-procedure-library-2026-11-09",
+          "text": "EV/HV procedures cannot be fixed or invented in the application. The owner will provide the procedures. Store them as digital documents accessible to all approved staff roles, and deny access to vehicle owners/clients and people without an active work role in the workspace."
+        }
+      ],
+      "sopMapping": {
+        "references": [
+          "Controlled EV/HV SOP and procedure library"
+        ],
+        "status": "library-not-provided",
+        "evidence": [],
+        "note": "Owner will provide the current documents. Document availability does not approve a procedure or grant technical authority."
+      },
+      "acceptance": [
+        "Provide a digital library for controlled EV/HV SOPs and procedures; do not embed, generate or infer fixed technical sequences.",
+        "Allow all active VMMS staff roles to read published effective procedures; deny customer/vehicle-owner audiences, external users, unknown accounts and suspended staff.",
+        "Show the document title, revision, effective status and applicable scope; distinguish drafts and superseded copies so they cannot be mistaken for effective instructions.",
+        "Restrict document changes and publication to separately approved document-control authority; account administration alone does not publish or approve procedures.",
+        "Do not make a procedure available for an operational sign-off until its approval, effective revision, applicability and related staff authority are verified.",
+        "Test staff access, owner/external denial, suspended membership, draft/superseded presentation, tenant/site isolation and document audit using synthetic content."
+      ],
+      "existingEvidence": {
+        "classification": "REQUIRES IMPLEMENTATION",
+        "references": [
+          "docs/architecture/work-order-policy-package.md",
+          "docs/decisions/review-register.md"
+        ],
+        "note": "The fail-closed policy model exists; a staff-only digital document library and access verification are not claimed."
+      },
+      "plannedImplementation": "Extend controlled document metadata and effective-revision workflows with a staff-only library. Procedures remain owner-provided source documents; workflow gates reference effective approved revisions rather than embedding technical instructions.",
+      "migration": "No procedures are authored or assumed. Owner-provided versions will be inventoried and staged after receipt; preserve revision and approval provenance.",
+      "serverControl": "Enforce staff workspace membership and document scope on every metadata and download request. Require effective state and separate document-control authority for publication; owner/customer audience is explicitly denied.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [
+        "VR-USER-033"
+      ],
+      "configurationDependencies": [
+        "REV-008",
+        "REV-009",
+        "REV-041"
+      ],
+      "evidence": [
+        "docs/architecture/work-order-policy-package.md",
+        "docs/decisions/review-register.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-build",
+        "reference": "user-staff-procedure-library-2026-11-09"
+      },
+      "status": "planned",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/discovery/legacy-portal-audit.md",
+        "note": "The reference portal does not determine procedure content or workspace access."
+      },
+      "statusNote": "Owner will supply procedures later. Build a staff-only digital library without invented EV/HV steps; exact procedure content and approvers remain pending."
+    },
+    {
+      "id": "USER-034",
+      "title": "Support combined staff roles and a service-centre reporting hierarchy",
+      "kind": "user-direction",
+      "module": "CORE",
+      "sourceRefs": [
+        "user-workforce-organogram-2026-11-09"
+      ],
+      "sourceText": [
+        {
+          "id": "user-workforce-organogram-2026-11-09",
+          "text": "The Head of Service Centre combines the Operations Admin functions and sits at the top of the service-centre reporting structure. The Head has a site-wide operational overview, reviews reports and roles, sends internal messages, assigns work to Team Leads or other eligible roles, and assigns staff to existing roles. Team Leads plan and hand work to Supervisors; Supervisors manage assigned Technicians/Engineers. Some staff may combine role functions. The VMMS Operator remains a separate account-administration role."
+        }
+      ],
+      "sopMapping": {
+        "references": [],
+        "status": "not-applicable",
+        "evidence": [],
+        "note": "This is an organizational and product authorization requirement, not an operating procedure. Technical procedures and sign-off authority remain separately governed."
+      },
+      "acceptance": [
+        "Provide a combined Head of Service Centre / Operations Admin role profile with a site-scoped overview and access to authorized reports, role assignments and internal work messages.",
+        "Allow a staff account to hold multiple active role placements at a site and different placements at different sites; retain effective-dated reporting relationships for each placement.",
+        "Allow the Head to assign staff to existing effective role profiles and allocate Operations-reviewed work to an eligible Team Lead using the existing versioned work-order command.",
+        "Represent the default reporting chain Head of Service Centre → Team Lead → Supervisor → Technician/Engineer; allow other role reporting lines to be configured without assuming every supporting role reports identically.",
+        "Keep reporting lines, staff role placement, job/task assignment, qualification, and signed authority as separate facts. A role or manager title never grants technical, inspection, release, finance or procedure-publication authority.",
+        "Allow a Team Lead to plan and hand work to an eligible Supervisor, and a Supervisor to coordinate assigned Technicians/Engineers within the effective task, qualification, safety and authority rules.",
+        "Scope the Head overview and every directory, report, message and assignment by current organisation/site access; record sensitive reads and mutations with actor, target, time and outcome.",
+        "Verify combined roles, site separation, reporting cycles, inactive parents, role reassignment history, unauthorized assignment, and operational-grant isolation with PostgreSQL/API and browser tests."
+      ],
+      "existingEvidence": {
+        "classification": "PARTIAL IMPLEMENTATION",
+        "references": [
+          "docs/architecture/workforce-organogram.md",
+          "docs/architecture/work-order-lifecycle-and-booking.md",
+          "apps/api/src/workforce.ts",
+          "apps/api/migrations/033_workforce_roles.sql",
+          "apps/api/test/foundation.test.ts"
+        ],
+        "note": "The site-scoped role catalog, placements, reporting links, Head overview with filtered work-stage drill-down, and first internal-message slice have local PostgreSQL/API and browser evidence. Task allocation, full role UX, Operator account provisioning, production approval, and staff UAT remain open."
+      },
+      "plannedImplementation": "Add site-scoped role profiles, multi-role staff placements, effective reporting links and a Head of Service Centre / Operations Admin workspace. Reuse existing work-order assignment commands and extend task allocation without duplicating the workshop aggregate. Keep the Operator account lifecycle separate.",
+      "migration": "No real staff accounts are provisioned yet. Create role profiles and synthetic identities only in isolated development. Historical service backlog import is separate and remains deferred until mappings and approval.",
+      "serverControl": "Derive actor, organisation and site from authenticated session. Enforce active staff membership and a dedicated role-assignment or work-allocation authorization on each command. Reject cross-site reporting edges and cycles. Preserve all existing signed grant, qualification, independent inspection and safety checks.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [
+        "VR-USER-034"
+      ],
+      "configurationDependencies": [
+        "REV-006",
+        "REV-008",
+        "REV-009",
+        "REV-035",
+        "REV-041",
+        "REV-042"
+      ],
+      "evidence": [
+        "docs/architecture/workforce-organogram.md",
+        "docs/decisions/review-register.md",
+        "apps/api/test/foundation.test.ts",
+        "docs/verification/checks/workforce-role-placement-2026-11-09.md",
+        "docs/verification/browser/workforce-browser-results.json",
+        "docs/verification/checks/head-overview-2026-11-09.md",
+        "docs/verification/browser/head-overview-browser-results.json",
+        "docs/verification/checks/internal-messages-2026-11-09.md",
+        "docs/architecture/supervisor-work-allocation.md",
+        "apps/api/migrations/042_supervisor_task_allocations.sql",
+        "apps/api/src/work-order-task-allocations.ts",
+        "apps/web/src/task-allocations.tsx",
+        "docs/verification/checks/supervisor-task-allocation-2026-11-11.md",
+        "docs/verification/checks/workforce-reporting-manager-denials-2026-11-11.md",
+        "docs/verification/checks/internal-messages-2026-11-11.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-build",
+        "reference": "user-workforce-organogram-2026-11-09"
+      },
+      "status": "in-progress",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/discovery/legacy-portal-audit.md",
+        "note": "The old portal is reference-only. Implement the approved organogram and maintain separate site-scoped authority controls."
+      },
+      "statusNote": "Supervisor task allocation is implemented for the exact handed-off plan and direct-report role placements, with append-only revisions and API integration coverage. Assignment does not authorize work execution or sign-off. The 11 November PostgreSQL suite adds denial and rollback coverage for cross-site/cross-organisation, ended, inactive-account and inactive-membership reporting managers. The Head's internal messaging slice also passes focused PostgreSQL/API and seven browser checks; it remains production-gated by REV-042. Full technical eligibility gates, task workbench, procedure delivery, role assignment UX, provisioning, production approval and workforce UAT remain open."
+    },
+    {
+      "id": "USER-035",
+      "title": "Let service advisors scan a vehicle VIN with the camera",
+      "kind": "user-direction",
+      "module": "M02",
+      "sourceRefs": [
+        "user-request-2026-11-11-vehicle-scan"
+      ],
+      "sourceText": [
+        {
+          "id": "user-request-2026-11-11-vehicle-scan",
+          "text": "When a job is entered, allow either a camera vehicle scan or service-advisor entry."
+        }
+      ],
+      "sopMapping": {
+        "references": [],
+        "status": "not-applicable",
+        "evidence": [],
+        "note": "This is an optional intake input method; it does not accept G1 or authorize any work."
+      },
+      "acceptance": [
+        "Allow an advisor to start an optional camera scan from intake while retaining manual VIN entry.",
+        "Validate decoded input as a 17-character VIN, normalize it for review, and reject invalid values without overwriting the current field.",
+        "Never submit intake, select a vehicle record, establish ownership, or grant authority from a scan alone.",
+        "Explain unsupported browser or camera-permission states and keep the manual entry path available.",
+        "Stop the camera when scanning ends, the advisor stops it, or the screen closes."
+      ],
+      "existingEvidence": {
+        "classification": "PARTIAL IMPLEMENTATION",
+        "references": [
+          "apps/web/src/vin-scanner.tsx",
+          "docs/verification/checks/vin-barcode-scan-2026-11-11.md"
+        ],
+        "note": "Local synthetic browser verification passes; physical camera compatibility remains unverified."
+      },
+      "plannedImplementation": "Use progressive browser barcode detection for common vehicle label formats and the existing VIN field; keep manual entry as the fallback.",
+      "migration": "No migration required. Scanning is a client-side input method and submits no additional records.",
+      "serverControl": "Treat the scanned value like any typed VIN; existing site-scoped lookup and intake validation remain authoritative.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [
+        "VR-USER-035"
+      ],
+      "configurationDependencies": [
+        "Physical device/browser camera checks tracked by P-002; HarmonyOS checks remain separate."
+      ],
+      "evidence": [
+        "docs/architecture/vin-barcode-scan.md",
+        "docs/verification/checks/vin-barcode-scan-2026-11-11.md",
+        "apps/web/src/vin-scanner.tsx",
+        "apps/web/src/vin-scanner.test.ts"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-build",
+        "reference": "user-request-2026-11-11-vehicle-scan"
+      },
+      "status": "in-progress",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/discovery/legacy-portal-audit.md",
+        "note": "Camera scanning supplements the approved manual intake flow; it creates no additional authority."
+      },
+      "statusNote": "Camera barcode scan and manual fallback are implemented and verified with a synthetic browser media stream. Real-device compatibility and VIN-label conditions remain open."
+    },
+    {
+      "id": "USER-036",
+      "title": "Preserve showroom vehicle delivery records for controlled import",
+      "kind": "user-direction",
+      "module": "DELIVERY",
+      "sourceRefs": [
+        "user-request-2026-11-11-monthly-sales-report"
+      ],
+      "sourceText": [
+        {
+          "id": "user-request-2026-11-11-monthly-sales-report",
+          "text": "The owner supplied MONTHLY SALES REPORT FOR OCTOBER 2025-SEPTEMBER 2026-1.xlsx and asked that its current business data be extracted and added to the VMMS database."
+        }
+      ],
+      "sopMapping": {
+        "references": [],
+        "status": "not-applicable",
+        "evidence": [],
+        "note": "This historical sales source does not define a service procedure or grant operational authority."
+      },
+      "acceptance": [
+        "Preserve each source row, its original values, source file hash, worksheet, and stable row reference in restricted staging.",
+        "Exclude the sales-representative column from VMMS data.",
+        "Preserve the name of customer as a purchaser-at-delivery source claim; do not treat it as a verified current owner, service client, payer, owner account, or access grant.",
+        "Keep delivery date, model, chassis, and registration values as source claims; flag missing, out-of-period, or nonstandard values for review.",
+        "Keep staged sales claims separate from the operational work-order, invoice, payment, warranty, owner-access, and safety ledgers.",
+        "Import into a database only through a tenant/site-scoped, reviewed batch with idempotency, row reconciliation, and an approved mapping."
+      ],
+      "existingEvidence": {
+        "classification": "NEW SOURCE INVENTORY",
+        "references": [
+          "docs/discovery/monthly-sales-report-inventory.md"
+        ],
+        "note": "The report contains showroom delivery records, not maintenance activity or financial totals."
+      },
+      "plannedImplementation": "Extract into private local staging, then add a reviewed historical-sales database staging and promotion path. Preserve identity roles as source claims until the owner confirms the mapping.",
+      "migration": "Do not modify source workbook. Database promotion requires an additive, tenant/site-scoped import design and approval of the exact batch hash.",
+      "serverControl": "Do not expose the private batch through operational APIs. Any database staging or promotion must enforce organisation/site scope, role-limited access, provenance, row-level review, and idempotent commit.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [
+        "VR-USER-036"
+      ],
+      "configurationDependencies": [
+        "REV-044"
+      ],
+      "evidence": [
+        "docs/discovery/monthly-sales-report-inventory.md",
+        "scripts/stage-monthly-sales-report.py",
+        "scripts/test-monthly-sales-staging.py",
+        "docs/architecture/showroom-sales-staging.md",
+        "apps/api/migrations/045_vehicle_sales_source_staging.sql",
+        "scripts/stage-monthly-sales-db.mjs",
+        "docs/verification/checks/monthly-sales-staging-2026-11-11.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-build",
+        "reference": "user-request-2026-11-11-monthly-sales-report"
+      },
+      "status": "in-progress",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/architecture/historical-import.md",
+        "note": "The report is a separate showroom sales source. It is not imported as a repair job, payer, or verified owner."
+      },
+      "statusNote": "The 133-row workbook has been inventoried, extracted to protected local staging, and stored in the owner-only vmms_import_staging schema. The owner confirmed purchaser-at-delivery as the name's meaning. Replay and runtime denial checks pass. Current ownership, service payer, date exceptions, site scope, and any later promotion remain open."
+    },
+    {
+      "id": "USER-037",
+      "title": "Link sales delivery and PDI facts to vehicle history",
+      "kind": "user-direction",
+      "module": "DELIVERY",
+      "sourceRefs": [
+        "user-request-2026-11-12-sales-pdi-vehicle-history"
+      ],
+      "sourceText": [
+        {
+          "id": "user-request-2026-11-12-sales-pdi-vehicle-history",
+          "text": "The owner wants sales staff to record vehicle sales, delivery, PDI and basic vehicle/customer information so After-Sales can use the linked history."
+        }
+      ],
+      "sopMapping": {
+        "references": [
+          "Owner-provided PDI form and procedures"
+        ],
+        "status": "library-not-provided",
+        "evidence": [],
+        "note": "Use supplied forms as field references only until the owner provides and approves the governing SOPs."
+      },
+      "acceptance": [
+        "Authorised sales staff can record delivery and the approved PDI facts against a canonical vehicle and client/customer relationship.",
+        "Keep source, reporter, date and evidence for each PDI fact; preserve unknown or unverified values as unknown.",
+        "A purchaser-at-delivery claim does not establish current owner, service client, payer, warranty coverage or vehicle-owner account.",
+        "Sales access cannot alter workshop history or grant technical, inspection, release or financial authority.",
+        "Use the same vehicle history for later service work without duplicating the VIN identity.",
+        "PDI observations can be corrected only by a PDI Observer with a reason; corrections append and preserve the original record."
+      ],
+      "existingEvidence": {
+        "classification": "PARTIAL",
+        "references": [
+          "docs/architecture/candidates/sales-delivery-pdi-synthesis.md",
+          "apps/api/migrations/057_sales_delivery_pdi_observations.sql",
+          "apps/api/src/sales-deliveries.ts",
+          "apps/web/src/pages/sales-deliveries.tsx",
+          "docs/architecture/checklist-lifecycle.md"
+        ],
+        "note": "Actual delivery facts and append-only PDI observations have targeted PostgreSQL/API/browser evidence. These are not a pre-delivery PDI checklist. The selected delivery-preparation/PDI architecture is documented under USER-043/REV-055 but is not implemented. Full source-backed PDI procedures, delivery correction lifecycle, explicit service-client relation, workbook reconciliation/promotion, expanded after-sales role access and staff UAT remain incomplete."
+      },
+      "plannedImplementation": "Add a role-scoped sales delivery/PDI workflow linked to the canonical vehicle history after owner-provided field and policy review.",
+      "migration": "Do not promote the sales workbook purchaser claim to current owner or payer. Use additive, reviewable imports with preserved source IDs and claims.",
+      "serverControl": "Enforce organisation/site scope, an explicit sales role permission set, immutable source history and server-side separation from workshop and signed approval grants.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [
+        "CHECK-USER-037"
+      ],
+      "configurationDependencies": [
+        "REV-008",
+        "REV-011",
+        "REV-044"
+      ],
+      "evidence": [
+        "docs/verification/checks/sales-delivery-pdi-2026-11-13.md",
+        "docs/verification/sales-history-read-access-2026-11-13.md",
+        "docs/verification/sales-deliveries-browser-2026-11-13.md",
+        "docs/verification/sales-pdi-correction-2026-11-13.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-build",
+        "reference": "user-request-2026-11-12-sales-pdi-vehicle-history"
+      },
+      "status": "in-progress",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/discovery/after-sales-reference-audit.md",
+        "note": "Reuse only approved field patterns; do not inherit the legacy portal identity or PDI authority assumptions."
+      },
+      "statusNote": "Actual delivery records and source-attributed PDI observations have API/PostgreSQL and synthetic browser evidence. They do not implement a pre-delivery checklist; that lifecycle is now designed under USER-043/REV-055. Approved PDI procedures, explicit service-client relation, historical reconciliation/promotion, wider service-role access, screen-reader checks and staff acceptance remain open."
+    },
+    {
+      "id": "USER-038",
+      "title": "Record service requests and scheduled customer follow-ups",
+      "kind": "user-direction",
+      "module": "CUSTOMER",
+      "sourceRefs": [
+        "user-request-2026-11-12-service-requests-and-callbacks"
+      ],
+      "sourceText": [
+        {
+          "id": "user-request-2026-11-12-service-requests-and-callbacks",
+          "text": "The owner wants requests reported to Sales, the Service Advisor or another role to be recorded, confirmed with the client, followed up on time, and connected to later workshop work."
+        }
+      ],
+      "sopMapping": {
+        "references": [],
+        "status": "not-applicable",
+        "evidence": [],
+        "note": "This request/callback record does not authorize a diagnosis, repair or safety action."
+      },
+      "acceptance": [
+        "Staff can record a phone, walk-in or other service request before a workshop job exists.",
+        "Record the caller/contact role, source, reported concern, known client/vehicle/contact links, contact outcome, next action and callback due time; show missing or uncertain facts clearly.",
+        "Allow the initial request save to include an optional next contact step and due time, assign that planned follow-up to its creator, and keep it separate from outbound contact history.",
+        "Keep request updates append-only and attributable, including who contacted the client and the outcome.",
+        "Show a role-scoped queue of requests awaiting confirmation or callback, with overdue and due states.",
+        "Convert a request to workshop reception only after staff explicitly confirm the client, vehicle and visit contact; preserve the request history and link it to the resulting visit/work order.",
+        "Save drafts safely on shared devices and never allow a draft to confer access, consent, authority or safety clearance.",
+        "Allow an unconverted request to be closed and reopened only with an attributed reason; preserve immutable, paginated transition history and never close a request linked to a workshop job."
+      ],
+      "existingEvidence": {
+        "classification": "IMPLEMENTED_PARTIAL",
+        "references": [
+          "docs/architecture/service-requests-and-callbacks.md",
+          "docs/verification/checks/service-request-real-browser-2026-11-13.md",
+          "docs/verification/service-request-arrival-conversion-2026-11-13.md"
+        ],
+        "note": "The site-scoped request/callback workflow and explicit reception conversion are implemented in verified slices. Request-based intake now shows source facts and confirmation context. Role/time-zone breadth, simultaneous browser tabs and staff acceptance remain open."
+      },
+      "plannedImplementation": "Continue closing role/time-zone coverage, shared-device workflows, simultaneous-tab conflict handling and staff UAT for the structured request/callback queue and confirmed one-job conversion.",
+      "migration": "Historical calls are not included in supplied workbooks. Do not create historical request records without a source inventory.",
+      "serverControl": "Partition by organisation/site, check action permission at the server, retain request history and prevent unverified identity links or arbitrary work-order creation.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [],
+      "configurationDependencies": [
+        "REV-008",
+        "REV-011",
+        "REV-043"
+      ],
+      "evidence": [
+        "docs/verification/checks/service-request-storage-2026-11-12.md",
+        "docs/verification/checks/service-request-real-browser-2026-11-13.md",
+        "docs/verification/checks/service-request-caller-details-2026-11-13.md",
+        "docs/verification/checks/service-request-command-recovery-2026-11-13.md",
+        "docs/verification/checks/service-request-correction-concurrency-2026-11-13.md",
+        "docs/verification/checks/service-request-close-reopen-2026-11-13.md",
+        "docs/verification/service-request-arrival-conversion-2026-11-13.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-build",
+        "reference": "user-request-2026-11-12-service-requests-and-callbacks"
+      },
+      "status": "in-progress",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/discovery/after-sales-reference-audit.md",
+        "note": "Borrow guided scripts, call outcomes and follow-up queues only after mapping to the approved VMMS fields and role model."
+      },
+      "statusNote": "The site-scoped request queue, caller details, contact history, callbacks, explicit reception conversion, response-loss recovery and reasoned close/reopen history have API/PostgreSQL/browser evidence. The request-to-arrival screen now shows reported facts and callback state, requires visit confirmation and explains Operations review; its real local browser journey passed. Full role/time-zone coverage, simultaneous browser tabs and staff UAT remain open."
+    },
+    {
+      "id": "USER-039",
+      "title": "Keep job progress, sign-offs and customer handover connected",
+      "kind": "user-direction",
+      "module": "WORKSHOP",
+      "sourceRefs": [
+        "user-request-2026-11-12-joined-workorder-lifecycle",
+        "user-request-2026-11-13-workflow-release-review-customer-update-order"
+      ],
+      "sourceText": [
+        {
+          "id": "user-request-2026-11-12-joined-workorder-lifecycle",
+          "text": "The owner wants per-task acknowledgements, progress, comments and requests, supervisor completion sign-off, Team Lead final release, Head of Service Centre inspection, Service Advisor customer updates, invoicing and paid collection/delivery to form one traceable service journey."
+        },
+        {
+          "id": "user-request-2026-11-13-workflow-release-review-customer-update-order",
+          "text": "The owner clarified that the Supervisor reports technical completion, the Team Lead signs final release and places the vehicle in the collection zone, the Head of Service Centre then inspects and signs off, and the Service Advisor only updates the customer after that review."
+        }
+      ],
+      "sopMapping": {
+        "references": [
+          "Owner-provided workshop and release SOPs"
+        ],
+        "status": "library-not-provided",
+        "evidence": [],
+        "note": "Do not invent technical steps, inspection criteria or sign-off permissions while procedures and grants are unapproved."
+      },
+      "acceptance": [
+        "Every planned task has an assigned accountable supervisor/team member, acknowledgement, progress, comments, blockers and evidence requests in its history.",
+        "Only the authorised supervisor can record technical completion, with required evidence, qualification and independent inspection checks.",
+        "The authorised Team Lead records final release and collection-zone movement after supervisor technical completion.",
+        "The Head of Service Centre inspects and records the required sign-off after Team Lead release; Service Advisor customer updates follow only after that review.",
+        "Customer calls/messages, invoice review, external payment or showroom guarantee, collection/delivery and handover acknowledgement are separate attributable steps linked to the same work order.",
+        "Enforce G1 through G5 independently and deny actions when policy, authority, evidence, payer or payment terms are missing.",
+        "Transcribe source reports as separately identified claims before Operations review; preserve the authenticated recorder separately from any unknown performer and keep those claims outside technical and commercial sign-off."
+      ],
+      "existingEvidence": {
+        "classification": "UNKNOWN",
+        "references": [],
+        "note": "Task planning and supervisor allocations exist. Technician execution, G3/G4 transitions, Head final inspection, customer communication history and invoice/collection workflow are incomplete."
+      },
+      "plannedImplementation": "Extend the existing work-order aggregate and timeline with task execution, role-specific sign-offs, customer updates and separately gated commercial/hand-over transitions. Add a pre-review source-report transcription record distinct from assigned-worker entries.",
+      "migration": "Historical source completion labels remain source claims and cannot satisfy current sign-off gates.",
+      "serverControl": "Use command-specific, site-scoped, idempotent and versioned transitions with signed grants, qualification checks, independent inspection, durable audit and fail-closed gates.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [
+        "TASK-PROGRESS-001",
+        "CHECK-USER-039-TASK-EVIDENCE-001",
+        "CHECK-USER-039-SOURCE-REPORT-001"
+      ],
+      "configurationDependencies": [
+        "REV-006",
+        "REV-007",
+        "REV-008",
+        "REV-009",
+        "REV-012"
+      ],
+      "evidence": [
+        "docs/architecture/task-progress-and-acknowledgement.md",
+        "docs/architecture/supervisor-work-allocation.md",
+        "docs/verification/checks/task-progress-and-acknowledgement-2026-11-13.md",
+        "docs/verification/checks/supervisor-task-activity-2026-11-13.md",
+        "docs/verification/browser-work-plan/results.json",
+        "docs/verification/task-activity-oversight-2026-11-13.md",
+        "docs/verification/task-activity-oversight-2026-11-13/results.json",
+        "docs/architecture/service-work-history-and-reports.md",
+        "docs/verification/work-history-service-report-2026-11-13.md",
+        "docs/verification/task-scoped-evidence-upload-2026-11-13.md",
+        "docs/architecture/source-reported-service-history.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-build",
+        "reference": "user-request-2026-11-12-joined-workorder-lifecycle"
+      },
+      "status": "in-progress",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/architecture/technical-completion-and-release.md",
+        "note": "The workflow remains blocked where SOPs, authority grants, inspection rules or commercial policy are pending."
+      },
+      "statusNote": "Assigned-worker progress, correction-safe work entries, task-scoped accepted evidence upload after handoff, and the purpose-built service report have PostgreSQL/API and populated-browser-PDF coverage. Task upload binds to the current plan and assignment, denies wrong actor/site, stale plan and pending/quarantined/rejected evidence without partial links or downloads, survives response loss, leaves work-order scope unchanged, and preserves report labels through correction. Production storage/scanner, specific work-authority checks, Supervisor completion, Team Lead release, Head inspection, customer updates, G1-G5 handover and staff UAT remain open. Shirley intake awaits physical VIN verification. A source-report transcription design now distinguishes reported claims from current worker records; implementation and PostgreSQL/browser verification remain open."
+    },
+    {
+      "id": "USER-040",
+      "title": "Make the daily screens simpler and show the next action",
+      "kind": "user-direction",
+      "module": "PLATFORMS",
+      "sourceRefs": [
+        "user-request-2026-11-12-simplify-role-based-journey"
+      ],
+      "sourceText": [
+        {
+          "id": "user-request-2026-11-12-simplify-role-based-journey",
+          "text": "The owner says the screens and system feel too complicated and disorganized, and asks for a proper connected system from sales/PDI through after-sales and service completion."
+        }
+      ],
+      "sopMapping": {
+        "references": [],
+        "status": "not-applicable",
+        "evidence": [],
+        "note": "Screen structure does not grant staff authority."
+      },
+      "acceptance": [
+        "Use the service journey as the primary mental model: Today, Requests, Jobs and Vehicles/history.",
+        "Keep team, SOP, report and account administration in role-aware secondary navigation.",
+        "On each job, show the current owner, next allowed action, due time, evidence needed and exact reason an action is blocked.",
+        "Embed task updates and handoffs in the job context instead of duplicating the same job across unrelated pages.",
+        "Preserve the approved Raymond Gray baseline and verify phone, foldable, tablet, desktop, keyboard, screen reader and zoom behavior."
+      ],
+      "existingEvidence": {
+        "classification": "PARTIAL",
+        "references": [
+          "docs/verification/role-aware-navigation-2026-11-13.md",
+          "docs/verification/work-order-workflow-context-2026-11-13.md",
+          "docs/verification/today-callbacks-2026-11-13.md"
+        ],
+        "note": "Role-aware navigation, work-order step context and a read-only Today callback panel are implemented in verified slices. Full role UAT, due-time policy, approved SOP evidence, manual assistive-technology checks and the later sign-off and handover workflow remain incomplete."
+      },
+      "plannedImplementation": "Use the role-based information architecture and one work-order timeline while retaining distinct queues where they serve a separate role or next action.",
+      "migration": "No data migration required.",
+      "serverControl": "Client-side navigation only presents actions. Every read and mutation remains authorized by the server using current site scope and grants.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [
+        "CHECK-USER-040",
+        "CHECK-USER-040-NAV-001",
+        "CHECK-USER-040-CONTEXT-001",
+        "CHECK-USER-040-CALLBACKS-TODAY-001"
+      ],
+      "configurationDependencies": [
+        "REV-039"
+      ],
+      "evidence": [
+        "docs/architecture/candidates/user040-navigation-synthesis.md",
+        "docs/verification/role-aware-navigation-2026-11-13.md",
+        "docs/verification/today-callbacks-2026-11-13.md",
+        "docs/architecture/work-order-workflow-context.md",
+        "docs/verification/work-order-workflow-context-2026-11-13.md",
+        "docs/architecture/supervisor-work-allocation.md",
+        "docs/verification/task-activity-oversight-2026-11-13.md",
+        "docs/verification/task-activity-oversight-2026-11-13/results.json"
+      ],
+      "owner": {
+        "role": "design-agent",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-build",
+        "reference": "user-request-2026-11-12-simplify-role-based-journey"
+      },
+      "status": "in-progress",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/architecture/service-journey.md",
+        "note": "Information architecture follows the existing branding baseline; no new artistic direction is assumed."
+      },
+      "statusNote": "The role-aware Today/navigation, read-only overdue and due-today callback summary, and stored work-order step summary are implemented in verified slices. A disposable PostgreSQL/API browser journey confirms the callback panel's site-time-zone overdue result, caller privacy and filter-preserving request link; empty and denied-read states remain mocked. The work-plan panel shows assignment controls only to the current Supervisor. No repair due-time policy or approved SOP evidence checklist exists yet. Manual assistive-technology checks, wider role UAT and the remaining USER-040 acceptance checks stay open."
+    },
+    {
+      "id": "USER-041",
+      "title": "Learn and record vehicle type, drivetrain and systems identification",
+      "kind": "user-direction",
+      "module": "M01",
+      "sourceRefs": [
+        "user-request-2026-11-13-vehicle-systems-learning",
+        "ev-afro-service-centre-pdf"
+      ],
+      "sourceText": [
+        {
+          "id": "user-request-2026-11-13-vehicle-systems-learning",
+          "text": "Add a feature for vehicle type, drivetrain and systems identification that all roles under the Head of Aftersales, including the Head, can use to learn about unfamiliar brands, check and select information, add comments/inputs, and save submissions for later review. It is intended for trainee technicians, but full engineers and technicians can also access it."
+        },
+        {
+          "id": "ev-afro-service-centre-pdf",
+          "text": "EV Aftersales Centre, Vehicle Type, Drivetrain & Systems Identification, Exercise 01 (five-page student handout and worksheet). Full transcription in docs/sources/ev-afro-service-centre-transcription.md; SHA-256 79D05F479614C81E29DF8AFD469507FB00184DA0AA200A7B70E0E1FB03F70833."
+        }
+      ],
+      "sopMapping": {
+        "references": [
+          "SOP-008 Competency"
+        ],
+        "status": "pending-technical-review",
+        "evidence": [
+          "docs/architecture/vehicle-systems-learning.md"
+        ],
+        "note": "Learning records and reviewed reference content do not grant qualification, diagnosis, procedure or work authority."
+      },
+      "acceptance": [
+        "Make a staff-only learning and reference area available to active after-sales roles, including the Head of Service Centre, technicians, engineers and trainees; deny clients, public, suspended and outside-workspace identities.",
+        "Let staff find reviewed vehicle learning records by make, model/variant/year, vehicle class, drivetrain, system family and learner level.",
+        "Let staff save a private exercise draft, add comments/inputs and evidence citations, submit it for scoped review, receive reasoned feedback, revise and retain version history.",
+        "Capture BEV/PHEV/HEV/EREV/REEV/ICE and FWD/RWD/AWD hypotheses separately from evidence-backed confirmations, confidence and unknowns.",
+        "Support system/component identification and energy-flow explanation from the supplied PDF while preserving its non-invasive safety boundary and photo/badge caution.",
+        "Separate authoring, learning-record review and technical reference publication grants from job, qualification, SOP and diagnostic authority.",
+        "Never mutate canonical vehicle/customer/work-order data or satisfy any safety/work gate from a learning answer or comment.",
+        "Use source version/page/section citations and preserve uncertain or conflicting claims as such; retain comments and corrections append-only."
+      ],
+      "existingEvidence": {
+        "classification": "PARTIAL IMPLEMENTATION",
+        "references": [
+          "docs/architecture/vehicle-systems-learning.md",
+          "docs/sources/ev-afro-service-centre-transcription.md"
+        ],
+        "note": "The full source transcription and structured staff exercise are implemented. Immutable assessment snapshots cover hypotheses, evidence, 26 systems, four energy paths, explanations, questions and citations; legacy selections remain unconfirmed. Separately granted review, author resubmission, and an opt-in same-site read-only library with immutable withdrawal tombstones are implemented and passed disposable PostgreSQL/browser checks. A searchable technical reference catalog with make/model/variant/year and system facets, approved model sources, reviewer assignments, native assistive-technology review and staff acceptance remain open."
+      },
+      "plannedImplementation": "Maintain the staff learning exercise, separately granted review, and opt-in same-site learning library. Add a governed searchable technical reference catalog, approved model-specific content and separate technical publication lifecycle only after source and authority review. Keep unsupported vehicle-specific facts unknown.",
+      "migration": "Learning assessment snapshot migration 070 and same-site shared learning snapshot/withdrawal migration 072 are implemented. A governed technical reference catalog still needs schema and retention review; do not attach learning answers to canonical vehicle identity unless a separately authorized command is used.",
+      "serverControl": "Derive actor, organization and site from session; enforce active staff membership and read/write/review/publish grants on every endpoint; retain audit revisions; prevent cross-domain writes.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [
+        "CHECK-USER-041-LEARNING-001"
+      ],
+      "configurationDependencies": [
+        "REV-051: technical content owners and reviewer/publication grants",
+        "Approved model-specific source materials and attachment/retention policy"
+      ],
+      "evidence": [
+        "docs/architecture/vehicle-systems-learning.md",
+        "docs/sources/ev-afro-service-centre-transcription.md",
+        "scripts/vehicle-learning-browser.mjs",
+        "docs/verification/vehicle-learning-current-state-2026-11-14.md",
+        "docs/architecture/vehicle-learning-review-workflow.md",
+        "apps/api/migrations/071_vehicle_learning_review.sql",
+        "apps/web/src/vehicle-learning-review.tsx",
+        "apps/api/migrations/072_vehicle_learning_library.sql",
+        "apps/web/src/vehicle-learning-library.tsx",
+        "docs/architecture/vehicle-learning-library.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-design",
+        "reference": "user-request-2026-11-13-vehicle-systems-learning"
+      },
+      "status": "in-progress",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/sources/ev-afro-service-centre-transcription.md",
+        "note": "The PDF is a student exercise and non-invasive source, not an approved repair instruction or vehicle master record."
+      },
+      "statusNote": "The source transcription, structured exercise, separate review workflow, and opt-in same-site read-only library are implemented. Library snapshots bind to the exact reviewed revision and authorized reviewers can withdraw visibility while preserving history. Disposable PostgreSQL/API/browser checks passed; navigation unit tests cover all eleven after-sales roles. Reviewer assignments/grants, searchable technical reference catalog and make/model/year/system facets, approved model sources, full role-specific API/browser UAT, native assistive technology and staff acceptance remain open."
+    },
+    {
+      "id": "USER-042",
+      "title": "Prepare controlled interim after-sales SOP drafts for later approval",
+      "kind": "user-direction",
+      "module": "M01",
+      "sourceRefs": [
+        "user-request-2026-11-13-interim-sops"
+      ],
+      "sourceText": [
+        {
+          "id": "user-request-2026-11-13-interim-sops",
+          "text": "Create comprehensive, high-standard SOPs likely to be used for the EV after-sales workshop and VMMS until the owner supplies updated SOPs."
+        }
+      ],
+      "sopMapping": {
+        "references": [
+          "GOV-001–004"
+        ],
+        "status": "draft-only",
+        "evidence": [
+          "docs/operations/sops/"
+        ],
+        "note": "Drafts are not effective work instructions and cannot satisfy safety or authorization gates."
+      },
+      "acceptance": [
+        "Create interim drafts for intake/job control, PDI, routine maintenance, and invoice/payment/receipt/vehicle handover.",
+        "Mark every draft with revision, owner/approver pending, no effective date, review needs and a clear no-authority warning.",
+        "Reflect the approved role order and separation: Operations review/assignment, Team Lead plan, Supervisor completion, Team Lead release, Head inspection, Service Advisor customer update/commercial handover.",
+        "Do not invent fixed EV/HV repair steps, manufacturer values/intervals, emergency response instructions, qualification grants, financial rates, tax or monetary limits.",
+        "Keep drafts out of the effective SOP library and fail closed until owners approve and publish effective revisions."
+      ],
+      "existingEvidence": {
+        "classification": "DRAFT DOCUMENTS PREPARED",
+        "references": [
+          "docs/operations/sops/SOP-001-service-intake-and-job-control.md",
+          "docs/operations/sops/SOP-002-PDI-and-vehicle-condition-record.md",
+          "docs/operations/sops/SOP-003-routine-maintenance-and-inspection.md",
+          "docs/operations/sops/SOP-004-invoice-payment-receipt-and-vehicle-handover.md"
+        ],
+        "note": "Interim drafts prepared; qualified content review, management approval and controlled publication remain open."
+      },
+      "plannedImplementation": "Obtain technical, quality, service, sales and Finance review; map approved requirements to validation and role gates; publish only controlled signed revisions.",
+      "migration": "No operational data migration.",
+      "serverControl": "Draft content cannot be returned as effective instruction or satisfy a command gate. Only approved document lifecycle and effective grants can publish.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [
+        "CHECK-USER-042-SOP-DRAFTS-001"
+      ],
+      "configurationDependencies": [
+        "REV-008: actual owner-provided SOP register and document-control approver",
+        "REV-051/REV-052/REV-053/REV-054 review items"
+      ],
+      "evidence": [
+        "docs/operations/sops/",
+        "docs/architecture/sop-validation-mapping.md",
+        "docs/decisions/review-register.md"
+      ],
+      "owner": {
+        "role": "document-owner-pending",
+        "person": null
+      },
+      "decision": {
+        "status": "draft-for-review",
+        "reference": "user-request-2026-11-13-interim-sops"
+      },
+      "status": "in-progress",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/architecture/sop-validation-mapping.md",
+        "note": "Draft material remains non-effective until technically reviewed, approved and published."
+      },
+      "statusNote": "Four process drafts are prepared. No draft is effective or authorizes work. Named owners, exact sources, approvals, effective dates, staff acknowledgement and publication remain open."
+    },
+    {
+      "id": "USER-043",
+      "title": "Use role-aware PDI and routine maintenance checklists with reasoned task outcomes",
+      "kind": "user-direction",
+      "module": "M03",
+      "sourceRefs": [
+        "user-request-2026-11-13-pdi-maintenance-forms"
+      ],
+      "sourceText": [
+        {
+          "id": "user-request-2026-11-13-pdi-maintenance-forms",
+          "text": "Create technical-role forms/checklists for pre-delivery inspection and routine maintenance at 10,000 km or 1 year, whichever comes first, plus other vehicle milestones. Produce reports showing completed and uncompleted tasks with reasons/comments, which the Head, Team Lead or Supervisor can review, approve, take charge or pass on within the structure."
+        }
+      ],
+      "sopMapping": {
+        "references": [
+          "SOP-002",
+          "SOP-003",
+          "SOP-008",
+          "SOP-009"
+        ],
+        "status": "draft-template-only",
+        "evidence": [
+          "docs/operations/forms/pdi-and-maintenance-checklist-draft.md"
+        ],
+        "note": "10,000 km / 12 months is an intake reminder only; exact work content must use the vehicle-specific effective manufacturer schedule."
+      },
+      "acceptance": [
+        "Create a pre-delivery PDI checklist under a distinct delivery-preparation record that exists before the actual dated delivery and does not create an after-sales work order.",
+        "Create routine-maintenance checklist instances under the customer's actual work order, tied to a stable template revision and exact vehicle/model scope.",
+        "Keep any workshop-only PDI use optional pending owner scope review; do not make it a side effect of the required delivery PDI.",
+        "Use the 10,000 km or 12-month whichever-first condition as a review/intake reminder, not as a substitute for the applicable manufacturer schedule or identical service package.",
+        "Capture each task result as completed, failed, not checked, not completed, blocked or not applicable; require a reason/comment for non-complete outcomes.",
+        "Capture source procedure/revision, applicability, evidence/measurement and unit where prescribed, assignee, progress updates, reviewer decision and revision history.",
+        "Support task delegation and handoff with role grants and current assignment checks; no title or checklist edit grants authority.",
+        "Generate purpose-built PDI/maintenance reports with completed and open items, reasons, next steps, evidence, holds and distinct Supervisor/Team Lead/Head decisions.",
+        "Block completion/release when a required procedure, evidence, qualification, consent, task or sign-off is missing; unknown criteria remain visibly unknown."
+      ],
+      "existingEvidence": {
+        "classification": "PARTIAL IMPLEMENTATION",
+        "references": [
+          "docs/operations/forms/pdi-and-maintenance-checklist-draft.md",
+          "docs/operations/sops/SOP-002-PDI-and-vehicle-condition-record.md",
+          "docs/operations/sops/SOP-003-routine-maintenance-and-inspection.md",
+          "docs/architecture/work-order-checklists.md",
+          "docs/architecture/checklist-lifecycle.md",
+          "docs/verification/checklist-template-storage-2026-11-14.md"
+        ],
+        "note": "Exact-vehicle, staff-only availability and work-order checklist storage foundations are implemented and PostgreSQL-tested. Architecture review found that the current work-order-only model cannot represent pre-delivery PDI; a distinct delivery-preparation/PDI lifecycle is now the selected engineering direction but has not been implemented. No approved model schedule is active; template authoring, checklist commands, outcomes, review, reports, device verification and staff UAT remain open."
+      },
+      "plannedImplementation": "Implement delivery-preparation PDI and work-order routine-maintenance records with exact context-specific template approval, role-aware updates/review, approved-source binding, and distinct generated reports. Operational activation remains fail-closed until source schedules and policy are approved.",
+      "migration": "No backlog work history import in this slice; historical activity remains a separate reviewed batch.",
+      "serverControl": "Server validates site, assignment, current version, competence/authority, applicable effective procedure and distinct review/release commands.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [
+        "CHECK-USER-043-CHECKLISTS-001"
+      ],
+      "configurationDependencies": [
+        "REV-053: exact OEM schedules, model/variant applicability, required values/evidence and reviewer policy",
+        "REV-008: approved SOPs and document-control authority"
+      ],
+      "evidence": [
+        "docs/operations/forms/pdi-and-maintenance-checklist-draft.md",
+        "docs/operations/sops/SOP-002-PDI-and-vehicle-condition-record.md",
+        "docs/operations/sops/SOP-003-routine-maintenance-and-inspection.md",
+        "docs/architecture/work-order-checklists.md",
+        "docs/architecture/checklist-lifecycle.md",
+        "docs/architecture/candidates/checklist-lifecycle-cross-judge-2026-11-14.md",
+        "docs/verification/checklist-template-storage-2026-11-14.md",
+        "apps/api/src/work-order-checklists.ts",
+        "apps/web/src/work-order-checklists.tsx"
+      ],
+      "owner": {
+        "role": "technical-owner-pending",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-design",
+        "reference": "user-request-2026-11-13-pdi-maintenance-forms"
+      },
+      "status": "in-progress",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/architecture/sop-validation-mapping.md",
+        "note": "No generic schedule or technical pass/fail values may be activated without current vehicle-specific source and approval."
+      },
+      "statusNote": "Exact-model template eligibility, source scan/digest/target checks, active grant snapshot checks, work-order-scoped storage and the read-only panel are implemented. Full API suite, API typecheck, web tests and production build pass. No operational template is active; template authoring, instance/outcome/review commands, reports, device checks and staff UAT remain open."
+    },
+    {
+      "id": "USER-044",
+      "title": "Generate checked invoices and receipts after manual external payment verification",
+      "kind": "user-direction",
+      "module": "M10",
+      "sourceRefs": [
+        "user-request-2026-11-13-manual-invoice-payment-receipt-email"
+      ],
+      "sourceText": [
+        {
+          "id": "user-request-2026-11-13-manual-invoice-payment-receipt-email",
+          "text": "Keep payment manual for now. Generate an invoice; after staff verify it has been paid, generate a receipt, and send relevant documents to clients by email."
+        }
+      ],
+      "sopMapping": {
+        "references": [
+          "SOP-007",
+          "SOP-010"
+        ],
+        "status": "draft-only",
+        "evidence": [
+          "docs/operations/sops/SOP-004-invoice-payment-receipt-and-vehicle-handover.md"
+        ],
+        "note": "No rates, taxes, monetary limits, finance grants, email provider or legal invoice/receipt rules are presumed approved."
+      },
+      "acceptance": [
+        "Do not collect or process payments or add a payment gateway in this launch flow.",
+        "Prepare an itemized invoice only from approved completed work/parts and approved Finance configuration; require a separate authorized checker before issue.",
+        "Keep invoice draft/unissuable if client/payer, rates, taxes, currency, numbering, terms or required financial authority is unresolved.",
+        "Allow an authorized staff verifier to record externally confirmed payment, amount/currency, invoice allocation, evidence, reference, actor and verification time; keep partial/unmatched/reversed/disputed amounts distinct.",
+        "Generate a numbered receipt only after the corresponding amount is verified and allocated; do not treat a showroom guarantee or client screenshot as settled payment by default.",
+        "Send only approved invoice/receipt revisions to an explicitly verified client email through a configured approved sender; record delivery outcome and safe retry without duplicate financial artifacts.",
+        "Block vehicle departure until technical and inspection gates are clear and payment is reconciled or a valid authorized showroom guarantee is recorded.",
+        "Generate accessible, purpose-built invoice/receipt documents with client-appropriate information and immutable, reasoned correction history."
+      ],
+      "existingEvidence": {
+        "classification": "DRAFT FINANCE CONFIGURATION REGISTRY IMPLEMENTED; OPERATIONAL FINANCE WORKFLOW INCOMPLETE",
+        "references": [
+          "docs/operations/sops/SOP-004-invoice-payment-receipt-and-vehicle-handover.md",
+          "docs/architecture/work-order-lifecycle-and-booking.md",
+          "docs/decisions/review-register.md",
+          "docs/architecture/finance-configuration-drafts.md",
+          "apps/api/src/finance-configuration.ts",
+          "apps/api/migrations/073_finance_configuration_drafts.sql",
+          "docs/verification/finance-configuration-drafts-2026-11-14.md"
+        ],
+        "note": "Exact money, the draft-only Finance configuration registry API, and a proposal-only staff setup page are implemented. Current grants control read/edit affordances and are rechecked by the server; no effective policy, invoice/payment/receipt/email workflow or G5 financial clearance exists."
+      },
+      "plannedImplementation": "Build attributable actual labour and compatible fitted-part records before invoice preview. The proposal-only Finance setup is complete; the next preview must snapshot approved source revisions, identify missing rates/configuration without guessing amounts, and remain non-issuable. Then implement invoice checks/issue, manual external payment verification/allocation, receipts, client email and G5 only under approved policy and grants.",
+      "migration": "No financial data imported. Any future history import requires Finance mapping and reconciliation.",
+      "serverControl": "Command-specific grants for prepare/check/issue/verify/adjust/guarantee/handover; atomic audit/outbox; idempotency; site and payer scope; no payment authorization from role label.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [
+        "CHECK-USER-044-INVOICE-RECEIPT-001",
+        "CHECK-USER-044-FINANCE-DRAFT-UI-001",
+        "BUILD-USER-044-INVOICE-PREVIEW-001",
+        "CHECK-USER-044-INVOICE-PREVIEW-001"
+      ],
+      "configurationDependencies": [
+        "REV-012: Finance-approved rates/taxes/terms, role grants, sender/provider and client-email rules",
+        "REV-032: showroom guarantee authority and evidence"
+      ],
+      "evidence": [
+        "docs/operations/sops/SOP-004-invoice-payment-receipt-and-vehicle-handover.md",
+        "docs/architecture/work-order-lifecycle-and-booking.md",
+        "docs/decisions/review-register.md",
+        "apps/api/src/commercial-money.ts",
+        "apps/api/test/commercial-money.test.ts",
+        "docs/verification/checks/manual-finance-money-2026-11-14.md",
+        "docs/architecture/manual-finance.md",
+        "docs/architecture/finance-configuration-drafts.md",
+        "apps/api/src/finance-configuration.ts",
+        "apps/api/migrations/073_finance_configuration_drafts.sql",
+        "docs/verification/finance-configuration-drafts-2026-11-14.md",
+        "docs/architecture/finance-configuration-draft-ui.md",
+        "apps/web/src/pages/finance-setup.tsx",
+        "apps/web/src/api.ts",
+        "apps/api/src/app.ts",
+        "docs/verification/finance-configuration-draft-ui-2026-11-14.md",
+        "docs/architecture/manual-finance-design-plan.md"
+      ],
+      "owner": {
+        "role": "finance-owner-pending",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-design",
+        "reference": "user-request-2026-11-13-manual-invoice-payment-receipt-email"
+      },
+      "status": "in-progress",
+      "gapTreatment": {
+        "implementationMode": "new-system",
+        "decisionReference": "USER-001",
+        "referenceAudit": "docs/operations/sops/SOP-004-invoice-payment-receipt-and-vehicle-handover.md",
+        "note": "Manual external payment verification is selected; collecting/processing payments remains out of scope."
+      },
+      "statusNote": "Exact money, the non-effective Finance proposal registry and grant-aware setup page are implemented and verified. The current task-work model contains narrative findings/actions, not chargeable labour; compatible part catalogue, issue and traceability records are also not implemented. Invoice preview depends on those source records. Financial policy, grants, templates, recipient rules and sender configuration remain pending; the full manual Finance workflow is incomplete."
     }
   ],
   "sourceCoverage": [
@@ -15111,7 +16902,9 @@
       "sourceRef": "master-0013",
       "classification": "mapped-requirement",
       "requirementIds": [
-        "R-M-0013"
+        "R-M-0013",
+        "R-M-0037",
+        "R-M-0038"
       ],
       "reason": null
     },
@@ -15311,7 +17104,8 @@
       "sourceRef": "master-0039",
       "classification": "mapped-requirement",
       "requirementIds": [
-        "R-M-0039"
+        "R-M-0039",
+        "R-M-0038"
       ],
       "reason": null
     },
@@ -16055,7 +17849,8 @@
       "sourceRef": "master-0136",
       "classification": "mapped-requirement",
       "requirementIds": [
-        "R-M-0136"
+        "R-M-0136",
+        "R-M-0038"
       ],
       "reason": null
     },
@@ -17124,7 +18919,9 @@
         "R-M-0072",
         "R-M-0073",
         "R-M-0074",
-        "R-M-0075"
+        "R-M-0075",
+        "R-M-0037",
+        "R-M-0038"
       ],
       "reason": null
     },
@@ -17225,7 +19022,9 @@
       "sourceRef": "upgrade-0048",
       "classification": "mapped-requirement",
       "requirementIds": [
-        "BR-02"
+        "BR-02",
+        "R-M-0037",
+        "R-M-0038"
       ],
       "reason": null
     },
@@ -17234,7 +19033,9 @@
       "classification": "mapped-requirement",
       "requirementIds": [
         "R-M-0043",
-        "R-M-0064"
+        "R-M-0064",
+        "R-M-0037",
+        "R-M-0038"
       ],
       "reason": null
     },
@@ -17259,7 +19060,9 @@
       "sourceRef": "upgrade-0052",
       "classification": "mapped-requirement",
       "requirementIds": [
-        "R-M-0041"
+        "R-M-0041",
+        "R-M-0037",
+        "R-M-0038"
       ],
       "reason": null
     },
@@ -17812,27 +19615,38 @@
     }
   ],
   "counts": {
-    "requirements": 237,
+    "requirements": 256,
     "sourceBlocks": 350,
     "mappedSourceBlocks": 295,
     "contextBlocks": 55,
     "byModule": {
       "CONFIG": 10,
-      "CORE": 17,
-      "DELIVERY": 22,
-      "M01": 7,
-      "M02": 9,
-      "M03": 18,
+      "CORE": 18,
+      "CUSTOMER": 1,
+      "DELIVERY": 24,
+      "FINANCE": 1,
+      "M01": 9,
+      "M02": 10,
+      "M03": 19,
       "M04": 19,
       "M05": 12,
       "M06": 10,
       "M07": 17,
       "M08": 15,
       "M09": 7,
-      "M10": 24,
-      "OPERATIONS": 27,
-      "PLATFORMS": 10,
-      "SECURITY": 13
+      "M10": 25,
+      "OPERATIONS": 31,
+      "PLATFORMS": 12,
+      "SECURITY": 15,
+      "WORKSHOP": 1
+    },
+    "byStatus": {
+      "configuration-required": 10,
+      "deferred": 1,
+      "in-progress": 46,
+      "not-applicable": 1,
+      "planned": 192,
+      "verified": 6
     }
   },
   "launchRequirementIds": [
@@ -18050,7 +19864,17 @@
     "USER-021",
     "USER-022",
     "USER-023",
-    "USER-024"
+    "USER-024",
+    "USER-026",
+    "USER-027",
+    "USER-028",
+    "USER-029",
+    "USER-032",
+    "USER-033",
+    "USER-034",
+    "USER-041",
+    "USER-043",
+    "USER-044"
   ],
   "fullCompletionRequirementIds": [
     "AT-01",
@@ -18289,6 +20113,18 @@
     "USER-022",
     "USER-023",
     "USER-024",
-    "USER-025"
+    "USER-025",
+    "USER-026",
+    "USER-027",
+    "USER-028",
+    "USER-029",
+    "USER-032",
+    "USER-033",
+    "USER-034",
+    "USER-036",
+    "USER-041",
+    "USER-042",
+    "USER-043",
+    "USER-044"
   ]
 }

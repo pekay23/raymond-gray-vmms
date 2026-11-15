@@ -10,11 +10,13 @@ import {
   type GetObjectCommandOutput,
 } from '@aws-sdk/client-s3';
 import { fileTypeFromBuffer } from 'file-type';
+import type { PoolClient } from 'pg';
 import { z } from 'zod';
 import { ApiError } from './errors.js';
 import { type Database, scoped, type Scope, uuid } from './db.js';
 
 const MiB = 1024 * 1024;
+const maxClamAvResponseBytes = 4096;
 const uploadName = z.string().trim().min(1).max(255);
 const declaredMediaType = z.string().trim().toLowerCase().min(1).max(160);
 const uploadPurpose = z.enum([
@@ -50,6 +52,25 @@ const evidenceViewSchema = z.object({
 });
 export type EvidenceView = z.infer<typeof evidenceViewSchema>;
 export type EvidenceIntentInput = z.infer<typeof createEvidenceIntentSchema>;
+
+export const evidenceIntentStatusSchema = z.discriminatedUnion('state', [
+  z.object({
+    id: uuid, purpose: uploadPurpose, targetId: uuid.nullable(), displayName: z.string(), declaredMediaType: z.string(),
+    expectedBytes: z.number().int().positive(), expiresAt: z.iso.datetime({ offset: true }),
+    state: z.literal('issued'), evidenceId: z.null(), evidenceState: z.null(),
+  }).strict(),
+  z.object({
+    id: uuid, purpose: uploadPurpose, targetId: uuid.nullable(), displayName: z.string(), declaredMediaType: z.string(),
+    expectedBytes: z.number().int().positive(), expiresAt: z.iso.datetime({ offset: true }),
+    state: z.literal('expired'), evidenceId: z.null(), evidenceState: z.null(),
+  }).strict(),
+  z.object({
+    id: uuid, purpose: uploadPurpose, targetId: uuid.nullable(), displayName: z.string(), declaredMediaType: z.string(),
+    expectedBytes: z.number().int().positive(), expiresAt: z.iso.datetime({ offset: true }),
+    state: z.literal('completed'), evidenceId: uuid, evidenceState,
+  }).strict(),
+]);
+export type EvidenceIntentStatus = z.infer<typeof evidenceIntentStatusSchema>;
 
 export type StoredEvidenceIntent = {
   id: string;
@@ -97,6 +118,8 @@ export type EvidenceServices = {
   scanner: MalwareScanner | null;
   maxUploadBytes: number;
   allowedMediaTypes: ReadonlySet<string>;
+  /** Closes resources owned by this service bundle. Its process boundary owns the bundle. */
+  close(): Promise<void>;
 };
 
 export function createEvidenceServices(
@@ -111,19 +134,18 @@ export function createEvidenceServices(
   if (suppliedStorageValues !== 0 && suppliedStorageValues !== 4) {
     throw new Error(`VMMS evidence object-store configuration is incomplete for the ${role} role.`);
   }
-  let store: PrivateEvidenceStore | null = null;
+  let storageConfiguration: {
+    endpoint: string;
+    bucket: string;
+    accessKeyId: string;
+    secretAccessKey: string;
+  } | null = null;
   if (endpoint && bucket && accessKeyId && secretAccessKey) {
     const parsedEndpoint = z.url().parse(endpoint);
     if (!['http:', 'https:'].includes(new URL(parsedEndpoint).protocol)) {
       throw new Error('VMMS evidence object-store endpoint must use HTTP or HTTPS.');
     }
-    const client = new S3Client({
-      endpoint: parsedEndpoint,
-      region: env.VMMS_EVIDENCE_S3_REGION?.trim() || 'us-east-1',
-      forcePathStyle: true,
-      credentials: { accessKeyId, secretAccessKey },
-    });
-    store = new S3PrivateEvidenceStore(client, bucket);
+    storageConfiguration = { endpoint: parsedEndpoint, bucket, accessKeyId, secretAccessKey };
   }
 
   const host = env.VMMS_EVIDENCE_CLAMAV_HOST?.trim();
@@ -132,9 +154,12 @@ export function createEvidenceServices(
     throw new Error('VMMS evidence scanner host and port must be configured together.');
   }
   let scanner: MalwareScanner | null = null;
+  let scannerConfiguration: { host: string; port: number; timeoutMs: number } | null = null;
   if (host && portValue) {
     const port = z.coerce.number().int().min(1).max(65535).parse(portValue);
-    scanner = new ClamAvScanner(host, port, 60_000);
+    const timeoutMs = z.coerce.number().int().min(1000).max(60_000)
+      .parse(env.VMMS_EVIDENCE_CLAMAV_TIMEOUT_MS || 60_000);
+    scannerConfiguration = { host, port, timeoutMs };
   }
 
   const maxUploadBytes = z.coerce.number().int().min(1024).max(100 * MiB)
@@ -147,7 +172,28 @@ export function createEvidenceServices(
       throw new Error('VMMS_EVIDENCE_ALLOWED_MIME_TYPES contains an invalid media type.');
     }
   }
-  return { store, scanner, maxUploadBytes, allowedMediaTypes };
+
+  let client: S3Client | undefined;
+  let closePromise: Promise<void> | undefined;
+  const close = () => closePromise ??= Promise.resolve().then(() => {
+    client?.destroy();
+    client = undefined;
+  });
+  let store: PrivateEvidenceStore | null = null;
+  if (storageConfiguration) {
+    const createdClient = new S3Client({
+      endpoint: storageConfiguration.endpoint,
+      region: env.VMMS_EVIDENCE_S3_REGION?.trim() || 'us-east-1',
+      forcePathStyle: true,
+      credentials: { accessKeyId: storageConfiguration.accessKeyId, secretAccessKey: storageConfiguration.secretAccessKey },
+    });
+    client = createdClient;
+    store = new S3PrivateEvidenceStore(createdClient, storageConfiguration.bucket);
+  }
+  if (scannerConfiguration) {
+    scanner = new ClamAvScanner(scannerConfiguration.host, scannerConfiguration.port, scannerConfiguration.timeoutMs);
+  }
+  return { store, scanner, maxUploadBytes, allowedMediaTypes, close };
 }
 
 class S3PrivateEvidenceStore implements PrivateEvidenceStore {
@@ -204,30 +250,50 @@ class ClamAvScanner implements MalwareScanner {
     let version = 'unknown';
     let versionSocket: net.Socket | undefined;
     let scanSocket: net.Socket | undefined;
+    let inputReader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+    const timedOut = Symbol('clamav-scan-timeout');
+    let timeoutHandle: NodeJS.Timeout | undefined;
+    const deadline = new Promise<typeof timedOut>((resolve) => {
+      timeoutHandle = setTimeout(() => {
+        versionSocket?.destroy();
+        scanSocket?.destroy();
+        void inputReader?.cancel().catch(() => undefined);
+        resolve(timedOut);
+      }, this.timeoutMs);
+    });
+    const withinDeadline = async <T>(operation: Promise<T>): Promise<T> => {
+      const result = await Promise.race([operation, deadline]);
+      if (result === timedOut) throw new Error('ClamAV scan exceeded its total time limit.');
+      return result;
+    };
     try {
       versionSocket = net.createConnection({ host: this.host, port: this.port });
       versionSocket.setTimeout(this.timeoutMs);
-      await connectSocket(versionSocket);
-      await writeSocket(versionSocket, Buffer.from('zVERSION\0'));
-      version = await readNulTerminated(versionSocket);
+      await withinDeadline(connectSocket(versionSocket));
+      await withinDeadline(writeSocket(versionSocket, Buffer.from('zVERSION\0')));
+      version = await withinDeadline(readNulTerminated(versionSocket, this.timeoutMs));
       versionSocket.destroy();
       versionSocket = undefined;
 
       scanSocket = net.createConnection({ host: this.host, port: this.port });
       scanSocket.setTimeout(this.timeoutMs);
-      await connectSocket(scanSocket);
-      await writeSocket(scanSocket, Buffer.from('zINSTREAM\0'));
-      for await (const raw of Readable.fromWeb(input)) {
+      await withinDeadline(connectSocket(scanSocket));
+      await withinDeadline(writeSocket(scanSocket, Buffer.from('zINSTREAM\0')));
+      inputReader = input.getReader();
+      while (true) {
+        const next = await withinDeadline(inputReader.read());
+        if (next.done) break;
+        const raw = next.value;
         const chunk = Buffer.isBuffer(raw) ? raw : Buffer.from(raw as Uint8Array);
         if (chunk.length === 0) continue;
         digest.update(chunk);
         const size = Buffer.alloc(4);
         size.writeUInt32BE(chunk.length);
-        await writeSocket(scanSocket, size);
-        await writeSocket(scanSocket, chunk);
+        await withinDeadline(writeSocket(scanSocket, size));
+        await withinDeadline(writeSocket(scanSocket, chunk));
       }
-      await writeSocket(scanSocket, Buffer.alloc(4));
-      const response = await readNulTerminated(scanSocket);
+      await withinDeadline(writeSocket(scanSocket, Buffer.alloc(4)));
+      const response = await withinDeadline(readNulTerminated(scanSocket, this.timeoutMs));
       const sha256 = digest.digest('hex');
       if (/^stream:\s*OK$/i.test(response)) {
         return { kind: 'clean', sha256, engine: 'ClamAV', version: version.slice(0, 160), detailCode: 'clean', scannedAt };
@@ -241,6 +307,11 @@ class ClamAvScanner implements MalwareScanner {
       scanSocket?.destroy();
       return { kind: 'unavailable', engine: 'ClamAV', version: version.slice(0, 160), detailCode: 'scanner-unavailable', scannedAt };
     } finally {
+      clearTimeout(timeoutHandle);
+      if (inputReader) {
+        await inputReader.cancel().catch(() => undefined);
+        inputReader.releaseLock();
+      }
       versionSocket?.end();
       scanSocket?.end();
     }
@@ -251,12 +322,18 @@ function connectSocket(socket: net.Socket): Promise<void> {
   return new Promise((resolve, reject) => {
     const onConnect = () => { cleanup(); resolve(); };
     const onError = (error: Error) => { cleanup(); reject(error); };
+    const onTimeout = () => { cleanup(); reject(new Error('ClamAV connection timed out.')); };
+    const onClose = () => { cleanup(); reject(new Error('ClamAV closed before connecting.')); };
     const cleanup = () => {
       socket.off('connect', onConnect);
       socket.off('error', onError);
+      socket.off('timeout', onTimeout);
+      socket.off('close', onClose);
     };
     socket.once('connect', onConnect);
     socket.once('error', onError);
+    socket.once('timeout', onTimeout);
+    socket.once('close', onClose);
   });
 }
 
@@ -264,11 +341,17 @@ function writeSocket(socket: net.Socket, bytes: Buffer): Promise<void> {
   return new Promise((resolve, reject) => {
     const onError = (error: Error) => { cleanup(); reject(error); };
     const onDrain = () => { cleanup(); resolve(); };
+    const onTimeout = () => { cleanup(); reject(new Error('ClamAV write timed out.')); };
+    const onClose = () => { cleanup(); reject(new Error('ClamAV closed while writing.')); };
     const cleanup = () => {
       socket.off('error', onError);
       socket.off('drain', onDrain);
+      socket.off('timeout', onTimeout);
+      socket.off('close', onClose);
     };
     socket.once('error', onError);
+    socket.once('timeout', onTimeout);
+    socket.once('close', onClose);
     if (socket.write(bytes)) {
       cleanup();
       resolve();
@@ -278,29 +361,44 @@ function writeSocket(socket: net.Socket, bytes: Buffer): Promise<void> {
   });
 }
 
-function readNulTerminated(socket: net.Socket): Promise<string> {
+function readNulTerminated(socket: net.Socket, timeoutMs: number): Promise<string> {
   return new Promise((resolve, reject) => {
     let data = Buffer.alloc(0);
     const onData = (chunk: Buffer) => {
+      if (data.length + chunk.length > maxClamAvResponseBytes + 1) {
+        cleanup();
+        reject(new Error('ClamAV response exceeded the protocol limit.'));
+        return;
+      }
       data = Buffer.concat([data, chunk]);
       const end = data.indexOf(0);
       if (end < 0) return;
+      if (end > maxClamAvResponseBytes) {
+        cleanup();
+        reject(new Error('ClamAV response exceeded the protocol limit.'));
+        return;
+      }
       cleanup();
       resolve(data.subarray(0, end).toString('utf8'));
     };
     const onError = (error: Error) => { cleanup(); reject(error); };
     const onTimeout = () => { cleanup(); reject(new Error('ClamAV response timed out.')); };
     const onEnd = () => { cleanup(); reject(new Error('ClamAV closed the connection before completing its response.')); };
+    const onClose = () => { cleanup(); reject(new Error('ClamAV closed the connection before completing its response.')); };
+    const deadline = setTimeout(onTimeout, timeoutMs);
     const cleanup = () => {
+      clearTimeout(deadline);
       socket.off('data', onData);
       socket.off('error', onError);
       socket.off('timeout', onTimeout);
       socket.off('end', onEnd);
+      socket.off('close', onClose);
     };
     socket.on('data', onData);
     socket.once('error', onError);
     socket.once('timeout', onTimeout);
     socket.once('end', onEnd);
+    socket.once('close', onClose);
   });
 }
 
@@ -311,44 +409,56 @@ export async function createEvidenceIntent(
   input: EvidenceIntentInput,
   services: EvidenceServices,
 ): Promise<StoredEvidenceIntent> {
+  return scoped(pool, scope, async client =>
+    (await createEvidenceIntentInTransaction(client, scope, commandId, input, services)).intent,
+  );
+}
+
+export async function createEvidenceIntentInTransaction(
+  client: PoolClient,
+  scope: Scope,
+  commandId: string,
+  input: EvidenceIntentInput,
+  services: EvidenceServices,
+): Promise<{ intent: StoredEvidenceIntent; created: boolean }> {
   if (!services.store) throw new ApiError(503, 'EVIDENCE_STORAGE_UNAVAILABLE', 'Evidence storage is not configured.');
   if (input.expectedBytes > services.maxUploadBytes) throw new ApiError(413, 'EVIDENCE_TOO_LARGE', 'The selected file exceeds the configured upload limit.');
   if (!services.allowedMediaTypes.has(input.declaredMediaType)) throw new ApiError(415, 'EVIDENCE_TYPE_NOT_ALLOWED', 'This file type is not enabled for evidence uploads.');
-  return scoped(pool, scope, async (client) => {
-    const values = [randomUUID(), scope.organisationId, scope.siteId, scope.actorId, commandId, input.purpose,
-      input.targetId ?? null, input.displayName, input.declaredMediaType, input.expectedBytes];
-    const inserted = await client.query(`
+  const values = [randomUUID(), scope.organisationId, scope.siteId, scope.actorId, commandId, input.purpose,
+    input.targetId ?? null, input.displayName, input.declaredMediaType, input.expectedBytes];
+  const inserted = await client.query(`
       INSERT INTO evidence_upload_intents (
         id, organisation_id, site_id, created_by, command_id, purpose_kind, target_id,
         display_name, declared_media_type, expected_bytes, expires_at
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,now()+interval '20 minutes')
       ON CONFLICT (organisation_id,site_id,created_by,command_id) DO NOTHING
       RETURNING id,expires_at,expected_bytes,display_name,declared_media_type,state`, values);
-    let row = inserted.rows[0];
-    if (!row) {
-      const prior = await client.query(`
+  let row = inserted.rows[0];
+  const created = Boolean(row);
+  if (!row) {
+    const prior = await client.query(`
         SELECT id,expires_at,expected_bytes,display_name,declared_media_type,state,
                purpose_kind,target_id
         FROM evidence_upload_intents
         WHERE organisation_id=$1 AND site_id=$2 AND created_by=$3 AND command_id=$4
         `, [scope.organisationId, scope.siteId, scope.actorId, commandId]);
-      row = prior.rows[0];
-      if (!row) throw new ApiError(409, 'EVIDENCE_INTENT_CONFLICT', 'The upload request could not be resumed. Start a new upload.');
-      const same = row.expected_bytes === input.expectedBytes && row.display_name === input.displayName
-        && row.declared_media_type === input.declaredMediaType && row.purpose_kind === input.purpose
-        && row.target_id === (input.targetId ?? null);
-      if (!same) throw new ApiError(409, 'EVIDENCE_INTENT_CONFLICT', 'This upload command was already used with different file details.');
-    }
-    return {
-      id: uuid.parse(row.id),
-      expiresAt: z.iso.datetime({ offset: true }).parse(new Date(row.expires_at).toISOString()),
-      maxBytes: services.maxUploadBytes,
-      expectedBytes: Number(row.expected_bytes),
-      displayName: z.string().parse(row.display_name),
-      declaredMediaType: z.string().parse(row.declared_media_type),
-      state: z.enum(['issued','completed']).parse(row.state),
-    };
-  });
+    row = prior.rows[0];
+    if (!row) throw new ApiError(409, 'EVIDENCE_INTENT_CONFLICT', 'The upload request could not be resumed. Start a new upload.');
+    const same = row.expected_bytes === input.expectedBytes && row.display_name === input.displayName
+      && row.declared_media_type === input.declaredMediaType && row.purpose_kind === input.purpose
+      && row.target_id === (input.targetId ?? null);
+    if (!same) throw new ApiError(409, 'EVIDENCE_INTENT_CONFLICT', 'This upload command was already used with different file details.');
+  }
+  const intent = {
+    id: uuid.parse(row.id),
+    expiresAt: z.iso.datetime({ offset: true }).parse(new Date(row.expires_at).toISOString()),
+    maxBytes: services.maxUploadBytes,
+    expectedBytes: Number(row.expected_bytes),
+    displayName: z.string().parse(row.display_name),
+    declaredMediaType: z.string().parse(row.declared_media_type),
+    state: z.enum(['issued','completed']).parse(row.state),
+  };
+  return { intent, created };
 }
 
 async function readIntentForUpload(pool: Database, scope: Scope, intentId: string): Promise<StoredEvidenceIntent> {
@@ -422,7 +532,7 @@ export async function uploadEvidence(
   }
 
   const evidenceId = randomUUID();
-  const quarantineKey = `quarantine/${scope.organisationId}/${scope.siteId}/${evidenceId}`;
+  const quarantineKey = `quarantine/${evidenceId}`;
   const digest = createHash('sha256');
   let sizeBytes = 0;
   const metered = Readable.from((async function* () {
@@ -465,10 +575,55 @@ export async function readEvidence(pool: Database, scope: Scope, evidenceId: str
         WHERE a.organisation_id=e.organisation_id AND a.site_id=e.site_id AND a.evidence_id=e.id
         ORDER BY a.attempt_no DESC LIMIT 1
       ) latest ON true
-      WHERE e.id=$1 AND e.organisation_id=$2 AND e.site_id=$3 AND e.upload_intent_id IS NOT NULL`,
-      [evidenceId, scope.organisationId, scope.siteId]);
+      WHERE e.id=$1 AND e.organisation_id=$2 AND e.site_id=$3 AND e.upload_intent_id IS NOT NULL
+        AND (e.purpose_kind <> 'work-order' OR e.created_by=$4 OR EXISTS (
+          SELECT 1 FROM work_order_evidence_links l
+          WHERE l.organisation_id=e.organisation_id AND l.site_id=e.site_id AND l.evidence_id=e.id
+        ) OR EXISTS (
+          SELECT 1 FROM public.work_order_task_evidence_links task_link
+          WHERE task_link.organisation_id=e.organisation_id AND task_link.site_id=e.site_id
+            AND task_link.evidence_id=e.id
+        ))
+        AND (e.purpose_kind <> 'procedure-reference' OR EXISTS (
+          SELECT 1 FROM public.controlled_document_revisions r
+          WHERE r.organisation_id=e.organisation_id AND r.site_id=e.site_id AND r.evidence_id=e.id
+            AND r.status='effective' AND r.effective_from<=transaction_timestamp()
+            AND (r.effective_until IS NULL OR transaction_timestamp()<r.effective_until)
+            AND r.distribution='all-site-staff'
+        ))`,
+      [evidenceId, scope.organisationId, scope.siteId, scope.actorId]);
     if (!result.rowCount) throw new ApiError(404, 'EVIDENCE_NOT_FOUND', 'The evidence record was not found.');
     return evidenceViewSchema.parse(result.rows[0]);
+  });
+}
+
+export async function readEvidenceIntent(pool: Database, scope: Scope, intentId: string): Promise<EvidenceIntentStatus> {
+  return scoped(pool, scope, async (client) => {
+    const found = await client.query(`
+      SELECT i.id,i.purpose_kind AS purpose,i.target_id AS "targetId",i.display_name AS "displayName",
+             i.declared_media_type AS "declaredMediaType",i.expected_bytes AS "expectedBytes",
+             i.expires_at AS "expiresAt",i.state,e.id AS "evidenceId",e.scan_state AS "evidenceState"
+      FROM evidence_upload_intents i
+      LEFT JOIN evidence_records e
+        ON e.organisation_id=i.organisation_id AND e.site_id=i.site_id AND e.upload_intent_id=i.id
+      WHERE i.id=$1 AND i.organisation_id=$2 AND i.site_id=$3 AND i.created_by=$4`,
+    [intentId, scope.organisationId, scope.siteId, scope.actorId]);
+    const row = found.rows[0];
+    if (!row) throw new ApiError(404, 'EVIDENCE_INTENT_NOT_FOUND', 'The upload request was not found.');
+    const stored = z.object({
+      id: uuid, purpose: uploadPurpose, targetId: uuid.nullable(), displayName: z.string(), declaredMediaType: z.string(),
+      expectedBytes: z.coerce.number().int().positive(), expiresAt: z.union([z.date(), z.iso.datetime({ offset: true })]),
+      state: z.enum(['issued', 'completed', 'expired']), evidenceId: uuid.nullable(), evidenceState: evidenceState.nullable(),
+    }).parse(row);
+    const expiresAt = stored.expiresAt instanceof Date ? stored.expiresAt.toISOString() : stored.expiresAt;
+    if (stored.state === 'completed') {
+      if (!stored.evidenceId || !stored.evidenceState) throw new Error('A completed evidence intent is missing its evidence record.');
+      return evidenceIntentStatusSchema.parse({ ...stored, expiresAt, state: 'completed', evidenceId: stored.evidenceId, evidenceState: stored.evidenceState });
+    }
+    if (stored.state === 'expired' || Date.parse(expiresAt) <= Date.now()) {
+      return evidenceIntentStatusSchema.parse({ ...stored, expiresAt, state: 'expired', evidenceId: null, evidenceState: null });
+    }
+    return evidenceIntentStatusSchema.parse({ ...stored, expiresAt, state: 'issued', evidenceId: null, evidenceState: null });
   });
 }
 
@@ -493,6 +648,21 @@ export async function beginEvidenceDownload(
       WHERE e.id=$1 AND e.organisation_id=$2 AND e.site_id=$3 AND e.upload_intent_id IS NOT NULL
         AND e.scan_state='accepted' AND e.accepted_key IS NOT NULL
         AND latest.verdict='clean' AND latest.scanned_sha256=e.sha256
+        AND (e.purpose_kind <> 'work-order' OR EXISTS (
+          SELECT 1 FROM work_order_evidence_links l
+          WHERE l.organisation_id=e.organisation_id AND l.site_id=e.site_id AND l.evidence_id=e.id
+        ) OR EXISTS (
+          SELECT 1 FROM public.work_order_task_evidence_links task_link
+          WHERE task_link.organisation_id=e.organisation_id AND task_link.site_id=e.site_id
+            AND task_link.evidence_id=e.id
+        ))
+        AND (e.purpose_kind <> 'procedure-reference' OR EXISTS (
+          SELECT 1 FROM public.controlled_document_revisions r
+          WHERE r.organisation_id=e.organisation_id AND r.site_id=e.site_id AND r.evidence_id=e.id
+            AND r.status='effective' AND r.effective_from<=transaction_timestamp()
+            AND (r.effective_until IS NULL OR transaction_timestamp()<r.effective_until)
+            AND r.distribution='all-site-staff'
+        ))
       `, [evidenceId, scope.organisationId, scope.siteId]);
     if (!result.rowCount) throw new ApiError(404, 'EVIDENCE_NOT_FOUND', 'The evidence record was not found.');
     const row = result.rows[0] as Record<string, unknown>;
@@ -574,21 +744,53 @@ export async function processNextEvidenceScanJob(pool: Database, services: Evide
   return true;
 }
 
-export async function runEvidenceWorker(pool: Database, services: EvidenceServices, signal: AbortSignal): Promise<void> {
-  while (!signal.aborted) {
-    try {
-      const processed = await processNextEvidenceScanJob(pool, services);
-      if (!processed) await delay(1000, signal);
-    } catch {
-      await delay(3000, signal);
+export type EvidenceWorkerLoopError = {
+  event: 'evidence.scan-worker.loop-failed';
+  retryInMs: number;
+};
+
+export type EvidenceWorkerLoopOptions = {
+  idleDelayMs?: number;
+  errorDelayMs?: number;
+  onError?: (event: EvidenceWorkerLoopError) => void;
+};
+
+export async function runEvidenceWorker(
+  pool: Database,
+  services: EvidenceServices,
+  signal: AbortSignal,
+  options: EvidenceWorkerLoopOptions = {},
+): Promise<void> {
+  const idleDelayMs = options.idleDelayMs ?? 1000;
+  const errorDelayMs = options.errorDelayMs ?? 3000;
+  const onError = options.onError ?? ((event) => console.error(JSON.stringify(event)));
+
+  try {
+    while (!signal.aborted) {
+      try {
+        const processed = await processNextEvidenceScanJob(pool, services);
+        if (!processed) await delay(idleDelayMs, signal);
+      } catch {
+        onError({ event: 'evidence.scan-worker.loop-failed', retryInMs: errorDelayMs });
+        await delay(errorDelayMs, signal);
+      }
     }
+  } finally {
+    await services.close();
   }
 }
 
 function delay(milliseconds: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
-    const timer = setTimeout(resolve, milliseconds);
-    signal.addEventListener('abort', () => { clearTimeout(timer); resolve(); }, { once: true });
+    if (signal.aborted) return resolve();
+    const cleanup = () => {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', onAbort);
+    };
+    const finish = () => { cleanup(); resolve(); };
+    const onAbort = () => finish();
+    const timer = setTimeout(finish, milliseconds);
+    signal.addEventListener('abort', onAbort, { once: true });
   });
 }
 

@@ -1,6 +1,6 @@
 # VMMS shared OIDC integration
 
-Status: implementation design, 8 November 2026. Local Keycloak is the development provider; production issuer, host, and client registration remain environment-specific.
+Status: implementation design with local VMMS sign-in verified 14 November 2026. Local Keycloak is the only provider tested end-to-end by VMMS. An unauthenticated production preflight verified issuer discovery and that Keycloak accepts the exact VMMS authorization callback while rejecting an unlisted redirect. Full production sign-in/callback/logout, VMMS API runtime and operational recovery remain unverified; see [preflight evidence](../verification/oidc-production-preflight-2026-11-14.md) and REV-056. Do not infer production readiness from redirect validation.
 
 ## Scope and boundaries
 
@@ -57,6 +57,7 @@ interface OidcLoginService {
 
 - Configured issuer is exact and HTTPS outside explicit local development. Discovery is from that issuer only; no request-controlled issuer, callback, token endpoint, or redirect URI.
 - `openid-client` performs protocol/token validation. Authorization Code + PKCE S256 is required; implicit and resource-owner password grants are not used.
+- The discovered client enables `openid-client` non-repudiation checks before code exchange. This verifies the ID-token signature against the configured issuer's JWKS; parsed claims alone are not identity proof.
 - Login state is high-entropy, stored as a hash, browser-bound, expires after five minutes, and is consumed atomically exactly once. Validate the matching browser cookie before consuming the transaction. The binding cookie uses Secure in production, HttpOnly, SameSite=Lax, callback-only path, and no Domain attribute.
 - A callback from another browser, invalid state, provider error, replay, expiry, issuer/audience/signature/nonce/PKCE failure, or unmapped/suspended local identity cannot create a VMMS session.
 - OIDC errors return a generic sign-in failure; do not echo authorization codes, state, tokens, provider error descriptions, or secrets into logs or response pages.
@@ -68,7 +69,7 @@ interface OidcLoginService {
 1. Type-check and unit-test state hashing, cookie naming/validation, callback construction, and issuer/subject mapping boundaries.
 2. API integration tests cover state replay/expiry, wrong browser cookie, nonce/PKCE validation failures, provider errors, unapproved/inactive local mapping, session rotation, CSRF logout, and unchanged site authorization.
 3. A real local Keycloak client and synthetic account prove the authorization-code path and exact VMMS callback through the local HTTP smoke harness. A separate Playwright virtual-authenticator check proves the provider's passkey enrollment and passwordless authorization-code path; neither is a production or physical-device check.
-4. Keep wrong issuer, audience, signature, token time, missing state, code replay, wrong PKCE, redirect mismatch, and provider outage denial cases in the tracked security gate; do not claim all are covered until test evidence exists.
+4. The local security gate is recorded in `docs/verification/checks/oidc-protocol-denials-2026-11-09.md`: wrong issuer, audience, signature, expiry, state, code replay, nonce, PKCE, redirect mismatch, and provider outage are denied; callback state replay, cross-browser binding, local account disablement, local logout revocation, and site authorization are also tested. Google linking, passkey user verification, and production revocation/configuration remain open.
 5. Production remains blocked pending HTTPS client registration, secret management, Google broker, physical-device passkey coverage, central logout, deployment/recovery, and owner review.
 
 ## Design synthesis

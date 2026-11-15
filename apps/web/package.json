@@ -4,12 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "assets:generate": "node scripts/build-images.mjs",
+    "assets:generate": "node scripts/build-images.mjs && node scripts/build-brand-images.mjs",
     "predev": "npm run assets:generate",
     "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "test": "node --import tsx --test src/formatting.test.ts src/vin-scanner.test.ts src/drafts.test.ts src/worker.test.ts src/api.test.ts src/workspace-navigation.test.ts",
+    "verify:workspace-navigation": "node ../../scripts/workspace-navigation-browser.mjs",
     "prebuild": "npm run assets:generate",
     "verify:responsive": "node scripts/verify-responsive.mjs",
     "build": "tsc --noEmit && vite build",
+    "cloudflare:dev": "vite --config vite.cloudflare.config.ts --host 127.0.0.1",
+    "cloudflare:build": "npm run assets:generate && vite build --config vite.cloudflare.config.ts",
+    "cloudflare:preview": "vite preview --config vite.cloudflare.config.ts --host 127.0.0.1",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -23,6 +28,8 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@cloudflare/vite-plugin": "^1.68.0",
     "@tailwindcss/vite": "4.3.5",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
@@ -31,6 +38,7 @@
     "sharp": "0.35.5",
     "tailwindcss": "4.3.5",
     "typescript": "7.0.2",
-    "vite": "8.3.6"
+    "vite": "8.3.6",
+    "wrangler": "^4.160.0"
   }
 }

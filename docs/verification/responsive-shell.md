@@ -1,17 +1,17 @@
 # Responsive shell verification
 
-Date: 2026-11-08  
+Date: 2026-11-08\
 Status: partial evidence for F-008; not a completion record.
 
 ## Scope
 
 Inspected the public sign-in page and authenticated work-order workspace at `http://127.0.0.1:5173/` in installed Microsoft Edge. The repeatable suites are `npm run verify:responsive` (public sign-in) and `node scripts/browser-smoke.mjs` (local OIDC login and authenticated workflow; keep local VMMS, Keycloak and PostgreSQL running). The authenticated harness refuses non-loopback app, identity-provider, or database URLs before test credentials are entered or records are written.
 
-The public suite checks 15 viewport/orientation combinations—280×653, 320×568, 390×844, 540×720, 568×320, 720×540, 768×1024, 820×1180, 844×390, 1024×768, 1180×820, 1440×1000, 1920×1080, 2560×1080, and 2560×1440—and 200%/400% native browser zoom. The authenticated suite checks 12 work-order viewports: compact/small/standard phones, folded and unfolded device ratios, landscape phone, portrait and landscape tablets, desktop, wide desktop and ultrawide desktop.
+The public suite checks 15 viewport/orientation combinations—280×653, 320×568, 390×844, 540×720, 568×320, 720×540, 768×1024, 820×1180, 844×390, 1024×768, 1180×820, 1440×1000, 1920×1080, 2560×1080, and 2560×1440—and native 200%/400% browser zoom for both staff and owner sign-in. The authenticated suite checks 16 work-order-related viewports: compact/small/standard phones, folded and unfolded device ratios, landscape phone, portrait and landscape tablets, widths around the sidebar breakpoint, desktop, wide desktop and ultrawide desktop. A separate native zoom run now verifies a real staff VMMS session before testing the queue, work-order detail, intake and open diagnostic form at 200%/400%. The current empty owner shell still uses a mocked session.
 
 ## Results
 
-- All 15 viewport checks and both zoom checks passed. No horizontal document overflow, out-of-bounds logo/main/controls, or uncaught page errors were reported.
+- All 15 viewport checks and four public-entry zoom checks passed. The 51-check browser smoke reported no uncaught page errors. It verified accessible names, semantic text bounds, no horizontal document overflow, in-bounds controls, and staff 200%/400% zoom on queue, work-order detail, intake and diagnostic form. The empty owner shell zoom remains mocked and is not owner-dashboard evidence.
 - The suite verified image `object-fit: contain`, selected responsive AVIF/WebP variants present in the generated manifest, and checked that the logo retained its source aspect ratio without clipping.
 - The sign-in action remained visible and measured 44 CSS pixels high, with no clipped button text.
 - At 320×568, the document remained vertically scrollable; it did not require horizontal scrolling.

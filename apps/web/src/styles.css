@@ -69,6 +69,9 @@
 @layer components {
   .button {
     @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold;
+    transition-property: color, background-color, border-color, box-shadow, transform;
+    transition-duration: 140ms;
+    transition-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
   }
   .button-primary {
     @apply border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-800;
@@ -99,12 +102,24 @@
   }
   .nav-link {
     @apply flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-zinc-400 hover:bg-zinc-900 hover:text-white;
+    transition-property: color, background-color, box-shadow, transform;
+    transition-duration: 140ms;
+    transition-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
   }
   .nav-link-active {
     @apply bg-zinc-800 text-white;
   }
   .error-box {
     @apply flex gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800;
+  }
+  .toast {
+    opacity: 0;
+    transform: translateY(-0.375rem);
+    transition: opacity 150ms cubic-bezier(0.2, 0.7, 0.2, 1), transform 150ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .toast[data-visible="true"] {
+    opacity: 1;
+    transform: translateY(0);
   }
   .field-hint {
     @apply mt-1.5 text-xs leading-5 text-zinc-500;
@@ -124,11 +139,79 @@
   .sign-in-visual {
     min-height: max(25rem, 100vw);
   }
+  html[data-vmms-compact-viewport="true"] .sign-in-layout {
+    width: var(--vmms-visual-viewport-width) !important;
+    min-width: 0 !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  html[data-vmms-compact-viewport="true"] .sign-in-visual {
+    min-width: 0 !important;
+    min-height: 14rem !important;
+    padding: 1rem !important;
+  }
+  html[data-vmms-compact-viewport="true"] .sign-in-visual > div:not(.absolute) {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+  }
+  html[data-vmms-compact-viewport="true"] .sign-in-visual h1 {
+    max-width: 100% !important;
+    font-size: 1.75rem !important;
+    line-height: 1.2 !important;
+    overflow-wrap: anywhere !important;
+  }
+  html[data-vmms-compact-viewport="true"] .sign-in-layout > main {
+    min-width: 0 !important;
+    padding-inline: 1rem !important;
+  }
+  html[data-vmms-compact-viewport="true"] .sign-in-layout > main > * {
+    min-width: 0 !important;
+  }
+  html[data-vmms-compact-viewport="true"] #workspace-shell {
+    display: block !important;
+  }
+  html[data-vmms-compact-viewport="true"] #workspace-navigation {
+    position: sticky !important;
+    top: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0.75rem 1rem !important;
+  }
+  html[data-vmms-compact-viewport="true"] #workspace-navigation > nav {
+    display: flex !important;
+    flex: initial !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    margin-top: 0 !important;
+    overflow: visible !important;
+  }
+  html[data-vmms-zoom-compact-viewport="true"] #workspace-navigation {
+    position: static !important;
+    top: auto !important;
+  }
   .sign-in-picture {
     @apply absolute inset-0 -z-20 block;
   }
   .sign-in-picture img {
     @apply size-full object-contain object-bottom;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
@@ -150,20 +233,126 @@
   }
 }
 
+@page {
+  margin: 12mm;
+}
+
 @media print {
-  aside,
-  nav,
-  button,
-  footer,
+  html,
+  body {
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+    color: #111 !important;
+    font-size: 10pt;
+  }
+  body * {
+    visibility: hidden !important;
+  }
+  .work-order-print,
+  .work-order-print * {
+    visibility: visible !important;
+  }
+  .overview-report,
+  .overview-report * {
+    visibility: visible !important;
+  }
+  .task-progress-report,
+  .task-progress-report * {
+    visibility: visible !important;
+  }
+  .work-order-print-page {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .work-order-print {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    color: #111 !important;
+  }
+  .overview-report-page {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .overview-report {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    color: #111 !important;
+  }
+  .task-progress-report-page {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .task-progress-report {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    color: #111 !important;
+  }
+  .overview-report-section { break-inside: avoid-page; }
+  .overview-report h2, .overview-report dl > div { break-inside: avoid; }
+  .task-progress-report-section { margin-top: 7mm !important; break-inside: auto; }
+  .task-progress-report-section h2,
+  .task-progress-report dl > div { break-inside: avoid; }
+  .work-order-print-toolbar,
+  .overview-report-toolbar,
+  .task-progress-report-toolbar,
   .skip-link {
     display: none !important;
   }
-  main {
-    max-width: none !important;
-    padding: 0 !important;
+  .work-order-print-header {
+    break-after: avoid-page;
   }
-  .panel {
+  .print-section {
+    margin-top: 7mm !important;
+    break-inside: auto;
+  }
+  .keep-together,
+  .print-section h2,
+  .work-order-print dl > div {
     break-inside: avoid;
-    box-shadow: none;
+  }
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
   }
 }

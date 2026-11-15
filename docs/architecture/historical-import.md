@@ -1,6 +1,12 @@
 # Historical maintenance import
 
-The old portal contains no real records to migrate, according to the owner. A separate backlog of maintenance activities and information does exist. The owner wants to import it later, after listing the available information about clients, their customers, work performed and completion statuses. Build the import controls independently of that data collection.
+The old portal contains no real records to migrate, according to the owner. A separate backlog of maintenance activities and information does exist. The owner says the supplied service-advisor workbook is all backlog data currently available; any additional files will be provided later. It is inventoried and extracted into restricted local staging. A separate showroom delivery/sales report is also available, but it contains no maintenance history. It is staged as a separate historical sales source and must not be converted to work orders. Build the import controls now, but defer operational promotion until mappings, batch review and authorization are complete.
+
+The service-advisor workbook extraction is not a batch of VMMS jobs and must not enter the operational ledger. Client/owner/visit-contact roles, powertrain, source-status crosswalk, amounts, permission and completeness remain subject to review. `DATE RESOLVED`, technician labels, actions, warranty labels and costs remain source claims and cannot create live completion, release, authority, coverage, invoice or payment records. The exact extraction and row reconciliation are recorded in the [service-advisor workbook inventory](../discovery/service-advisor-backlog-inventory.md); the restricted raw staging artifact remains outside the repository.
+
+The monthly sales report has its own [source inventory](../discovery/monthly-sales-report-inventory.md) and private staging format. Raw claims may be stored in the local `vmms_import_staging` schema, which has no VMMS runtime grants or application routes. A customer name on a showroom delivery record is not automatically a current owner, future service payer, client account, or owner-portal grant. Delivery dates and chassis values that conflict with the report title or VMMS identity rules remain flagged. Do not promote these source claims until the owner resolves the review items and the exact batch is approved.
+
+The versioned template package in [`docs/import/historical/v1`](../import/historical/v1/README.md) defines the first CSV contract and a fictional example. It does not import records. The real source inventory, permission checks, status mappings, and owner approvals remain pending.
 
 ## Inventory before mapping
 

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "organisation": { "key": "raymond-gray-rehearsal", "name": "Raymond Gray role rehearsal" },
+  "site": { "key": "site-1", "code": "RHR", "name": "Role rehearsal service centre" },
+  "staff": [
+    { "key": "operator", "username": "vmms.operator.local", "displayName": "Synthetic VMMS Operator", "email": "vmms.operator@example.test", "roleCode": "vmms-operator", "reportsTo": null },
+    { "key": "head", "username": "vmms.head.local", "displayName": "Synthetic Head of Service Centre", "email": "vmms.head@example.test", "roleCode": "head-service-centre", "reportsTo": null },
+    { "key": "ev-lead", "username": "vmms.ev-lead.local", "displayName": "Synthetic EV Team Lead", "email": "vmms.ev-lead@example.test", "roleCode": "ev-team-lead", "reportsTo": "head" },
+    { "key": "ice-lead", "username": "vmms.ice-lead.local", "displayName": "Synthetic ICE Team Lead", "email": "vmms.ice-lead@example.test", "roleCode": "ice-team-lead", "reportsTo": "head" },
+    { "key": "supervisor", "username": "vmms.supervisor.local", "displayName": "Synthetic Supervisor", "email": "vmms.supervisor@example.test", "roleCode": "supervisor", "reportsTo": "ev-lead" },
+    { "key": "technician", "username": "vmms.technician.local", "displayName": "Synthetic Technician Engineer Trainee", "email": "vmms.technician@example.test", "roleCode": "technician-engineer-trainee", "reportsTo": "supervisor" },
+    { "key": "advisor", "username": "vmms.advisor.local", "displayName": "Synthetic Service Advisor", "email": "vmms.advisor@example.test", "roleCode": "service-advisor", "reportsTo": "head" },
+    { "key": "inspector", "username": "vmms.inspector.local", "displayName": "Synthetic Quality Inspector", "email": "vmms.inspector@example.test", "roleCode": "quality-inspector", "reportsTo": "head" },
+    { "key": "parts", "username": "vmms.parts.local", "displayName": "Synthetic Parts and Inventory", "email": "vmms.parts@example.test", "roleCode": "parts-inventory", "reportsTo": "head" },
+    { "key": "warranty", "username": "vmms.warranty.local", "displayName": "Synthetic Warranty Customer Support", "email": "vmms.warranty@example.test", "roleCode": "warranty-customer-support", "reportsTo": "head" },
+    { "key": "finance", "username": "vmms.finance.local", "displayName": "Synthetic Finance Billing", "email": "vmms.finance@example.test", "roleCode": "finance-billing", "reportsTo": "head" },
+    { "key": "records", "username": "vmms.records.local", "displayName": "Synthetic Compliance Records HR", "email": "vmms.records@example.test", "roleCode": "compliance-records-hr", "reportsTo": "head" },
+    { "key": "sales", "username": "vmms.sales.local", "displayName": "Synthetic Sales Representative", "email": "vmms.sales@example.test", "roleCode": "sales-representative", "reportsTo": null },
+    { "key": "pdi-observer", "username": "vmms.pdi.local", "displayName": "Synthetic PDI Observer", "email": "vmms.pdi@example.test", "roleCode": "pdi-observer", "reportsTo": null }
+  ],
+  "owner": { "key": "owner", "username": "vmms.owner.local", "displayName": "Synthetic Vehicle Owner", "email": "vmms.owner@example.invalid" }
+}

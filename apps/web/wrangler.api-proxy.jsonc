@@ -1,0 +1,26 @@
+# Cloudflare Worker for VMMS API Same-Origin Proxy
+# Deploy: wrangler deploy --config wrangler.api-proxy.jsonc --env production
+# Binds to: api.raymond-gray.org (or subdomain)
+
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "raymond-gray-vmms-api-proxy",
+  "main": "src/api-proxy.ts",
+  "compatibility_date": "2026-11-10",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "VMMS_API_ORIGIN": "https://vmms-api.fly.dev"
+  },
+  "env": {
+    "production": {
+      "vars": {
+        "VMMS_API_ORIGIN": "https://vmms-api.fly.dev"
+      }
+    },
+    "preview": {
+      "vars": {
+        "VMMS_API_ORIGIN": "https://vmms-api-preview.fly.dev"
+      }
+    }
+  }
+}

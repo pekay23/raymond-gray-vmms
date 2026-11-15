@@ -2,8 +2,10 @@ import {
   allowInsecureRequests,
   authorizationCodeGrant,
   buildAuthorizationUrl,
+  buildEndSessionUrl,
   calculatePKCECodeChallenge,
   discovery,
+  enableNonRepudiationChecks,
   randomPKCECodeVerifier,
   randomState,
   randomNonce,
@@ -11,7 +13,7 @@ import {
 import { z } from 'zod';
 import type { Config } from './config.js';
 
-const subjectClaims = z.object({ iss: z.string().url(), sub: z.string().min(1).max(255) });
+const subjectClaims = z.object({ iss: z.string().url(), sub: z.string().min(1).max(255), sid: z.string().min(1).max(255).optional(), iat: z.number().int().positive() });
 
 export type AuthorizationParameters = {
   state: string;
@@ -19,11 +21,17 @@ export type AuthorizationParameters = {
   codeVerifier: string;
 };
 
-export type VerifiedSubject = { issuer: string; subject: string };
+export type LogoutParameters = {
+  state: string;
+  postLogoutRedirectUri: string;
+};
+
+export type VerifiedSubject = { issuer: string; subject: string; sessionId?: string; issuedAt: number };
 
 export interface OidcProvider {
   createAuthorizationUrl(input: AuthorizationParameters): Promise<URL>;
   exchangeAuthorizationCode(input: AuthorizationParameters & { callbackUrl: URL }): Promise<VerifiedSubject>;
+  createLogoutUrl(input: LogoutParameters): Promise<URL>;
 }
 
 export class OidcClient implements OidcProvider {
@@ -59,7 +67,16 @@ export class OidcClient implements OidcProvider {
     });
     const claims = subjectClaims.parse(tokens.claims());
     if (claims.iss !== this.config.OIDC_ISSUER) throw new Error('The identity issuer did not match the configured issuer.');
-    return { issuer: claims.iss, subject: claims.sub };
+    return { issuer: claims.iss, subject: claims.sub, ...(claims.sid ? { sessionId: claims.sid } : {}), issuedAt: claims.iat };
+  }
+
+  async createLogoutUrl(input: LogoutParameters): Promise<URL> {
+    const client = await this.configuration();
+    return buildEndSessionUrl(client, {
+      client_id: this.config.OIDC_CLIENT_ID,
+      post_logout_redirect_uri: input.postLogoutRedirectUri,
+      state: input.state,
+    });
   }
 
   private async configuration() {
@@ -70,7 +87,10 @@ export class OidcClient implements OidcProvider {
         this.clientSecret,
         undefined,
         { execute: new URL(this.config.OIDC_ISSUER).protocol==='http:'?[allowInsecureRequests]:[] },
-      );
+      ).then((client) => {
+        enableNonRepudiationChecks(client);
+        return client;
+      });
       this.clientConfiguration = discoveryRequest;
       try {
         return await discoveryRequest;

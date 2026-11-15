@@ -15,6 +15,13 @@ backups/
 *.dump
 *.bak
 *.docx
+*.xlsx
+*.xls
+*.csv
+*.jsonl
+*.pem
+*.p12
+*.key
 test-results/
 playwright-report/
 dist/

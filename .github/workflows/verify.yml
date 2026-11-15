@@ -22,19 +22,19 @@ jobs:
       postgres:
         image: postgres:18-alpine
         env:
-          POSTGRES_DB: postgres
+          POSTGRES_DB: vmms
           POSTGRES_USER: vmms_owner
           POSTGRES_PASSWORD: vmms_local_development_only
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U vmms_owner -d postgres"
+          --health-cmd "pg_isready -U vmms_owner -d vmms"
           --health-interval 3s
           --health-timeout 3s
           --health-retries 20
     env:
-      MIGRATION_DATABASE_URL: postgres://vmms_owner:vmms_local_development_only@127.0.0.1:5432/postgres
-      DATABASE_URL: postgres://vmms_runtime:vmms_runtime_local_development_only@127.0.0.1:5432/postgres
+      MIGRATION_DATABASE_URL: postgres://vmms_owner:vmms_local_development_only@127.0.0.1:5432/vmms
+      DATABASE_URL: postgres://vmms_runtime:vmms_runtime_local_development_only@127.0.0.1:5432/vmms
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -47,6 +47,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Create vmms_runtime role in CI database
+        run: |
+          psql "postgres://vmms_owner:vmms_local_development_only@127.0.0.1:5432/vmms" -c "
+            CREATE ROLE vmms_runtime WITH LOGIN PASSWORD 'vmms_runtime_local_development_only';
+            GRANT USAGE ON SCHEMA public TO vmms_runtime;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO vmms_runtime;
+          "
       - name: Install locked dependencies
         run: npm ci
       - name: Verify traceability, types, builds and PostgreSQL integration

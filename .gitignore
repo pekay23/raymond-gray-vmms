@@ -1,22 +1,171 @@
+# =============================================================================
+# Dependencies & Build Outputs
+# =============================================================================
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+
+# =============================================================================
+# Environment & Secrets (never commit actual secrets)
+# =============================================================================
+.env
+.env.*
+!.env.example
+docs/operations/pending-report-*.md
+# Customer lists, source workbooks, and reference documents stay local until a
+# reviewed historical-import packet is prepared for a private destination.
+/*.xlsx
+/*.xls
+/*.pdf
+/*.docx
+
+# =============================================================================
+# Cloudflare / Wrangler Local Development
+# =============================================================================
+.wrangler/
+**/.wrangler/
+
+# =============================================================================
+# Language/Tool Caches
+# =============================================================================
+# Python
 .venv/
 __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
-node_modules/
-dist/
+*.egg-info/
+.pip-cache/
+
+# TypeScript/Node
+.eslintcache
+.stylelintcache
+
+# =============================================================================
+# Test Artifacts & Coverage
+# =============================================================================
 coverage/
 test-results/
 playwright-report/
-.env
-.env.*
-!.env.example
+.nyc_output/
+
+# =============================================================================
+# IDE & Editor
+# =============================================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# =============================================================================
+# Local Databases & Volumes
+# =============================================================================
 *.sqlite3
 *.sqlite3-*
-media/
-staticfiles/
+*.sqlite
+*.db
+
+# =============================================================================
+# Code Analysis / Indexing (local only)
+# =============================================================================
 .codegraph/
+.graphify/
 graphify-out/
-*.tsbuildinfo
+.kilo/
+
+# =============================================================================
+# Log Files
+# =============================================================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =============================================================================
+# Package Manager Lockfiles (non-authoritative)
+# =============================================================================
+pnpm-lock.yaml
+
+# =============================================================================
+# Generated Assets (keep source images in public/ and assets/)
+# =============================================================================
+apps/web/public/brand/optimized/
+apps/web/public/images/workshop/*.webp
+apps/web/public/images/workshop/*.avif
+apps/web/src/generated/
+
+# =============================================================================
+# Verification Artifacts (screenshots, browser traces, local check outputs)
+# =============================================================================
+docs/verification/browser*/
+docs/verification/checks/
+docs/verification/*-browser*/
+docs/verification/*-evidence-*/
+docs/verification/*-queue-*/
+docs/verification/*-work-plan*/
+docs/verification/*-service-report-*/
+docs/verification/*-work-order-*/
+docs/verification/finance-configuration-draft-ui*/
+docs/verification/sales-deliveries-browser*/
+docs/verification/task-activity-*/
+docs/verification/task-labor*/
+docs/verification/task-progress-report*/
+docs/verification/vehicle-learning-browser*/
+docs/verification/workflow-context*/
+docs/verification/evidence-backup-verifier.md
+docs/verification/evidence-browser-recovery-design.md
+docs/verification/passkey-local-check-*.log
+!docs/verification/README.md
+!docs/verification/tooling.md
+!docs/verification/responsive-shell.md
+!docs/verification/shared-passkey-local-*.md
+!docs/verification/shared-auth-*.md
+!docs/verification/oidc-local-*.md
+!docs/verification/git-checkout-*.md
+!docs/verification/clean-workspace-*.md
+!docs/verification/traceability-review.md
+
+# =============================================================================
+# Documentation Build Outputs
+# =============================================================================
+docs/.vitepress/dist/
+docs/.vuepress/dist/
+*.html
+
+# =============================================================================
+# Large Data Files
+# =============================================================================
+*.xlsx
+*.xls
+*.csv
+*.parquet
+*.arrow
+
+# =============================================================================
+# OS / Misc
+# =============================================================================
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# =============================================================================
+# Specific Large Binary Sources (referenced in docs/sources/)
+# =============================================================================
 /Raymond_Gray_VMMS_Master_Functional_Specification.docx
 /Raymond_Gray_VMMS_Upgrade_Implementation_Prompt.docx
+
+# =============================================================================
+# Temporary / Scratch Files
+# =============================================================================
+*.tmp
+*.temp
+.tmp/
+temp/
+tmp/

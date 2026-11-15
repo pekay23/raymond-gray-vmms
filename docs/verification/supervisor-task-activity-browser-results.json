@@ -1,0 +1,28 @@
+{
+  "recordedAt": "2026-11-13T07:26:14.500Z",
+  "result": "VERIFIED",
+  "environment": "Chromium against the local VMMS API and a disposable synthetic PostgreSQL database",
+  "checks": [
+    {
+      "name": "Supervisor sees saved progress from an active direct-report Technician and has no completion or release controls",
+      "result": "VERIFIED",
+      "supervisorFeedItems": 1,
+      "unauthorisedTechnicianActivityReadStatus": 403
+    },
+    {
+      "name": "Technician assigned-task page has no horizontal overflow",
+      "result": "VERIFIED",
+      "viewportWidths": [320, 390, 768, 1024, 1440]
+    },
+    {
+      "name": "Work-plan, Supervisor allocation and handoff are usable across phone, foldable, tablet, desktop and landscape profiles",
+      "result": "VERIFIED",
+      "profileCount": 11,
+      "horizontalOverflow": false
+    }
+  ],
+  "limitations": [
+    "Synthetic local data does not establish staff UAT or production authorization configuration.",
+    "No approved SOP, repair sign-off, inspection, release, invoice or customer handover flow was tested."
+  ]
+}

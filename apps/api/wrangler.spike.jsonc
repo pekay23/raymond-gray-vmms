@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "raymond-gray-vmms-api-local-spike",
+  "main": "src/cloudflare-spike.ts",
+  "compatibility_date": "2026-11-10",
+  "compatibility_flags": ["nodejs_compat", "enable_nodejs_http_server_modules"],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "00000000000000000000000000000000"
+    }
+  ],
+  "vars": {
+    "VMMS_SPIKE_ENABLE": "true"
+  },
+  "dev": {
+    "ip": "127.0.0.1",
+    "port": 8787,
+    "local_protocol": "http"
+  }
+}

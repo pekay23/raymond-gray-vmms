@@ -83,6 +83,7 @@ type StaffCommand<T> = {
   expectedVersion?: number;
   payload: unknown;
   responseSchema: ZodType<T>;
+  lockSerializationRoots: (tx: PoolClient) => Promise<void>;
   authorize: (tx: PoolClient, membership: {canWrite: boolean}) => Promise<void>;
   apply: (tx: PoolClient) => Promise<{
     aggregateId: string;
@@ -101,12 +102,14 @@ function runStaffCommand<T>(input: StaffCommand<T>): Promise<T>;
 The scope and actor are resolved before this boundary. Inside one transaction it must:
 
 1. Set transaction-local tenant, site and actor context.
-2. Recheck active membership and invoke the command-specific authorization callback **before receipt replay**.
-3. Lock the idempotency key and load its receipt. Matching fingerprint returns the schema-validated stored response; changed content returns a conflict.
-4. Lock the target aggregate in documented order, validate its type, compare the expected version when required, then call the domain mutation.
-5. Persist the aggregate version change in its owning domain row, append one event, build the response projection after the event is visible in the transaction, insert its receipt and outbox row, and commit atomically.
+2. Lock and recheck active membership.
+3. Lock the command's serialization roots in canonical order. Existing work-order hold, completion, release and post-release safety transitions use the same work-order lock; new-aggregate commands lock the applicable allocator or uniqueness root.
+4. Invoke the command-specific authorization callback and lock/check current grants and qualifications. Revocation uses compatible locks.
+5. Lock the idempotency key and load its receipt only after current membership and authority checks. Matching fingerprint returns the schema-validated stored response; changed content returns a conflict. Replay occurs before stale-version validation.
+6. For a new command, validate the target type, compare the expected version when required, then call the domain mutation.
+7. Persist the aggregate version change in its owning domain row, append one reasoned event, build the response projection after the event is visible in the transaction, insert its receipt and outbox row, and commit atomically.
 
-Validation, authorization, stale-version and transaction failures leave no business, event, receipt or outbox writes. Same-version concurrent commands yield one accepted mutation. A repeated command ID with identical content has one accepted effect. Current authorization is checked before any stored response is returned.
+Validation, authorization, stale-version and transaction failures leave no business, event, receipt or outbox writes. Same-version concurrent commands yield one accepted mutation. A repeated command ID with identical content has one accepted effect. Current membership and authorization are checked before any stored response is returned. `runStaffCommand` now requires each caller to acquire its scoped serialization roots after membership and before grants/qualifications; receipt lookup remains after current authority and before command `apply`, where stale-version checks stay. Existing work-order commands share the scoped work-order row lock. The new PostgreSQL tests cover target-before-grant, grant revocation, replay authorization and ledger atomicity. No G3/G4 command exists yet, so hold-versus-release proof remains with the later G4 implementation and `CHECK-R-M-0038`.
 
 ## Design selection
 
@@ -129,4 +132,3 @@ Before marking the foundation complete, run the migration against an empty Postg
 ## Review and rollout boundary
 
 This schema shape is an engineering decision, not product or privacy approval. CUST-002 must stay gated until its owner access contract and named approver policy are resolved. The migration must preserve any existing local development work orders and audit history; production rollout is separately blocked pending the hosting and backup review.
-

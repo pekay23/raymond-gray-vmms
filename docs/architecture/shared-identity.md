@@ -1,6 +1,6 @@
 # Raymond Gray shared identity service
 
-Status: recommended architecture baseline for implementation, 8 November 2026. Keycloak is the local candidate; the production identity host and operations provider remain pending owner review.
+Status: shared-identity baseline, with local VMMS integration evidence and a limited production OIDC preflight. The owner selected `auth.raymond-gray.org`. Public issuer discovery and the exact VMMS authorization redirect were verified on 14 November 2026; a hostile redirect was rejected. Full production sign-in, code exchange, VMMS callback/session, logout, recovery and deployment operations remain unverified. See [production preflight evidence](../verification/oidc-production-preflight-2026-11-14.md) and REV-056.
 
 ## Purpose
 
@@ -23,25 +23,38 @@ Every registered application client records an owner, product, environment, clie
 
 Initial client inventory (registered only when implemented):
 
-| Product | Web callback host | First client | Status |
-| --- | --- | --- | --- |
-| VMMS | `vmms.raymond-gray.org` | `vmms-web` | Planned |
-| Platform | inspect actual app host before configuring | `platform-web` | Planned |
-| Remote support | inspect actual app host before configuring | `remote-support-web` | Planned |
-| Vehicle services | inspect actual app host before configuring | `vehicle-services-web` | Planned |
-| Native clients | per product and OS after platform decision | separate clients | Deferred |
+| Product | Environment | Web callback host | Client | Status |
+| --- | --- | --- | --- | --- |
+| VMMS | Development | loopback (`localhost` / `127.0.0.1`) | `vmms-web-dev` | Local OIDC and passkey sign-in verified; API sign-out path tested, actual provider logout callback registration remains unverified; see [local sign-in](../verification/oidc-local-2026-11-14.md) and [RP logout check](../verification/oidc-rp-logout-2026-11-14.md) |
+| VMMS | Production | `vmms.raymond-gray.org` | `vmms-web-prod` | Exact authorization callback accepted and hostile redirect rejected; full sign-in/callback/logout and VMMS production API remain unverified. See [preflight evidence](../verification/oidc-production-preflight-2026-11-14.md). |
+| Platform | all | inspect actual app host before configuring | `platform-web-*` | Planned |
+| Remote support | all | inspect actual app host before configuring | `remote-support-web-*` | Planned |
+| Vehicle services | all | inspect actual app host before configuring | `vehicle-services-web-*` | Planned |
+| Native clients | per product, environment and OS after platform decision | exact app link/redirect after registration | separate clients | Deferred |
 
 Development clients and realms are separate from staging and production. Each integration validates `(iss, sub)` and stores that mapping locally. An app must not call Keycloak's admin API in normal request handling.
+
+The exact VMMS development post-logout callback is `http://127.0.0.1:4100/api/v1/auth/oidc/logout/callback`; the local registration helper in `C:\Projects\raymond-gray-auth\scripts\register-local-vmms-client.py` configures it and writes the matching `OIDC_LOGOUT_CALLBACK_URL` into the ignored VMMS `.env`. Production authorization-start redirect validation was preflighted, but the production post-logout callback, provider logout, and local session revocation remain unverified. See [logout contract and implementation evidence](oidc-session-revocation.md) and [production preflight evidence](../verification/oidc-production-preflight-2026-11-14.md).
 
 ## Account lifecycle and linking
 
 Central sign-up stays closed. A user is provisioned by an authorised process, completes a verified sign-in method, and receives application-specific access only through that application's approval flow. Inviting a person into VMMS must not grant access to the other products. Suspending central authentication blocks future authentication; product suspension also revokes that product's sessions and local grants.
 
+### VMMS Operator and Head of Service Centre boundary
+
+The owner confirmed that the top-level VMMS Operator and the Head of Service Centre / Operations Admin are separate roles. The Operator manages VMMS account lifecycle: create, update, suspend and review user accounts through the approved shared-identity flow. The Head combines Operations Admin duties, oversees the service-centre site, assigns work to eligible Team Leads, and assigns employees to existing effective VMMS role profiles. The Head does not create or suspend central identity accounts. The Operator does not receive Operations review or job-allocation authority from account administration.
+
+The VMMS-side account states, command boundary, worker handoff, bootstrap limits and verification cases are defined in the [Operator account administration contract](operator-account-administration.md). The proposed cross-repository request/response, idempotency and enrollment lifecycle are in the [shared-auth provisioning contract](shared-auth-provisioning-contract.md), pending owner review under REV-045. The design keeps Keycloak administration behind the shared identity service and does not expose provisioning credentials to VMMS browsers or normal API requests.
+
+VMMS now has a synthetic-tested worker module and a dedicated database capability for leased account-request processing. There is still no configured shared-auth adapter or long-running worker process; no real identity or invitation can be created through this slice. Production identity-service endpoints, service authentication and enrollment delivery remain open.
+
+Neither role may edit role permission definitions, approved policies, technical/inspection/release/financial sign-off grants, or the shared identity provider's administration settings. Role assignment and account lifecycle changes must be attributable and audited. The Head/Operator role split and role assignment rules are recorded in `docs/architecture/workforce-organogram.md`; the authority to edit role profiles or publish controlled documents remains open under REV-041. Build role definitions and synthetic test accounts, not named-person production accounts.
+
 Google linking is deliberate and account-bound. Do not auto-link by email. Existing local accounts gain an immutable central subject through a controlled migration or a fresh-authenticated proof of both accounts. Preserve a product's local account UUIDs and actor references; no current prototype data migration is required.
 
 ## Runtime and availability
 
-Keycloak and PostgreSQL require persistent runtime/storage; production setup includes a fixed public hostname, TLS, trusted reverse-proxy configuration, private administration access, database backup/restore, health checks, monitoring, patching and an outage/recovery procedure. Store secrets in the selected host's secret manager. The Cloudflare zone owner controls DNS, but DNS is not changed by this local architecture work. Hosting is an open decision until latency, availability, recovery, cost and operational ownership are compared.
+Keycloak and PostgreSQL require persistent runtime/storage; production setup includes a fixed public hostname, TLS, trusted reverse-proxy configuration, private administration access, database backup/restore, health checks, monitoring, patching and an outage/recovery procedure. Store secrets in the selected host's secret manager. The auth repository's `DEPLOYMENT.md` documents Railway and Cloudflare DNS as current configuration, but those claims have not been independently verified here and conflict with the status in `docs/architecture.md`. The auth repository also reports a possible live database credential in ad hoc scripts; see REV-056. Do not use production authentication until the owner/operator verifies the deployment, rotates any exposed credential and confirms the VMMS client registration.
 
 ## Security acceptance
 
@@ -57,11 +70,13 @@ Keycloak and PostgreSQL require persistent runtime/storage; production setup inc
 
 The local synthetic passkey enrollment and passwordless login passed with a Chromium virtual authenticator. This does not replace physical-device, cross-device, browser/OS matrix, recovery, revocation, or production checks; see [`shared-passkey-local-2026-11-08.md`](../verification/shared-passkey-local-2026-11-08.md).
 
+The separate auth project provides the approved Raymond Gray Keycloak sign-in theme, using inherited provider templates and existing workshop/logo assets. Its 11-profile responsive preview is recorded in [the theme verification](../verification/checks/shared-auth-theme-2026-11-11.md). A disposable local Keycloak/PostgreSQL project also verified realm discovery survives a Keycloak restart and that its database volume, network and containers are removed after the check; this is not backup/restore or production evidence ([persistence check](../verification/checks/shared-auth-persistence-2026-11-11.md)). Google provider setup, production client registration, central logout, credential hygiene and production readiness remain open.
+
 ## Owner review items
 
 ## Current implementation evidence
 
-VMMS is the first local OIDC relying party. The integration flow and its exact protocol boundary are described in [`oidc-vmms-integration.md`](oidc-vmms-integration.md); provider discovery, the synthetic authorization-code HTTP flow, API test results, and remaining gaps are recorded in [`oidc-local-2026-11-08.md`](../verification/oidc-local-2026-11-08.md). Local passkey enrollment and conditional passwordless login are recorded separately in [`shared-passkey-local-2026-11-08.md`](../verification/shared-passkey-local-2026-11-08.md). This is a development slice only. Google federation, physical-device/browser coverage, central logout, and production configuration remain unverified.
+VMMS is the first local OIDC relying party. The integration flow and its exact protocol boundary are described in [`oidc-vmms-integration.md`](oidc-vmms-integration.md); provider discovery, the synthetic authorization-code HTTP flow, API test results, and remaining gaps are recorded in [`oidc-local-2026-11-14.md`](../verification/oidc-local-2026-11-14.md). The RP-initiated logout design is synthesized in [`candidates/oidc-rp-logout-synthesis.md`](candidates/oidc-rp-logout-synthesis.md), with local API evidence in [`oidc-rp-logout-2026-11-14.md`](../verification/oidc-rp-logout-2026-11-14.md). Local passkey enrollment and conditional passwordless login are recorded separately in [`shared-passkey-local-2026-11-08.md`](../verification/shared-passkey-local-2026-11-08.md). This is a development slice only. Google federation, physical-device/browser coverage, provider-driven logout delivery and production client registration remain unverified.
 
 - Select hosting/runtime and managed PostgreSQL provider; define recovery time and recovery point objectives.
 - Confirm identity administrators and account provisioning approvers.

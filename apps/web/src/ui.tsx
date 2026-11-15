@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { clsx } from "clsx";
 import type { ClassValue } from "clsx";
@@ -8,6 +8,114 @@ import { Link } from "react-router-dom";
 import { ApiError } from "./api";
 
 export const cn = (...values: ClassValue[]) => twMerge(clsx(values));
+
+type Toast = { id: string; message: string };
+const ToastContext = createContext<(message: string) => void>(() => {});
+
+export function useToast() {
+  return useContext(ToastContext);
+}
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const notify = useCallback((message: string) => {
+    setToasts((current) => [...current, { id: crypto.randomUUID(), message }]);
+  }, []);
+  const dismiss = useCallback((id: string) => {
+    setToasts((current) => current.filter((toast) => toast.id !== id));
+  }, []);
+
+  return (
+    <ToastContext.Provider value={notify}>
+      {children}
+      <div
+        className="pointer-events-none fixed right-4 top-4 z-50 flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2"
+        aria-live="polite"
+        aria-atomic="false"
+      >
+        {toasts.map((toast) => (
+          <ToastMessage key={toast.id} toast={toast} dismiss={dismiss} />
+        ))}
+      </div>
+    </ToastContext.Provider>
+  );
+}
+
+function ToastMessage({ toast, dismiss }: { toast: Toast; dismiss: (id: string) => void }) {
+  const [visible, setVisible] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const closeTimer = useRef<number | null>(null);
+  const closing = useRef(false);
+  const focusReturnTarget = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setVisible(true));
+    if (paused) return () => window.cancelAnimationFrame(frame);
+    const hide = window.setTimeout(() => setVisible(false), 5000);
+    const remove = window.setTimeout(() => dismiss(toast.id), 5160);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(hide);
+      window.clearTimeout(remove);
+    };
+  }, [dismiss, paused, toast.id]);
+
+  useEffect(() => () => {
+    if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
+  }, []);
+
+  function close() {
+    if (closing.current) return;
+    closing.current = true;
+    setVisible(false);
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && active.closest('.toast')) {
+      const previous = focusReturnTarget.current;
+      const previousCanReceiveFocus = Boolean(previous?.isConnected
+        && previous.getClientRects().length > 0
+        && !previous.matches(':disabled')
+        && !previous.closest('[hidden],[inert],[aria-hidden="true"]')
+        && getComputedStyle(previous).visibility !== 'hidden');
+      if (previousCanReceiveFocus && previous) {
+        previous.focus({ preventScroll: true });
+      } else {
+        const main = document.querySelector<HTMLElement>('#workspace-main, main');
+        if (main) {
+          if (!main.hasAttribute('tabindex')) main.tabIndex = -1;
+          main.focus({ preventScroll: true });
+        }
+      }
+    }
+    closeTimer.current = window.setTimeout(() => dismiss(toast.id), 160);
+  }
+
+  return (
+    <div
+      role="status"
+      data-visible={visible}
+      onFocusCapture={(event) => {
+        const relatedTarget = event.relatedTarget;
+        const focusStayedInside = relatedTarget instanceof Node && event.currentTarget.contains(relatedTarget);
+        if (!focusStayedInside && relatedTarget instanceof HTMLElement && relatedTarget !== document.body) {
+          focusReturnTarget.current = relatedTarget;
+        }
+        setPaused(true);
+      }}
+      onBlurCapture={(event) => {
+        const relatedTarget = event.relatedTarget;
+        if (!(relatedTarget instanceof Node) || !event.currentTarget.contains(relatedTarget)) setPaused(false);
+      }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      className="toast pointer-events-auto flex items-start justify-between gap-4 rounded-lg border border-emerald-200 border-l-2 border-l-emerald-600 bg-white px-4 py-3 text-sm text-zinc-800 shadow-lg"
+    >
+      <span>{toast.message}</span>
+      <button className="shrink-0 text-zinc-500 hover:text-zinc-900" onClick={close} aria-label="Dismiss notification">
+        <span aria-hidden="true">×</span>
+      </button>
+    </div>
+  );
+}
 
 export function Button({
   className,
@@ -159,17 +267,7 @@ export function useOnline() {
   );
 }
 
-const dateFormatter = new Intl.DateTimeFormat("en-GH", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "Africa/Accra",
-});
-export function dateTime(value: string) {
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.valueOf())
-    ? "Time unavailable"
-    : dateFormatter.format(parsed);
-}
+export { formatDateTime as dateTime } from "./formatting";
 
 export function PageHeading({
   eyebrow,

@@ -1,0 +1,73 @@
+from __future__ import annotations
+
+import importlib.util
+import json
+import os
+import tempfile
+import unittest
+from pathlib import Path
+
+SCRIPT = Path(__file__).with_name("create-instance.py")
+SPEC = importlib.util.spec_from_file_location("local_role_fixture_instance", SCRIPT)
+assert SPEC and SPEC.loader
+FIXTURE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(FIXTURE)
+
+
+class LocalRoleFixtureInstanceTests(unittest.TestCase):
+    def test_instance_uses_private_synthetic_credentials_and_distinct_ports(self):
+        with tempfile.TemporaryDirectory() as folder:
+            prior = os.environ.get("LOCALAPPDATA")
+            os.environ["LOCALAPPDATA"] = folder
+            try:
+                result = FIXTURE.create_instance("a1b2c3d4-1122-4334-8556-aabbccddeeff")
+            finally:
+                if prior is None:
+                    os.environ.pop("LOCALAPPDATA", None)
+                else:
+                    os.environ["LOCALAPPDATA"] = prior
+
+            state_dir = Path(result["stateDirectory"])
+            state = json.loads((state_dir / "state.json").read_text(encoding="utf-8"))
+            private = json.loads((state_dir / "private.json").read_text(encoding="utf-8"))
+            request = json.loads((state_dir / "identity-request.json").read_text(encoding="utf-8"))
+            credentials = json.loads((state_dir / "identity-credentials.json").read_text(encoding="utf-8"))
+            login_guide = (state_dir / "login-credentials.txt").read_text(encoding="utf-8")
+
+            self.assertEqual(state["installationId"], "a1b2c3d4-1122-4334-8556-aabbccddeeff")
+            self.assertEqual(state["instanceSlug"], "a1b2c3d4")
+            self.assertEqual(len(request["actors"]), 15)
+            self.assertEqual(set(credentials["actors"]), {f"p{index:02d}" for index in range(1, 16)})
+            self.assertNotIn("roleCode", json.dumps(request))
+            self.assertNotIn("clientSecret", json.dumps(state))
+            self.assertNotIn("databasePassword", json.dumps(state))
+            self.assertNotIn(private["sessionSecret"], login_guide)
+            self.assertNotIn(private["clientSecret"], login_guide)
+            self.assertIn("VMMS Operator", login_guide)
+            self.assertIn("Head of Service Centre / Operations Admin", login_guide)
+            self.assertIn("Sales Representative", login_guide)
+            self.assertIn("PDI Observer", login_guide)
+            self.assertIn("Approved vehicle owner", login_guide)
+            self.assertEqual(private["identityCredentials"], credentials)
+            self.assertEqual(len({state["authPort"], state["authDatabasePort"], state["vmmsDatabasePort"], state["apiPort"], state["webPort"]}), 5)
+            self.assertTrue(all(len(password) >= 12 for password in credentials["actors"].values()))
+            for path in state_dir.iterdir():
+                FIXTURE._check_acl(path)
+
+    def test_existing_installation_path_is_never_overwritten(self):
+        with tempfile.TemporaryDirectory() as folder:
+            prior = os.environ.get("LOCALAPPDATA")
+            os.environ["LOCALAPPDATA"] = folder
+            try:
+                FIXTURE.create_instance("a1b2c3d4-1122-4334-8556-aabbccddeeff")
+                with self.assertRaisesRegex(FIXTURE.FixtureError, "already exists"):
+                    FIXTURE.create_instance("a1b2c3d4-1122-4334-8556-aabbccddeeff")
+            finally:
+                if prior is None:
+                    os.environ.pop("LOCALAPPDATA", None)
+                else:
+                    os.environ["LOCALAPPDATA"] = prior
+
+
+if __name__ == "__main__":
+    unittest.main()

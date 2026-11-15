@@ -1,0 +1,2 @@
+ALTER TABLE public.delivery_preparation_delivery_links
+  DROP CONSTRAINT delivery_preparation_delivery_organisation_id_site_id_deliv_key;

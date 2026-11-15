@@ -1,0 +1,25 @@
+{
+  "name": "raymond-gray-vmms-web",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-11-10",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "vars": {
+    "VMMS_API_ORIGIN": "https://api.raymond-gray.org"
+  },
+  "env": {
+    "production": {
+      "vars": {
+        "VMMS_API_ORIGIN": "https://api.raymond-gray.org"
+      }
+    },
+    "preview": {
+      "vars": {
+        "VMMS_API_ORIGIN": "https://api-preview.raymond-gray.org"
+      }
+    }
+  }
+}

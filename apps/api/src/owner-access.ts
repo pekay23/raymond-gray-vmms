@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { z } from 'zod';
-import { runStaffCommand } from './commands.js';
+import { lockAdvisoryRoots, runStaffCommand } from './commands.js';
 import type { Database, Scope } from './db.js';
 import { uuid } from './db.js';
 import { ApiError, notFound } from './errors.js';
@@ -87,6 +87,16 @@ async function lockScopeById(client:PoolClient,scope:Scope,accessScopeId:string,
   return accessScope;
 }
 
+async function lockScopeRootById(client:PoolClient,scope:Scope,accessScopeId:string) {
+  const found=await client.query('SELECT id FROM vehicle_owner_access_scopes WHERE organisation_id=$1 AND site_id=$2 AND id=$3 FOR UPDATE',[scope.organisationId,scope.siteId,accessScopeId]);
+  if (!found.rowCount) notFound();
+}
+
+async function lockScopeRootForVehicle(client:PoolClient,scope:Scope,vehicleId:string) {
+  await lockAdvisoryRoots(client,[`vehicle-owner-access:${scope.organisationId}:${scope.siteId}:${vehicleId}`]);
+  await client.query('SELECT id FROM vehicle_owner_access_scopes WHERE organisation_id=$1 AND site_id=$2 AND vehicle_id=$3 FOR UPDATE',[scope.organisationId,scope.siteId,vehicleId]);
+}
+
 async function lockRelationship(client:PoolClient,scope:Scope,accessScopeId:string,relationshipId:string):Promise<Relationship> {
   const found=await client.query(`SELECT r.id,r.owner_account_id,v.revision,v.state,v.effective_from,v.effective_until,v.evidence_record_id
     FROM vehicle_owner_relationships r
@@ -142,6 +152,7 @@ async function projectAccessScope(client:PoolClient,accessScopeId:string):Promis
 export async function approveVehicleOwnerAccess(pool:Database,scope:Scope,commandId:string,vehicleId:string,body:z.infer<typeof approveOwnerSchema>) {
   return runStaffCommand(pool,{
     scope,commandId,operation:'owner-access.relationship-approved',targetAggregateId:vehicleId,payload:body,responseSchema:ownerAccessSummarySchema,
+    lockSerializationRoots:client=>lockScopeRootForVehicle(client,scope,vehicleId),
     authorize:client=>requireOwnerAccessAuthority(client,scope),
     apply:async client=>{
       await requireAcceptedEvidence(client,scope,body.evidenceRecordId);
@@ -169,6 +180,7 @@ export async function approveVehicleOwnerAccess(pool:Database,scope:Scope,comman
 export async function revokeVehicleOwnerAccess(pool:Database,scope:Scope,commandId:string,accessScopeId:string,relationshipId:string,body:z.infer<typeof revokeOwnerSchema>) {
   return runStaffCommand(pool,{
     scope,commandId,operation:'owner-access.relationship-revoked',targetAggregateId:accessScopeId,payload:{relationshipId,...body},responseSchema:ownerAccessSummarySchema,
+    lockSerializationRoots:client=>lockScopeRootById(client,scope,accessScopeId),
     authorize:client=>requireOwnerAccessAuthority(client,scope),
     apply:async client=>{
       await requireAcceptedEvidence(client,scope,body.evidenceRecordId);
@@ -190,6 +202,7 @@ export async function revokeVehicleOwnerAccess(pool:Database,scope:Scope,command
 export async function expireVehicleOwnerAccess(pool:Database,scope:Scope,commandId:string,accessScopeId:string,relationshipId:string,body:z.infer<typeof expireOwnerSchema>) {
   return runStaffCommand(pool,{
     scope,commandId,operation:'owner-access.relationship-expired',targetAggregateId:accessScopeId,payload:{relationshipId,...body},responseSchema:ownerAccessSummarySchema,
+    lockSerializationRoots:client=>lockScopeRootById(client,scope,accessScopeId),
     authorize:client=>requireOwnerAccessAuthority(client,scope),
     apply:async client=>{
       const accessScope=await lockScopeById(client,scope,accessScopeId,body.expectedVersion);
@@ -209,9 +222,12 @@ export async function expireVehicleOwnerAccess(pool:Database,scope:Scope,command
 export async function transferVehicleOwnerAccess(pool:Database,scope:Scope,commandId:string,accessScopeId:string,relationshipId:string,body:z.infer<typeof transferOwnerSchema>) {
   return runStaffCommand(pool,{
     scope,commandId,operation:'owner-access.relationship-transferred',targetAggregateId:accessScopeId,payload:{relationshipId,...body},responseSchema:ownerAccessSummarySchema,
+    lockSerializationRoots:client=>lockScopeRootById(client,scope,accessScopeId),
     authorize:client=>requireOwnerAccessAuthority(client,scope),
     apply:async client=>{
       await requireAcceptedEvidence(client,scope,body.evidenceRecordId);
+      // The target access-scope root is already locked before authority evaluation.
+      await requireOwnerAccount(client,body.newOwnerAccountId);
       const accessScope=await lockScopeById(client,scope,accessScopeId,body.expectedVersion);
       const prior=await lockRelationship(client,scope,accessScopeId,relationshipId);
       if (prior.state!=='approved') throw new ApiError(409,'OWNER_RELATIONSHIP_NOT_ACTIVE','Only an approved relationship can be transferred.');
@@ -219,7 +235,6 @@ export async function transferVehicleOwnerAccess(pool:Database,scope:Scope,comma
       const now=z.date().parse(nowResult.rows[0].now);
       if (prior.effective_until&&prior.effective_until<=now) throw new ApiError(409,'OWNER_EXPIRY_REVISION_REQUIRED','Append the expiration revision before transferring this relationship.');
       if (prior.owner_account_id===body.newOwnerAccountId) throw new ApiError(422,'TRANSFER_OWNER_UNCHANGED','Choose a different active owner account for the transfer.');
-      await requireOwnerAccount(client,body.newOwnerAccountId);
       const effectiveUntil=body.validUntil?new Date(body.validUntil):null;
       if (effectiveUntil&&effectiveUntil<=now) throw new ApiError(400,'INVALID_ACCESS_INTERVAL',"The incoming owner's access expiry must be later than the transfer time.");
       const incoming=await findRelationshipForOwner(client,scope,accessScope.id,body.newOwnerAccountId);

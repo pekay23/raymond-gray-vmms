@@ -26,13 +26,15 @@ The browser submits named commands such as create reception draft, add complaint
 
 The [initial API contract](initial-api-contract.md) defines the first usable unit. Every later command requires an accepted contract and a linked task. Generate transport types from the eventual OpenAPI schema; until generation is wired, runtime boundary schemas and contract checks must guard the deliberately small initial contract. Do not export database row types as client types.
 
+Manual invoices, external payment verification, receipts, client email and the G5 commercial projection follow the selected append-only contract in [manual finance](manual-finance.md). Domain ownership does not imply that finance commands or grants are implemented or active.
+
 ## Module ownership
 
 | API module | Owns |
 | --- | --- |
 | Identity | People, staff accounts, sessions, organisation, site and active access membership |
 | Authority | Named signed grants, validity, restrictions, revocation, approval snapshots and segregation |
-| Reception | Canonical customers, vehicles, appointments, visits, custody and recovery |
+| Reception and party directory | Canonical person/organisation parties, paying client selection, visit contacts, reported vehicle-party relationships, vehicles, appointments, visits, custody and recovery |
 | Owner access | Owner principals, site-scoped vehicle-access aggregates, relationship revisions, explicit approval grants and owner-safe access decisions |
 | Workshop | Work orders, complaints, tasks, scope revisions, diagnostic findings, task progress and gate facts |
 | Safety and quality | Scoped holds, permits, incidents, quarantine, independent inspections, tests and release |
@@ -40,9 +42,12 @@ The [initial API contract](initial-api-contract.md) defines the first usable uni
 | Commercial | Coverage, proposed/approved payer, costs, claims, invoices, receipts, credit and G5 |
 | People and equipment | Skills/training evidence, supervision, assets, calibration, readiness and impact |
 | Governance | Controlled revisions, effective instructions, acknowledgements, audits, CAPA and management action |
+| Learning | Staff-only vehicle-system references, evidence-based learning exercises, comments, saved submissions and governed review/publication; never technical authority or a controlled procedure |
 | Evidence | Upload intents, private object acceptance, hashes, scanning and scoped download/export |
 | Delivery and audit | Command receipts, append-only events, durable outbox, worker leases and adapters |
 | Reporting and import | Versioned metric projections; staged historical batches, source aliases and reconciliation |
+
+Training/learning content and effective instructions stay separate. A learning fact or submitted exercise may support education and future review, but cannot be used as verified vehicle identity, diagnosis, qualification, task instruction, work authorization or sign-off. Only the controlled-document governance path can publish an effective SOP; only the action-specific authority and safety gates can authorize work.
 
 Place server code in `apps/api`, client code in `apps/web`, deterministic checks in `scripts`, and project documents in `docs`. Start with actual modules needed by the first slice; do not create empty framework layers for future work. A normal request follows HTTP boundary, domain command and database transaction. Avoid pass-through controller/service/repository stacks.
 
@@ -60,14 +65,15 @@ Store monetary values as integer minor units with currency and a precision polic
 
 1. Validate the boundary payload and authenticate current session/site access.
 2. Begin a transaction and set transaction-local organisation/site context using the non-owner runtime database role.
-3. Lock and recheck active membership, then evaluate current command authority before looking up a receipt.
-4. Locate a matching receipt. Matching content returns its schema-validated original result; different content with the same key conflicts.
-5. Lock the aggregate rows in a documented order. Work-order hold and release commands use the same work-order lock. Vehicle-wide operations additionally coordinate through the vehicle row.
-6. Reject a stale expected version, then evaluate current scope, equipment, evidence and independent inspection requirements.
-7. Write the domain change, new version, attributable event, receipt and outbox item atomically through the aggregate contract.
-8. Commit before external delivery. A worker leases outbox rows and adapters provide their own idempotency.
+3. Lock and recheck active membership.
+4. Lock the target aggregate rows in a documented canonical order. Work-order hold, resolution, completion, release and post-release safety commands coordinate on the same work-order lock; multi-root commands lock roots in stable ID order. New-aggregate commands lock their applicable reference allocator/serialization root.
+5. Lock and recheck current command grants and qualifications in a documented order. Grant revocation uses compatible locking so the decision observes either the valid grant or its committed revocation.
+6. Acquire the actor/site command-id lock and locate a matching receipt only after current membership and authority checks. Matching content returns its schema-validated original result; different content with the same key conflicts. Replay is checked before stale-version evaluation so a valid retry returns its original result.
+7. For a new command, reject a stale expected version, then evaluate current scope, equipment, evidence and independent inspection requirements.
+8. Write the domain change, new version, attributable reasoned event, receipt and outbox item atomically through the aggregate contract.
+9. Commit before external delivery. A worker leases outbox rows and adapters provide their own idempotency.
 
-Receipt identity is actor, organisation, site and command UUID. Hash operation, target and canonical payload. Unique constraints and transaction-safe retry handling must prove simultaneous key insertion does not duplicate work. Failed validation or transaction rollback produces no partial business change.
+Receipt identity is actor, organisation, site and command UUID. Hash operation, target and canonical payload. The shared runner now performs membership lock, caller-supplied serialization-root locks, current authority/qualification checks, idempotency receipt lookup, and only then version checks and command mutation. Current work-order commands lock the scoped work-order row in the shared phase; multi-advisory roots are acquired in sorted order. Authority and qualification interval checks use decision-time clocks so a command that waited for its target cannot rely on transaction-start time. `BUILD-CMD-LOCK-ORDER-001` and `CHECK-CMD-LOCK-ORDER-001` track the implementation and PostgreSQL evidence. Unique constraints and transaction-safe retry handling must prove simultaneous key insertion does not duplicate work. Failed validation or transaction rollback produces no partial business change. G3/G4 commands are not implemented, so their shared-lock and hold/release race behavior remains unverified.
 
 RLS is defence in depth. Use a runtime role that neither owns tables nor bypasses RLS, explicit `SET LOCAL` context, and tests for pooled connection reuse, direct SQL, workers and exports. Migration credentials are separate. Application checks remain required. The initial bootstrap must never claim RLS protection while running business queries as an owner role.
 

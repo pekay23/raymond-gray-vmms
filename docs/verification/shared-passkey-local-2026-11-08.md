@@ -10,6 +10,7 @@ Date: 8 November 2026. Scope: local synthetic Keycloak account and local browser
 - The browser cookies were cleared and VMMS local logout was performed. A fresh VMMS authorization request then completed through conditional passkey sign-in without submitting the password again, followed the VMMS callback and created a new authorised VMMS session.
 - The test verified one discoverable resident credential, revoked each VMMS session through the app logout route, deleted its synthetic passkey, restored the account's required actions, and asserted cleanup. No OIDC callback or client registration was changed.
 - `npm ci` and package-lock audit reported zero dependency vulnerabilities; `node --check scripts/smoke-local-passkey.mjs` passed.
+- Re-ran `node --check scripts/smoke-local-passkey.mjs` and `npm run test:passkey` on 8 November after adding a fail-closed loopback/HTTP origin check to the harness. Enrollment, VMMS callback, passwordless login, required user verification, resident credential assertion and cleanup all passed again; the sanitized output is in [`passkey-local-check-2026-11-08.log`](passkey-local-check-2026-11-08.log).
 
 The automation drives the real VMMS and Keycloak browser flows and WebAuthn ceremonies, but uses a software virtual authenticator. It proves local enrollment, a passwordless OIDC return through VMMS, and VMMS session issue/revocation. It does not prove behavior with a physical device, cross-device handoff, every browser/OS, or production authenticator policy.
 

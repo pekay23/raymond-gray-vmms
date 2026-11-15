@@ -1,0 +1,375 @@
+{
+  "package": "Raymond Gray VMMS historical maintenance import templates",
+  "templateVersion": "1.0.0",
+  "stage": "template-only; no production importer or record writes are included",
+  "encoding": "UTF-8; an optional UTF-8 BOM may be stripped during intake; reject other encodings and invalid byte sequences",
+  "csvDialect": "RFC 4180 comma-delimited CSV with a header row, double-quote escaping, and CRLF records",
+  "dateFormats": [
+    "YYYY-MM-DD for a source date with no time",
+    "RFC 3339 timestamp with an explicit UTC offset when a time is present"
+  ],
+  "decimalFormat": "Base-10 decimal text using a period, without exponent or thousands separators. Currency is explicit for every amount.",
+  "currency": "ISO 4217 code per line. Do not infer a currency, tax rate, tax jurisdiction, or payer. Validate precision against an approved currency metadata version before import.",
+  "statusValues": {
+    "historical_status": [
+      "reported-open",
+      "reported-in-progress",
+      "reported-complete",
+      "reported-cancelled",
+      "reported-unknown"
+    ],
+    "mapping_state": [
+      "pending-review",
+      "approved",
+      "rejected"
+    ],
+    "gate_effect": [
+      "none"
+    ],
+    "relationship_kind": [
+      "account",
+      "contact",
+      "other",
+      "unknown"
+    ],
+    "ownership_interval_status": [
+      "source-reported",
+      "unresolved",
+      "unknown"
+    ],
+    "payer_entity_type": [
+      "client",
+      "customer",
+      "other",
+      "unknown"
+    ],
+    "tax_data_status": [
+      "provided",
+      "not-provided",
+      "unknown",
+      "not-applicable"
+    ],
+    "permission_state": [
+      "authorized",
+      "denied",
+      "unknown",
+      "pending-review"
+    ],
+    "review_state": [
+      "pending-review",
+      "approved",
+      "rejected"
+    ],
+    "commercial_line_kind": [
+      "labour",
+      "part",
+      "fee",
+      "adjustment",
+      "other",
+      "unknown"
+    ]
+  },
+  "files": [
+    {
+      "name": "batch-manifest.csv",
+      "columns": [
+        "batch_id",
+        "template_version",
+        "source_system",
+        "source_owner",
+        "source_format",
+        "source_date_from",
+        "source_date_to",
+        "source_file_name",
+        "source_file_sha256",
+        "source_record_count",
+        "access_permission_reference"
+      ],
+      "required": [
+        "batch_id",
+        "template_version",
+        "source_system",
+        "source_owner",
+        "source_format",
+        "source_file_name",
+        "source_file_sha256",
+        "source_record_count",
+        "access_permission_reference"
+      ],
+      "example": "examples/batch-manifest.csv"
+    },
+    {
+      "name": "clients.csv",
+      "columns": [
+        "batch_id",
+        "source_client_id",
+        "client_name",
+        "client_reference",
+        "source_row_reference"
+      ],
+      "required": [
+        "batch_id",
+        "source_client_id",
+        "client_name",
+        "source_row_reference"
+      ],
+      "example": "examples/clients.csv"
+    },
+    {
+      "name": "customers.csv",
+      "columns": [
+        "batch_id",
+        "source_customer_id",
+        "full_name",
+        "email",
+        "phone",
+        "source_row_reference"
+      ],
+      "required": [
+        "batch_id",
+        "source_customer_id",
+        "full_name",
+        "source_row_reference"
+      ],
+      "example": "examples/customers.csv"
+    },
+    {
+      "name": "client-customer-links.csv",
+      "columns": [
+        "batch_id",
+        "source_link_id",
+        "source_client_id",
+        "source_customer_id",
+        "relationship_kind",
+        "effective_from",
+        "effective_until",
+        "source_evidence_reference",
+        "source_row_reference"
+      ],
+      "required": [
+        "batch_id",
+        "source_link_id",
+        "source_client_id",
+        "source_customer_id",
+        "relationship_kind",
+        "source_row_reference"
+      ],
+      "example": "examples/client-customer-links.csv"
+    },
+    {
+      "name": "vehicles.csv",
+      "columns": [
+        "batch_id",
+        "source_vehicle_id",
+        "vin",
+        "registration",
+        "make",
+        "model",
+        "variant",
+        "powertrain",
+        "source_row_reference"
+      ],
+      "required": [
+        "batch_id",
+        "source_vehicle_id",
+        "source_row_reference"
+      ],
+      "example": "examples/vehicles.csv"
+    },
+    {
+      "name": "ownership-intervals.csv",
+      "columns": [
+        "batch_id",
+        "source_ownership_id",
+        "source_vehicle_id",
+        "source_customer_id",
+        "effective_from",
+        "effective_until",
+        "interval_status",
+        "source_evidence_reference",
+        "source_row_reference"
+      ],
+      "required": [
+        "batch_id",
+        "source_ownership_id",
+        "source_vehicle_id",
+        "source_customer_id",
+        "interval_status",
+        "source_row_reference"
+      ],
+      "example": "examples/ownership-intervals.csv"
+    },
+    {
+      "name": "maintenance-jobs.csv",
+      "columns": [
+        "batch_id",
+        "source_job_id",
+        "source_client_id",
+        "source_customer_id",
+        "source_vehicle_id",
+        "source_payer_entity_type",
+        "source_payer_id",
+        "job_reference",
+        "source_status_raw",
+        "source_started_at",
+        "source_completed_at",
+        "complaint",
+        "summary",
+        "source_author",
+        "source_row_reference"
+      ],
+      "required": [
+        "batch_id",
+        "source_job_id",
+        "source_status_raw",
+        "source_row_reference"
+      ],
+      "example": "examples/maintenance-jobs.csv"
+    },
+    {
+      "name": "maintenance-tasks.csv",
+      "columns": [
+        "batch_id",
+        "source_task_id",
+        "source_job_id",
+        "sequence_no",
+        "description",
+        "source_status_raw",
+        "source_technician_reference",
+        "labour_hours",
+        "source_row_reference"
+      ],
+      "required": [
+        "batch_id",
+        "source_task_id",
+        "source_job_id",
+        "description",
+        "source_row_reference"
+      ],
+      "example": "examples/maintenance-tasks.csv"
+    },
+    {
+      "name": "commercial-lines.csv",
+      "columns": [
+        "batch_id",
+        "source_line_id",
+        "source_job_id",
+        "line_kind",
+        "description",
+        "quantity",
+        "unit_amount_decimal",
+        "line_amount_decimal",
+        "currency",
+        "tax_amount_decimal",
+        "tax_currency",
+        "tax_rate_decimal",
+        "tax_jurisdiction",
+        "tax_data_status",
+        "payer_entity_type",
+        "payer_source_id",
+        "invoice_reference",
+        "payment_status_raw",
+        "source_row_reference"
+      ],
+      "required": [
+        "batch_id",
+        "source_line_id",
+        "source_job_id",
+        "line_kind",
+        "quantity",
+        "line_amount_decimal",
+        "currency",
+        "tax_data_status",
+        "payer_entity_type",
+        "source_row_reference"
+      ],
+      "example": "examples/commercial-lines.csv"
+    },
+    {
+      "name": "evidence-manifest.csv",
+      "columns": [
+        "batch_id",
+        "source_evidence_id",
+        "source_job_id",
+        "source_file_name",
+        "source_file_sha256",
+        "declared_media_type",
+        "evidence_kind",
+        "authority_reference",
+        "permission_state",
+        "source_row_reference"
+      ],
+      "required": [
+        "batch_id",
+        "source_evidence_id",
+        "source_file_name",
+        "source_file_sha256",
+        "declared_media_type",
+        "evidence_kind",
+        "permission_state",
+        "source_row_reference"
+      ],
+      "example": "examples/evidence-manifest.csv"
+    },
+    {
+      "name": "status-map.csv",
+      "columns": [
+        "batch_id",
+        "entity_type",
+        "source_status_raw",
+        "historical_status",
+        "gate_effect",
+        "mapping_state",
+        "mapping_reason",
+        "reviewer_reference",
+        "reviewed_at"
+      ],
+      "required": [
+        "batch_id",
+        "entity_type",
+        "source_status_raw",
+        "historical_status",
+        "mapping_state",
+        "mapping_reason",
+        "gate_effect"
+      ],
+      "example": "examples/status-map.csv"
+    },
+    {
+      "name": "field-mapping.csv",
+      "columns": [
+        "batch_id",
+        "source_file_sha256",
+        "source_row_reference",
+        "source_column",
+        "target_entity",
+        "target_field",
+        "mapping_rule",
+        "mapping_version",
+        "review_state",
+        "reviewer_reference",
+        "reviewed_at"
+      ],
+      "required": [
+        "batch_id",
+        "source_file_sha256",
+        "source_row_reference",
+        "source_column",
+        "target_entity",
+        "target_field",
+        "mapping_rule",
+        "mapping_version",
+        "review_state"
+      ],
+      "example": "examples/field-mapping.csv"
+    }
+  ],
+  "rules": [
+    "Source IDs remain strings and are scoped by batch and source entity type. They are never VMMS record IDs.",
+    "Keep the raw source file unchanged, hash it with SHA-256, and record the hash and source row in the field mapping.",
+    "Leave an unknown or ambiguous client, customer, vehicle, owner, payer, date, status, or authority unresolved for review.",
+    "Keep source completion labels verbatim. A historical status has gate_effect none and never creates a current inspection, approval, release, or financial closure.",
+    "Treat every CSV value as text. Never evaluate spreadsheet formulas. A later export must escape formula-like values.",
+    "Do not attach or publish evidence until source permission and current VMMS publication rules are reviewed."
+  ]
+}

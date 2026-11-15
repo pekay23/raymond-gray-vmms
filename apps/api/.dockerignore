@@ -1,0 +1,44 @@
+# apps/api/.dockerignore
+# Exclude from Docker build context
+
+# Dependencies & build outputs
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Source control
+.git/
+.gitignore
+
+# IDE & editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test artifacts
+coverage/
+test-results/
+*.test.ts
+
+# Documentation
+*.md
+docs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+*.tmp
+temp/
+.tmp/

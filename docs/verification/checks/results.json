@@ -1,9 +1,10 @@
 {
-  "recordedAt": "2026-11-08T12:43:37.433Z",
+  "recordedAt": "2026-11-15T01:07:37.704Z",
   "platform": "win32",
   "node": "v24.22.1",
-  "scope": "Local development build and real PostgreSQL API integration; no production, device, restore or staff UAT claim.",
+  "scope": "Local development build and real PostgreSQL API integration; no production, provider backup/restore, device or staff UAT claim.",
   "changedDuringChecks": false,
+  "changedSourcePaths": [],
   "sourceHashes": [
     [
       "apps/api/migrations/001_foundation.sql",
@@ -34,8 +35,296 @@
       "87d51b799b73b8467a9cda69c6882ba73b1ee6027e2748a2ac47b634d85f1e0c"
     ],
     [
+      "apps/api/migrations/008_work_order_evidence_links.sql",
+      "1afa83ac2bfc679336df526f42cb997fa19ccd595f6db6049f8af6729e9cde4a"
+    ],
+    [
+      "apps/api/migrations/009_vehicle_owner_invitations.sql",
+      "41e225c48ccbc11e5a2e7a7f85df25f3065ab20e5e88a919dd2eecfef2667cad"
+    ],
+    [
+      "apps/api/migrations/010_vehicle_owner_identity_sessions.sql",
+      "d27a2cdd138262e0413413528df06db924a4453f83542f5cade5108162792e5e"
+    ],
+    [
+      "apps/api/migrations/011_opaque_evidence_object_keys.sql",
+      "13805d0116ce5c1300c23cb8c56213abf2f34430f053e0f3ba859811385ffe8b"
+    ],
+    [
+      "apps/api/migrations/012_diagnostic_findings.sql",
+      "f3b56989e008bb0dd285d980693908b55a2caf89d2b15ad990ac4896fbbb6496"
+    ],
+    [
+      "apps/api/migrations/013_intake_facts.sql",
+      "e8d0cf88d9911cc54c57c3d3f1c7d9de6795d4aa8bd78215b8cdaf6028d9341a"
+    ],
+    [
+      "apps/api/migrations/014_intake_fact_correction_chain.sql",
+      "dbe5b6a84ed5937d975d4fb62be365821b2be746dc47d7d231c40a8dd79c3318"
+    ],
+    [
+      "apps/api/migrations/015_vehicle_customer_optional.sql",
+      "0eb4a5571333351000ae284ff27bf0e8624248be9bda5712653f09f51cde06a8"
+    ],
+    [
+      "apps/api/migrations/016_vehicle_variant_powertrain.sql",
+      "baef737a89d749b46ac92d0fc998009baa4e43f272a3f95e00aad848192fd719"
+    ],
+    [
+      "apps/api/migrations/017_party_roles.sql",
+      "1bb4360838c2703ebb6ea676c16e07df7f5dc0cb702a0319c0afad5c491baef0"
+    ],
+    [
+      "apps/api/migrations/018_client_booking_references.sql",
+      "e3d3f5842e4cddb17221408d4076f3478901759ce5e14de682ec5fcb42a3c50b"
+    ],
+    [
+      "apps/api/migrations/019_staff_authority_qualifications.sql",
+      "a121313ff16d3e607ec8972e6cca9a5d3f2b7e9f3555bfe0b8f75dd94d29c010"
+    ],
+    [
+      "apps/api/migrations/020_work_order_lead_assignments.sql",
+      "dfd2aff08b7484d5d86785e97702ed8eda645c129d4366a0f64d9a108604b8b8"
+    ],
+    [
+      "apps/api/migrations/021_lock_authority_registry_writes.sql",
+      "9a547d445a6d8a324be863935f6334296ed0badbc277386f7e0da68afe16ae16"
+    ],
+    [
+      "apps/api/migrations/022_work_order_supervisor_handoffs.sql",
+      "ffd02b4d70ec34f968dde0d3c521203b0052a8e160fee9416afc32f80748f039"
+    ],
+    [
+      "apps/api/migrations/023_qualification_scope_contract.sql",
+      "1292a85eb50c329e98cb566b5066c1ff78cbf841681c0abfb0efb5eedc10c4fa"
+    ],
+    [
+      "apps/api/migrations/024_work_order_authority_decision_snapshots.sql",
+      "197d5ee2d109de76b89084b593b863327a6dda1a583fe95ff86331836fddab7c"
+    ],
+    [
+      "apps/api/migrations/025_operations_review_before_assignment.sql",
+      "712e90baa22bd44827c48eca292b9c996a66bcdd96e9c2dff955bbdab365c019"
+    ],
+    [
+      "apps/api/migrations/026_authority_decision_clock.sql",
+      "2559a1869d392511a363294e058852424b81377d32034af4289280646c3859b6"
+    ],
+    [
+      "apps/api/migrations/027_work_plan_revisions.sql",
+      "fc4d2e1bb97bf53b79c664ebf4af1d1430dd9fed3370e1443509bd71e0aa7ce8"
+    ],
+    [
+      "apps/api/migrations/028_attempt_limiter_retention.sql",
+      "58cd9d85c4e3ad01d357dbcf099803120b31f072b5c7c5bade3a2f1910c6be5d"
+    ],
+    [
+      "apps/api/migrations/029_owner_vehicle_list.sql",
+      "28a8700725d4c3c248aed85928acfaa5d6f72338ac5b55707356e69c3eb93c1c"
+    ],
+    [
+      "apps/api/migrations/030_oidc_session_revocation.sql",
+      "e35aa2b66db0dff04999480f1cd1791437d017c292cae3901af382a28c68b3cc"
+    ],
+    [
+      "apps/api/migrations/031_sensitive_read_audit.sql",
+      "e9ca25829c6235a432955ca7c77f1517b0f3bb2830367e5901e52f784741393d"
+    ],
+    [
+      "apps/api/migrations/032_sensitive_read_events.sql",
+      "1da7ef983138236522c9b6259f7b36657d39cfed1c19b7287684bbe75737abb7"
+    ],
+    [
+      "apps/api/migrations/033_workforce_roles.sql",
+      "fd264debcf63ddbe0a7f17b7b590bd3eaf82604a1ddeafc3cf8be2c142bb5824"
+    ],
+    [
+      "apps/api/migrations/034_workforce_read_audit.sql",
+      "a11aabe6e78451e8b2981eb07e738a2f0e5464143f7a31a7e7462432f84c0594"
+    ],
+    [
+      "apps/api/migrations/035_workforce_overview_audit.sql",
+      "d9273ee8bfacde8826eac6abafaf56c3a459aeb1e3d9cf81cd26cc3ef35ba647"
+    ],
+    [
+      "apps/api/migrations/036_staff_messages.sql",
+      "fd24f7c9a0d78daa5eac24d5d79ffe693a44e13a18d053947f2e54635bff18af"
+    ],
+    [
+      "apps/api/migrations/037_staff_message_read_command.sql",
+      "5fd131f01e678f77c901bd093206d95cb69d160a371e4b5cc4c0096a82998dac"
+    ],
+    [
+      "apps/api/migrations/038_staff_account_provisioning_requests.sql",
+      "478ca378a875b94db08ecd4e979e4f5f7ec5eebe6062c5e46f874f4e3b3b6052"
+    ],
+    [
+      "apps/api/migrations/039_staff_account_provisioning_worker.sql",
+      "0845c7ef4859fd17105cbe24394f931b6732355532031e497fd68d015d635177"
+    ],
+    [
+      "apps/api/migrations/040_owner_vehicle_read_audit.sql",
+      "4f5579f47fe64c72ff3464c1725dfb2c342105fac35f339a91aae01910203eeb"
+    ],
+    [
+      "apps/api/migrations/041_controlled_document_library.sql",
+      "28f91d1a4194dcaf57688e0a917ea963735d0fcc6a767064c05f38662ac099d4"
+    ],
+    [
+      "apps/api/migrations/042_supervisor_task_allocations.sql",
+      "6ff3e5bdd7c1de132a281cd2c1305901173f5ff3a174711d21d05f20852c2a13"
+    ],
+    [
+      "apps/api/migrations/043_work_order_policy_ledger.sql",
+      "e0321a9745c8354ff26b2c3c6359b5824984ad36a8b73aaf3b8810e4cefc997c"
+    ],
+    [
+      "apps/api/migrations/044_require_writable_membership_for_assignment.sql",
+      "d8ede4bd7c872105ada10800dd2609a1d3aaa2c6ca3459351160384e7f6ae208"
+    ],
+    [
+      "apps/api/migrations/045_vehicle_sales_source_staging.sql",
+      "2411cb7ce220abf8cd5891656ed355c1f1d639df47f4035389edd5b29969e578"
+    ],
+    [
+      "apps/api/migrations/046_diagnostic_evidence_variable.sql",
+      "3addc6e9e8f81c959c4baa04ed5649cdc3741e502f7cdf95c019a9be8f76f9c5"
+    ],
+    [
+      "apps/api/migrations/047_identity_runtime_least_privilege.sql",
+      "5810fb5d5b36ac9b6ebc564130f9524e3cb385902d0d5977101052143aa184a6"
+    ],
+    [
+      "apps/api/migrations/048_site_time_zone.sql",
+      "2cb2555abed20510ae36838aba58aae5b7e061c4613c365e36f0ab3175258a13"
+    ],
+    [
+      "apps/api/migrations/049_service_requests.sql",
+      "0892e3cbbc49451eb0035ccca3ae9b7d5f611c12c8d0aaa073db6452329dfc62"
+    ],
+    [
+      "apps/api/migrations/050_service_request_read_audit.sql",
+      "f2a7f2a75da538ef732e007176d838a420ac45f21e42860185f39e0a4c00f7c6"
+    ],
+    [
+      "apps/api/migrations/051_scoped_site_time_zone.sql",
+      "94dcd230b84e6b13fd31cd2806f1310c6551856bd3019bb8ba926a07489ba80e"
+    ],
+    [
+      "apps/api/migrations/052_request_assignee_lock.sql",
+      "c636329060ad24bee1d8f757dd3afa6751438d788256f8c78d7a838b66fbd220"
+    ],
+    [
+      "apps/api/migrations/053_request_work_order_link.sql",
+      "220d0df10e0a9148a3d82bf01391a89a7d1077bb231f6e084dc2727191fde380"
+    ],
+    [
+      "apps/api/migrations/054_request_contact_corrections.sql",
+      "b9a42ffc3b5e1dd47daf9cc02f52ad17a1474f1c5a07de016e4a7efe9bdffa51"
+    ],
+    [
+      "apps/api/migrations/055_service_request_caller_details.sql",
+      "d1caff10cbbf46ac420999cd139df36e409c4db2dd2fbc0455b6dc51710e3f15"
+    ],
+    [
+      "apps/api/migrations/056_service_request_status_history.sql",
+      "609a9c824456a3a97a9352245a381884efb73d72814cbb2f8bc22d48b0c4fc83"
+    ],
+    [
+      "apps/api/migrations/057_sales_delivery_pdi_observations.sql",
+      "bb7961c22b14748b3c7c966d349145023f4814be4254148a22d6453aaf44da2a"
+    ],
+    [
+      "apps/api/migrations/058_one_initial_delivery_per_site_vehicle.sql",
+      "8a2debe16c7cc8ff8f0462e718ec5f39c39c725585afc3ab20a54271b4a39ffd"
+    ],
+    [
+      "apps/api/migrations/058_work_order_task_activity.sql",
+      "b65ba7531f5e5699dceffd02638879e3757eadcdab17adeb7fd73e6374204f95"
+    ],
+    [
+      "apps/api/migrations/059_work_order_task_work_entries.sql",
+      "ab6b8b299c37a185ab55da4b78346a574465e84ec87e3508dafe13d50cc9f9bf"
+    ],
+    [
+      "apps/api/migrations/060_service_report_read_audit.sql",
+      "e7d30f64c24aa41d9571c4d8f0fa7e616c5c2a635e9197db6cbfe0097ee364f0"
+    ],
+    [
+      "apps/api/migrations/061_task_work_evidence_options_audit.sql",
+      "1a04c08aa22b19fda2763fdaa135bf35f2b4e3501dea1d07b7d9e98c32f6072b"
+    ],
+    [
+      "apps/api/migrations/062_work_order_task_evidence.sql",
+      "c78c75d4c841b850b4cadab698893d71ca7157853e61291cb9a81d06fbd84a2b"
+    ],
+    [
+      "apps/api/migrations/063_work_order_source_reports.sql",
+      "c1957057e66d27ce0fb3e3de37afb398549c3e009c4589283207f720033a1158"
+    ],
+    [
+      "apps/api/migrations/064_vehicle_learning.sql",
+      "f0b1cb7415974a5af90f0490ebd4aff8fb66e04afaaa8aaf777c4ae74935573c"
+    ],
+    [
+      "apps/api/migrations/065_vehicle_learning_history.sql",
+      "b8104e8d074cb86760ae5e5c17e9c81a6b885d2748db54a993f291c789443bac"
+    ],
+    [
+      "apps/api/migrations/066_vehicle_learning_read_audit.sql",
+      "e3fca4bf053af922a1b03f91ffaa6cc924f89ec0e7354d5cf425053d2be30bef"
+    ],
+    [
+      "apps/api/migrations/067_workshop_checklist_templates.sql",
+      "0b071d6c22edef8327e2724b2860cd0fc51bf6dc4158eb18d1d063c2b0b6d01c"
+    ],
+    [
+      "apps/api/migrations/068_work_order_checklist_instances.sql",
+      "15731ea06f6d17c971fb28828a89b841ebf0f9e659aa3e190f23713e6dad000e"
+    ],
+    [
+      "apps/api/migrations/069_work_order_checklist_read_audit.sql",
+      "0e0a208dedbc1fff36967c26e3dbea9db70cec188356deb3861b5de04004bb9f"
+    ],
+    [
+      "apps/api/migrations/070_vehicle_learning_assessment.sql",
+      "ab3aa6a85674715c229e625d0651a78d206364db90e4947264f07bf7cb253410"
+    ],
+    [
+      "apps/api/migrations/071_vehicle_learning_review.sql",
+      "89040fe5b23884c5399e129fc60c89a3a5d5ec6b787128fa8d4d1cbec0977d14"
+    ],
+    [
+      "apps/api/migrations/072_vehicle_learning_library.sql",
+      "653f290b0f0b8ef79a389e5563a69591da742a6f714b2ca73ebebe88f9e90c83"
+    ],
+    [
+      "apps/api/migrations/073_finance_configuration_drafts.sql",
+      "ff8bf7dc2efd29e2038c0a2a2da0f9be6e9b43d222f3de521f71718b09ab48ff"
+    ],
+    [
+      "apps/api/migrations/074_work_order_task_labor_sessions.sql",
+      "1315d80f3e8b4d5d11c2f9585204312406af6bc3c26f4a05c42e6e3c0a9ae4d9"
+    ],
+    [
+      "apps/api/migrations/075_restore_finance_configuration_read_audit_action.sql",
+      "a162191aaa9ba480e6e80e652453223758528ee96010b794dd5dea892363e3be"
+    ],
+    [
+      "apps/api/migrations/076_delivery_preparations.sql",
+      "3bd321d2bc7ab3967d2db33c5de77b6a552da7c186345b10e5f3c5ccb621b1eb"
+    ],
+    [
+      "apps/api/migrations/077_allow_multiple_preparation_links_per_delivery.sql",
+      "337b15851c135b0c133e36ba722171f2013e28ec3627ca682d602300009b1bb9"
+    ],
+    [
+      "apps/api/migrations/078_oidc_rp_logout_transactions.sql",
+      "f4de40f125e73c78fd592288430d51e328b4c2d4b60008dd989d994067e39335"
+    ],
+    [
       "apps/api/package.json",
-      "83bfabeb24a2c2e50cd5a1b351ec7b29dce11833fbf09b192063568bc7ffd283"
+      "74c859d4ee221508f54594762b5c751e5a238bf6fd6a3ae2d4c23bfe0dbd9aae"
     ],
     [
       "apps/api/scripts/check-oidc-provider.ts",
@@ -43,35 +332,79 @@
     ],
     [
       "apps/api/scripts/link-local-identity.ts",
-      "b55258c6ccfbf3f926a9a42f14a40c99dd49019a5af61175c972f980e1d68534"
+      "c1a7c9af2674df1cde4863f33c0b24168ede6f40940985c891450cf5e37a35fb"
+    ],
+    [
+      "apps/api/scripts/local-identity-link.ts",
+      "a8a59c3bd83e9493667938eaafa45ff4b2c55950c2a8b0ae8f6c9824723dcecd"
+    ],
+    [
+      "apps/api/scripts/local-role-fixture-seed.ts",
+      "652dec3c2f9dfa3bbf32ddfbd5939a239ba2cf3a31d3ae53491ec5a43fd5890e"
     ],
     [
       "apps/api/scripts/migrate.ts",
       "e1eb7445624a94c90ce743eaf25649c7a51bfb8656e20b6a75098763d158b88c"
     ],
     [
+      "apps/api/scripts/prepare-local-role-fixture.ts",
+      "10153625a52b9af7be27457904a0c44274259490464553d5137793b20ee66fdc"
+    ],
+    [
+      "apps/api/scripts/seed-browser-switch-identity.ts",
+      "9d4bda670d34b2d24491fa3718535fb69fd2118d8c32b299fde4570460ed5e19"
+    ],
+    [
       "apps/api/scripts/seed.ts",
-      "0ccc0939870307c5a28361975b8269cc3344e93b1a7a4d567cde3d0a96a70f7d"
+      "b8c09c325cce91eba56ccde7b911958d15afdf5f763964f81132ef5382e781a6"
     ],
     [
       "apps/api/src/app.ts",
-      "25cd137ce9c3cf07f40044a368b44bf3b8a214d4a7d4a9c800a4e8e90de6f4c1"
+      "7ae615feeec59db9bb552dd994fed1a82aa04ba55fa920914071534481ef076f"
+    ],
+    [
+      "apps/api/src/attempt-limiter.ts",
+      "b684647ca1ea71c5c103703ad126ee326c107c8d0cece5a360bb66115c944fa2"
     ],
     [
       "apps/api/src/business-csrf.ts",
       "58da601137e3534706872ac0223203d45e6419d763d3ecb17729513f4b9d20ca"
     ],
     [
+      "apps/api/src/cloudflare-node.d.ts",
+      "42f0ea1506914f198c3cfc926d382a36407720bfca3d2f4053cc782b15fdc2aa"
+    ],
+    [
+      "apps/api/src/cloudflare-spike.ts",
+      "72c87eb090cc593ca123bfc5abaa35438479584be2e0dd18657dbdea7a993861"
+    ],
+    [
       "apps/api/src/commands.ts",
-      "043aa195282dd5a47383f888e9dbdd75c49c1fa233fb56b622d3816daa1f2534"
+      "49af102682b1da8313284eb6cc8e7eff749bdeda12e60e09a94c90aadc3693af"
+    ],
+    [
+      "apps/api/src/commercial-money.ts",
+      "487411eec7c777e5c1d8fbbc34db95f5d40e26fc20cac9635e8dc18da17eaab5"
     ],
     [
       "apps/api/src/config.ts",
-      "5c4d025f6c8d23598a58821e7150cbef3b27d67919bb97e2ba6faf88437e171f"
+      "168b7755a1ee4741597517d8849b7d8cfb85c878aae3759764a2942bd864d536"
+    ],
+    [
+      "apps/api/src/controlled-documents.ts",
+      "c5630da3c1775d3bf08f64ef572ccba416cbd3a2d1de71250531d1a8355124a6"
     ],
     [
       "apps/api/src/db.ts",
       "b025b3db38069c3b8d3cd115ed3ec39eae1a8607edee793ad86c952f3241559e"
+    ],
+    [
+      "apps/api/src/delivery-preparations.ts",
+      "337a205acb34dbe56bd754e822887287af5f19db996af171e378c3e37c4a1559"
+    ],
+    [
+      "apps/api/src/diagnostics.ts",
+      "449dc5bfd2baccea1cd345940685ad5fc5710c1ce884b46d38089c3e876ac9d5"
     ],
     [
       "apps/api/src/errors.ts",
@@ -83,51 +416,215 @@
     ],
     [
       "apps/api/src/evidence.ts",
-      "c88a8e88808b982661dcbab12f1bd767dbaa94233463de618cd5d28c0de81983"
+      "36aff80259557dd0885d7e81df1df39ccd9861d40f69036f145734a09f99a19a"
+    ],
+    [
+      "apps/api/src/finance-configuration.ts",
+      "4dfe82506929ce2b1fc679a9a98f8b9c635c3473ea14c53ef40970a42a2a7b8f"
     ],
     [
       "apps/api/src/identity.ts",
-      "ef3287311ffa63bc785b0cd4571ef3bfff6ba55c54fa1777acf934b848145c70"
+      "9de144f425e75cf3fb28800f91c0dd227ef081bdd1e50026a080258417414484"
+    ],
+    [
+      "apps/api/src/intake-facts.ts",
+      "de5579528e944c902a9af74aa5be84d64aa4ec322a9c88baa598b047b0cc2427"
+    ],
+    [
+      "apps/api/src/my-assigned-tasks.ts",
+      "ff2679e9b10eeb15570d6de6fda3f70955b1e1bbcb74812cdab0d5330859b5b3"
     ],
     [
       "apps/api/src/oidc-client.ts",
-      "b5c22c33aed6d61af128aabb0acb6cf994a49c3210a581acd15ae5540524e947"
+      "b6e38d419a68bd1a9a75fa3b9a643a40d9b65bcef7949cb7c86edbd00b07d808"
     ],
     [
       "apps/api/src/oidc-login.ts",
-      "45688b075d32d6a8b684935c9892d9639b910906e493af9101e4fa9bca705c3e"
+      "d59bedd843796e4ce723d61106e8ae9fb5cafbff73e6e0d6da46dcdcaf30c221"
+    ],
+    [
+      "apps/api/src/oidc-logout.ts",
+      "0d180d5fd6d31660d864f35cd8d3a6a5123c2af76721b5bb710fc057344180dc"
+    ],
+    [
+      "apps/api/src/oidc-rp-logout.ts",
+      "39bd1bcfc63063666bff2638c8577ca1ada967879fa6c28e3742dee715b3be98"
     ],
     [
       "apps/api/src/owner-access.ts",
-      "effac2a0de99ecbf06f06a1ca641eb2a661b43f329b0f5db00a76315ac6d87e0"
+      "b1408204b5077a06ce8ba632b0af1ff21434cf97b91239cb69f2add0d4fde157"
+    ],
+    [
+      "apps/api/src/owner-data.ts",
+      "20edcb6b4633aaa134df9cf95783001a300d15ff1c6e3c94a131405691e59247"
+    ],
+    [
+      "apps/api/src/owner-identity.ts",
+      "57228f1074eb3950237466a2a0cf96784dab2578e4601ace1d07f29886d2450f"
+    ],
+    [
+      "apps/api/src/owner-invitations.ts",
+      "1fd000e5d7edb2544f6f8f8f6611ea1aeb63cb1271a079c83990275c11b63c76"
+    ],
+    [
+      "apps/api/src/sales-deliveries.ts",
+      "693e2bdfaefcff0030f033e4159aa631eb1f3ce8ab4ea8a8b2ee773605cf8e40"
     ],
     [
       "apps/api/src/schemas.ts",
-      "c2f93da6e5028a5328275eaf7b956fda875874eb763d3ad265f634e44e0b802d"
+      "6f60d6b031e1abbc1207084a31d8e5934f66d6ac5203507e0d80ee02a24b679d"
+    ],
+    [
+      "apps/api/src/sensitive-read-audit.ts",
+      "2601403331475166b391a26946fa6813e8ba0b5d8840868c16bcb521dbbfa981"
     ],
     [
       "apps/api/src/server.ts",
       "06a3b70f828b16e3201efa2100e382d52b2885d8532a16629120e4d675449164"
     ],
     [
+      "apps/api/src/service-requests.ts",
+      "6924e4ab7e0f69f54cff264e52fa8e4d97ebfe51138a9769addc4ef5e6293127"
+    ],
+    [
+      "apps/api/src/staff-account-admin.ts",
+      "f046872b0a5254a2090f8baee039ca8622be2eed6e9a55d141623d9534103816"
+    ],
+    [
+      "apps/api/src/staff-account-worker.ts",
+      "f0f7fa1eb57b54622db21b02162944032cd85a484ac4547c70f16d21e9870507"
+    ],
+    [
+      "apps/api/src/staff-messages.ts",
+      "ad7b7c1f4e7b3050ab2bd5191fe832fe59e15d39691f8b7c6d1018a6f6b3ebc3"
+    ],
+    [
+      "apps/api/src/staff-role-policy.ts",
+      "a6d8117049b279bba68b5a15ab9d4fa39a0e3b9c4977d8dcd107ee7c4651b3c3"
+    ],
+    [
+      "apps/api/src/vehicle-learning-assessment.ts",
+      "97bd455d99b09d4d9e413461db3c7c06d193d53b2e2a6a1001cf0b4b36a4fe80"
+    ],
+    [
+      "apps/api/src/vehicle-learning.ts",
+      "4cf39519b535813739c58468ce280193d299508003a323fcd4e43cfc31ae288c"
+    ],
+    [
+      "apps/api/src/work-order-checklists.ts",
+      "df2c05596455ba502735c67e58161b6ffa9e2e992d4a158c519e7a49edb51972"
+    ],
+    [
+      "apps/api/src/work-order-evidence.ts",
+      "467171fe8d26eb125bac3526fbf10b89df917698944a159dfbf6015753610d12"
+    ],
+    [
+      "apps/api/src/work-order-policy.ts",
+      "53610d864d40e38fdcb0d4551657e3d63febaf9c8d4244e38f56a2e4f36132d0"
+    ],
+    [
+      "apps/api/src/work-order-reads.ts",
+      "925ae57fbac0b3225e72a7296b7f502c88b3a4c6c13a350fbff7b6331051d287"
+    ],
+    [
+      "apps/api/src/work-order-service-report.ts",
+      "35c0ec9663b5a38408fa6a8b8c72d2b40e99a1500bbce36db5dabbd4b666ed99"
+    ],
+    [
+      "apps/api/src/work-order-source-reports.ts",
+      "5403ac6e2048fcfa1d75b331ddc9edbb1500d9477d9faafd47429dedc1e59a3f"
+    ],
+    [
+      "apps/api/src/work-order-task-activity.ts",
+      "b7f08bdd5d8b7b322570d72d263f3750befaed8729d4646db2578702df9d85df"
+    ],
+    [
+      "apps/api/src/work-order-task-allocations.ts",
+      "0feeb9324e6e25d57ee408f59763b7f6541fda8edf0d7b3a774034301c0d6f1a"
+    ],
+    [
+      "apps/api/src/work-order-task-evidence.ts",
+      "a4348d532f37a77280a4781973694784a27b445438b2b110f4a3a0c390c8e25c"
+    ],
+    [
+      "apps/api/src/work-order-task-labor.ts",
+      "f2105a112318c2adcc3fae52a6fe2fecdce5dea9a1398da1f33d732adbf96962"
+    ],
+    [
+      "apps/api/src/work-order-task-work-entries.ts",
+      "463c9b3387c19ed5c28cefbfabed3d8f18dfbdf313b2b186560bf00770a3549e"
+    ],
+    [
+      "apps/api/src/work-order-workflow-context.ts",
+      "da613b280c6ac5afaa0262a701d6a92b00d57c6aa9536f93e5650ddeef6278a8"
+    ],
+    [
+      "apps/api/src/workforce.ts",
+      "0742426b88139c1bddd12f288d78a0255e9cda2878288d6eeb343d337bce52f8"
+    ],
+    [
       "apps/api/src/workshop.ts",
-      "d7305f3e35094dcb78bd45f6e7c40c14dbc783ee579e7a122a442b2848532a23"
+      "932a913def2284dff6a286f54d2037cb834132329204cc845f3aa9f519cba476"
+    ],
+    [
+      "apps/api/test/commercial-money.test.ts",
+      "98c48a573fab00125bdb8a66dd33dcb64f7bff9ae3cf2b67cbf2fd7f2aaa93be"
     ],
     [
       "apps/api/test/config.test.ts",
-      "f4b326edeb6a6bad95168654330544e6f422dedcc4372109254d35bd3007f4e8"
+      "517a7d1761edfbeabb3e7c1c43ebf22a7c92dd2407840e6579c28046926a48ab"
+    ],
+    [
+      "apps/api/test/evidence-scanner.test.ts",
+      "a0a2d3683da0654e8abfbc8b075eb3c3e84c10e5d07c069e4283428460c6afd5"
+    ],
+    [
+      "apps/api/test/evidence-worker.test.ts",
+      "fd66b4b48d5d1305e9c27ae536c1030f1954896149d0a1075173cbaa2353f975"
     ],
     [
       "apps/api/test/evidence.test.ts",
-      "0f761947be068934cac0ee535de8da95d4ac023319e4516ed63544d65af33f18"
+      "38723fe1df6606330e1e86fe1410a790944bc401edfcd6c4e814229a97cbbd76"
     ],
     [
       "apps/api/test/foundation.test.ts",
-      "6b2a22fe474f66592899bf6e70126d99c63c983db5c75cf0d02828efc1b054a2"
+      "cb6d763f75c32ba438f344a2f138407a84db54b1d253f1a30b4f4fddc6184feb"
+    ],
+    [
+      "apps/api/test/local-identity-link.test.ts",
+      "ea0b66802767630d3b6c332c41ca28f6d93e031e5a1db2fad7cc2d23a00c560f"
+    ],
+    [
+      "apps/api/test/local-role-fixture-seed.test.ts",
+      "0413555129ca6d81dbd3ec846e79face50506b3246c3f143150370f0b66696c2"
     ],
     [
       "apps/api/test/migration-upgrade.test.ts",
       "1ff8415762b96747f3fa81ef3cfeaf8db7c68001431f2d7a92b8abb9a437b58f"
+    ],
+    [
+      "apps/api/test/oidc-client.test.ts",
+      "92e6a3ca50a478015751b7f2a70bf6ad75b731428dfc3f6e59ee3f4f43c5d08a"
+    ],
+    [
+      "apps/api/test/support/clamav-fixture.ts",
+      "d5467e1a78fef9950252b714b19aaebb7fb7b584e36d0daaa7b1bc18ade98970"
+    ],
+    [
+      "apps/api/test/support/evidence-browser-runtime.ts",
+      "c32bccc6b5b478689b13f84996fa809fcfb179af0259e0439f449220f5fd233c"
+    ],
+    [
+      "apps/api/test/vehicle-learning-assessment.test.ts",
+      "a74dc73e5248e7a2ac592245bee24d05b8fdded1212c2c0b75d23490ee32b07f"
+    ],
+    [
+      "apps/api/test/work-order-policy.test.ts",
+      "79a57231a9179ba792154e852668afd95822fbe7eaee976be8e85ec597924d14"
+    ],
+    [
+      "apps/api/test/work-order-workflow-context.test.ts",
+      "84ec8d05d9dbd74c8c2298357d670fda1e1fcaf205d8594d2cf68fb985eeeacf"
     ],
     [
       "apps/api/tsconfig.json",
@@ -135,67 +632,399 @@
     ],
     [
       "apps/web/package.json",
-      "1ae5f6ba27ad6c5b6ac6f3e74abc42073b1c26ca74becada79b4fb65426b2b40"
+      "9fc152805eff9b94a7f3bdae8095e29394dca78d1b198a6656f7a802c7132d4d"
+    ],
+    [
+      "apps/web/scripts/build-brand-images.mjs",
+      "01ede756a4d09f87e7d360521c3195a0b70e932ca42056d953ca7181e10ec4f7"
     ],
     [
       "apps/web/scripts/build-images.mjs",
-      "901afb30649851af599bf9a2beb99292b1a56408c0d033b0bd60b738b2c271f1"
+      "04c5340b6ce365408bbb9abbd0ee9984b0135dbe4a0ebada4c0b9297593ac67d"
     ],
     [
       "apps/web/scripts/verify-responsive.mjs",
-      "fcdfb1414d5bccf3c98fb7f1574a945c7180bde771f1b87de429210098745cf0"
+      "a39f4f6eb2d75ac4544853baefda534563207f33f49a140cf8ad551a3e76d777"
+    ],
+    [
+      "apps/web/src/api-proxy.ts",
+      "380f3964c3a246e80977deee7d7ca073e5d52b928a52208bbc750d8fb43b799e"
+    ],
+    [
+      "apps/web/src/api.test.ts",
+      "605438119f630bd4fa533a1b248070e3d88eeeda6c6f410408b43df1e8105268"
     ],
     [
       "apps/web/src/api.ts",
-      "c7f56d457d031a65ca248dcc9308f2e762d38314607156a85375a16e7852e64a"
+      "189d41861f4d2ba3f753441ac4ff5fb14d4c1404a3440f700d49eda99dd075ce"
+    ],
+    [
+      "apps/web/src/currency-codes.ts",
+      "da551b14ac72db8ccff39ab35df5960b50922242aa539e65ba3f358bf1747f99"
+    ],
+    [
+      "apps/web/src/drafts.test.ts",
+      "71424f4f48ade1bf5e767817aadb0835699001fd39f19f9a37327a23638e3631"
     ],
     [
       "apps/web/src/drafts.ts",
-      "9cc537c54baba08a0c9dac56c530273fcea9809c61c6233e66e84cda843ff621"
+      "727af971083076293c1236cad32a1ed319942a8ac09e77f7e3b47564b592490e"
+    ],
+    [
+      "apps/web/src/formatting.test.ts",
+      "bcc0d12459d44b78bbd81f922b09e27836919448828356cb0abb7529bc8117aa"
+    ],
+    [
+      "apps/web/src/formatting.ts",
+      "e63f9debbd2fc6eff9e3ca273e1f2264b6f2e498d4b1b8b8d873baaae852a145"
+    ],
+    [
+      "apps/web/src/generated/brand-images.json",
+      "c377f9afd186c97e914927a6fcdbc38f39a600c8f23b0d2ccc0c5afa75e08167"
     ],
     [
       "apps/web/src/generated/workshop-images.json",
-      "8358d24252e5614983f89eab16c611a1766af12e9e6a87d23c03b8961d0710c6"
+      "5e46aeed0872ccbc41ec008287fee9b702b691f8492d10b04ba90aafe77ca7a2"
+    ],
+    [
+      "apps/web/src/intake-facts.tsx",
+      "c34dc050910a861773e4c4d5e7886da7a170adccfbd367753ff3a043cabb4c75"
     ],
     [
       "apps/web/src/main.tsx",
-      "6bf9df553b9050ebbea6f594894f60b37c19c0e559aabcbc3bfd69ad2c9c7952"
+      "a3c516b798288af1e3a3482fa711af77fe738180548f07ef096d34312571f58c"
+    ],
+    [
+      "apps/web/src/pages/documents.tsx",
+      "9ff9b45511e21be145d442049efa0c8f7fc4edafdde8bedaf426b6e2188489e9"
+    ],
+    [
+      "apps/web/src/pages/finance-setup.tsx",
+      "ec2b69b6ae91729398885986475fe3b47dd68442ef7071e35e5076732934aa1a"
+    ],
+    [
+      "apps/web/src/pages/head-overview.tsx",
+      "5e3c6179680ee5ce84155735420f7ae13f79922b4e33402cf93362d6b1dd7621"
     ],
     [
       "apps/web/src/pages/intake.tsx",
-      "1251bf2e3be398b297f2586495e09b520b4ba6d4dfabb56a8eb055767df913e0"
+      "e7798424641af60a62ffb903354a5939148fa2eebf396cbadbb6e0d6b9dc4aff"
+    ],
+    [
+      "apps/web/src/pages/messages.tsx",
+      "70f2f8c15162ae2c255ef507ff93662e99fc54f3a954ee943300a1e947b07729"
+    ],
+    [
+      "apps/web/src/pages/my-assigned-tasks.tsx",
+      "4d5ea32804ed3eb23aa0664853840b113a9a4f784886d734ea5dbc237f824af9"
+    ],
+    [
+      "apps/web/src/pages/print-head-overview.tsx",
+      "2d2cb04314bb63b24938e31d25d13edbcd256d7be5b15d41ab1aa91d5a748670"
+    ],
+    [
+      "apps/web/src/pages/print-task-progress-report.tsx",
+      "ca849133003031bf328f644882851f7907a096230b87be02aa06b5610f24ff52"
+    ],
+    [
+      "apps/web/src/pages/print-work-order.tsx",
+      "35f06488d2dc8964c43417309e215cec854d7d8b528e9ecfa100b1baf1e64f9c"
     ],
     [
       "apps/web/src/pages/reception.tsx",
-      "1c6e84a7637926e0b0574e3780d4fd78287dc6d386243598099f2813242a68b3"
+      "64a79eb70a2d39512aa4bffc025683f00fec7dccc29d927d660e5b3f37f1640d"
+    ],
+    [
+      "apps/web/src/pages/sales-deliveries.tsx",
+      "438c2522ada63ebc18d361cc50eab43dd63c775e38f15498ddd4b4cfaa79d805"
+    ],
+    [
+      "apps/web/src/pages/service-requests.tsx",
+      "4ba133ebbf2037f92eaa8ff624003f4de9ce69d199b0b005e223998d5358bdf5"
+    ],
+    [
+      "apps/web/src/pages/staff-accounts.tsx",
+      "e882c8e56578f713b7d669375bd291bccbf2f1c9edeeeb00e388ab55bca8fa4f"
+    ],
+    [
+      "apps/web/src/pages/today.tsx",
+      "b4729abb49c2f193a91817a9a9039e2e4b8bf2296da1e9f67523e16ef93b1b5e"
+    ],
+    [
+      "apps/web/src/pages/vehicle-learning.tsx",
+      "e9a74d8ee46e5bd2c0894aedfb8575ef446e43d501768f375d43f3349e64faa0"
     ],
     [
       "apps/web/src/pages/work-order.tsx",
-      "bdeee70909760d511216933c0c6c3e60d2fe0914851ea35b37bdccff7b9d61f3"
+      "063e41c30a15b3b541a91d5c39d1a165b33565468d771f6db8f1f3440d97b4a1"
+    ],
+    [
+      "apps/web/src/pages/workforce.tsx",
+      "e08ddf4c4d6decd3eb0688ea824e9e8a3e647c546844a5bd9ae89f33ca1204fa"
+    ],
+    [
+      "apps/web/src/source-report-capture.tsx",
+      "be29c224e168e5cfbf38ea275f2b3cade188a5a66f3643bc77225bcd333a533c"
+    ],
+    [
+      "apps/web/src/task-allocations.tsx",
+      "189965d286d6908226a5c42ef1a8e115ccd0cd4ed88bc97347d7c538bf0fa3db"
+    ],
+    [
+      "apps/web/src/task-work-evidence.tsx",
+      "a6657931c102c138d6d56a26befb0fb86efc9ce6deffcb931ff6ee6d6783fb80"
     ],
     [
       "apps/web/src/ui.tsx",
-      "42898dd5963a32e4c44f1bc65c7377f20279bd509f63c7ab06eaf13b05f362a4"
+      "6e376f3a88967dd598714e82f7cb4fe5abd31b44a6623be067f7cccd4ebf8fe8"
+    ],
+    [
+      "apps/web/src/vehicle-learning-activity.tsx",
+      "960108fc2cdeadd86837da1c810d0f235cbcc4a1b2c7eb31bc94fe4b8f30b5c5"
+    ],
+    [
+      "apps/web/src/vehicle-learning-assessment.ts",
+      "6aa84a1dae6ea997e9a585b03bd78625ea876a1854879262712724627cc57612"
+    ],
+    [
+      "apps/web/src/vehicle-learning-library.tsx",
+      "d3f43734e8735351c5c6619f4c813df7701607b99d013be42113cb87d3f31f5e"
+    ],
+    [
+      "apps/web/src/vehicle-learning-review.tsx",
+      "4019b16fa82654ed705198b7ed59359a3f4586139caa1c8f00b5393d9c7035e3"
+    ],
+    [
+      "apps/web/src/vin-scanner.test.ts",
+      "636b28d78da22b9ea5781c7f4e1f9b6518cd0e7d0b9a01af227f915290cb5469"
+    ],
+    [
+      "apps/web/src/vin-scanner.tsx",
+      "7cf5adaa9f49093efa18c05e57c8fc51640007a160e812aa5b4881bdbb45c867"
+    ],
+    [
+      "apps/web/src/work-order-checklists.tsx",
+      "f4da1cefb57ce2f14e84a7c531c52ee762e3f5cf709c44f85c2f976f63945916"
+    ],
+    [
+      "apps/web/src/work-order-evidence.tsx",
+      "d9b603d36fdd3705c47b053db7978767d091cd6963d90f7efad8c2928fa76eca"
+    ],
+    [
+      "apps/web/src/worker.test.ts",
+      "4c121594c38cba7bae7306d5cf325e9c38e296e9b61fd7b1c637851edd224526"
+    ],
+    [
+      "apps/web/src/worker.ts",
+      "40da73722d71484b2be2dc9cb0349d32e982e19bdd6527165318766a6cc7844d"
     ],
     [
       "apps/web/src/workshop-picture.tsx",
       "792675b419f07fea08a263551f6990d45b14dc72ee8b1af977da9d1757c741f5"
     ],
     [
-      "apps/web/src/workspace.tsx",
-      "68ba4f649e382d5276b2855dfb853a94c37aa14e092806d80fafe99aa9f2c3e5"
+      "apps/web/src/workspace-navigation.test.ts",
+      "ab96a3ee78b8c66a48e6bbfd8dd26a2da621fc9be3154c7bbf465215dd48876c"
     ],
     [
-      "apps/web/test-results/responsive/results.json",
-      "1dd67a7861e7e3f66f0d926e2ac914e7f7320dc03e0791736dfff294e0c3c5e5"
+      "apps/web/src/workspace-navigation.ts",
+      "c9b8e5bd0bb1701cc490263321df5984ec1924688651227fe141df70af00150d"
+    ],
+    [
+      "apps/web/src/workspace.tsx",
+      "1edcda85d48671b0559e7f96c53eec5cad541d2a6e4715cc9c22de5b620b4d9a"
     ],
     [
       "apps/web/tsconfig.json",
       "9f56597a2bb393d5b7983ba82068b0e3c100a59c8e24f17f8917a356e7cb946e"
     ],
     [
+      "apps/web/vite.cloudflare.config.ts",
+      "3278e15e11f1de6cf360a3ce004916d2515773d795f1a6951221606b9f0408d8"
+    ],
+    [
       "apps/web/vite.config.ts",
-      "70d09f02acdb76363b86e5d0fa147bc550cb2923ddf98c5787c7592961350617"
+      "6bf6114de039ae911e06d285312630f5ddc2faa44a42c362ec21386ebcee6615"
+    ],
+    [
+      "scripts/browser-smoke.mjs",
+      "4a4e190b7f26433375d2c0583d77f9e0cdb88bf4a05098bfb40d7194d4b6a561"
+    ],
+    [
+      "scripts/check-historical-import-templates.py",
+      "dd1224edfe33e64ff8f7cebac43be057b5bfe3d23644da4618877d73082194d9"
+    ],
+    [
+      "scripts/cloudflare-api-spike.mjs",
+      "13d9d118ae15bb24fbf4fdb331dfe95f63909d293b657158d0b1a9c8ac4dd0fd"
+    ],
+    [
+      "scripts/cloudflare-real-api-proxy.mjs",
+      "89182322f26bf95791e3fe7c4a7a26eaf8ab300a188bb113ab592597d1cbc3c3"
+    ],
+    [
+      "scripts/cloudflare-web-proxy-preview.mjs",
+      "c4f1e0a6015868cefd07dd9c1e8298a705aa3f73e8e3ddf93f90762ac2166661"
+    ],
+    [
+      "scripts/draft-migration-check.mjs",
+      "af356b7d45ba5d2b5101111c4739e77767dd8bf39a34dfbe9576a43218946e8a"
+    ],
+    [
+      "scripts/evidence-backup-drill.mjs",
+      "e167dae1d95ac1a91a6d83ee6a94ec3d1810fce95ad6706743b62e19d7d1b262"
+    ],
+    [
+      "scripts/evidence-browser-real-services.mjs",
+      "252bd242343feb1134117a4e7d37ceb11fa0fb7871cf5b46915f8d5352b26726"
+    ],
+    [
+      "scripts/evidence-browser-recovery.mjs",
+      "d42ada8fc4cc3b463711903384d390894e892ee0c5f31f6e8a754875658a0057"
+    ],
+    [
+      "scripts/extract-specifications.py",
+      "3cf2b0524552f6f379748cf0eb440ead82751aad856df4a11a3870ac632ead62"
+    ],
+    [
+      "scripts/finance-configuration-browser.mjs",
+      "84466bd99db51f1e189701778ab0ca06d47b7fab1dbcde857fe94d0bb046353e"
+    ],
+    [
+      "scripts/head-overview-browser.mjs",
+      "89b88b612558a38fab7d282fc401413f9935d5ab1b5e232bb992af2b2f7466e5"
+    ],
+    [
+      "scripts/local-role-fixtures/create-instance.py",
+      "e789b366e5b3ad5c86870112f9c1b3c83bb45e2141bbdaedb24bdffcb8a43b04"
+    ],
+    [
+      "scripts/local-role-fixtures/personas.json",
+      "a8e8613cbff6a4640176aeb8ea9e4f39b94ac3800c45f97601c596a92360d465"
+    ],
+    [
+      "scripts/local-role-fixtures/test_create_instance.py",
+      "eabd544e25dc8ec115f752c4bf27e2b1aa2440b1c44740c19a24d2681d954eff"
+    ],
+    [
+      "scripts/local-role-fixtures/verify-logins.mjs",
+      "dc52a423a4b796a63f4bb5b76305e73e443526ddceb1deac8cbca071ea70f536"
+    ],
+    [
+      "scripts/local-role-fixtures/verify-owner-claim.mjs",
+      "8e39fac75c4647a287efcc3fbca5893a774c8c1c081648032f1c4202a62c5021"
+    ],
+    [
+      "scripts/log-decision.py",
+      "e27b6a392582e328f17eeb2656c89286fbc18bd24dd4f3416b5eca83778a6a0b"
+    ],
+    [
+      "scripts/messages-browser.mjs",
+      "de7b2d445b51772b513ddaae63d440bb4788b6a8a0452e5ec1646fd8430e2968"
+    ],
+    [
+      "scripts/my-assigned-tasks-browser.mjs",
+      "608bc55a050bc5f793934fcf41ac21bd9e30d0f9a04656891b3911695d804471"
+    ],
+    [
+      "scripts/owner-session-expiry-browser.mjs",
+      "8dee09359751fa8ca74e4f31e9aa6dbd86af6813657010b8fb51ffd16f2accd0"
+    ],
+    [
+      "scripts/project-status.py",
+      "cfc3e2474b8199aa566342268201f6d00b9adacc25249387fa624f79f2e2e457"
+    ],
+    [
+      "scripts/queue-pagination-browser.mjs",
+      "da5594f214a2948529980812fbab6bae86483df4a8aaabea8c23547bbea72ae8"
+    ],
+    [
+      "scripts/sales-deliveries-real-browser.mjs",
+      "1d09bd944ed06ac86b62ab18ef50839a7902d1804fa3d83c7f36c73faebd50fc"
+    ],
+    [
+      "scripts/service-requests-browser.mjs",
+      "bd1a11419fa94f50bbf50f26e345589497b3c12d3e05be4da22c790dea4666f5"
+    ],
+    [
+      "scripts/service-requests-real-browser.mjs",
+      "b5ad52141d1102f9fef6eb39e22eb77bd374f315fd13424d8b90db3514dcfb01"
+    ],
+    [
+      "scripts/smoke-local-oidc.py",
+      "e8cdf36de12943917a5d4690b52b47df669d88b9884cb668b179dc4282257264"
+    ],
+    [
+      "scripts/staff-account-browser.mjs",
+      "4a4972442b605f45c1be86115f11dc49166237e7929b4431c0d122a2dd0325be"
+    ],
+    [
+      "scripts/stage-historical-import.py",
+      "30e28bb8f6e879667c0cb9c9635957d849883bd27a831e064dfaa4fa9ba4a13c"
+    ],
+    [
+      "scripts/stage-monthly-sales-db.mjs",
+      "47e7d0468a0b3cb498bd1080d8c98e1e63845b5c569a0872eacb9043a2575475"
+    ],
+    [
+      "scripts/stage-monthly-sales-report.py",
+      "94b03ce813bd798f193c9407d8246cff61beb20b3bef073c957d2897d88cc2a8"
+    ],
+    [
+      "scripts/stage-service-advisor-workbook.py",
+      "3eab957935f57a112bb07e731affc38114c430f0f5d4004fab1a2391cbf73b57"
+    ],
+    [
+      "scripts/test_evidence_backup.py",
+      "7d208372e4b788ccb414aa7bea954b798abe43d00867f1d7440e6a8f85934e78"
+    ],
+    [
+      "scripts/test_historical_import_staging.py",
+      "d78446303988b58f21c7ae7191dbb497421030493c6929f576a2d89187984b16"
+    ],
+    [
+      "scripts/test_historical_import_templates.py",
+      "74d8d7483090f086a19d8711fe5b7d4efcf48b62079ea71b5c515ed8723e1864"
+    ],
+    [
+      "scripts/test_service_advisor_staging.py",
+      "04f8c65eb9776a3ab1c3a7c52c46ae71ae1d2c92c1a3d27b767d033f8a7463a6"
+    ],
+    [
+      "scripts/test-monthly-sales-staging.py",
+      "a05b5973134bee0e67f9fafe12a70f268fbbd29694ebf85fb27772d4c023abe5"
+    ],
+    [
+      "scripts/test-traceability.py",
+      "f3d6f57e0753113a9029c7a13baee36d49f4e2a209e798051d2743ab0cca17d1"
+    ],
+    [
+      "scripts/update-tracker.py",
+      "060a2b539a90dc9dcbf2bcb24304a63b09266ef4a87e3e6e23eaf6a1f2b43fbd"
+    ],
+    [
+      "scripts/vehicle-learning-browser.mjs",
+      "0727b986310df04934da91118cc73be3b0fc72e43ce26ac68f7401ed80513aa0"
+    ],
+    [
+      "scripts/verify-evidence-backup.py",
+      "e74400ef05fc94bb0fb2e12a707b0c1a92599930863ee6f9182e964bf09a7bb5"
+    ],
+    [
+      "scripts/verify.mjs",
+      "748e05e4940e64c3c4a206288cc94f7e6a7ead724f7a52e51710044255ad1beb"
+    ],
+    [
+      "scripts/work-plan-browser.mjs",
+      "02ebb352f10d486cae92f3e89ffcc9f18182beddd65384d680b62d1b637d2919"
+    ],
+    [
+      "scripts/workforce-browser.mjs",
+      "e5fb2ac33d8c5765e8df3dbc5f18566c9dae8fe11f50e403b32c01588e5079b9"
+    ],
+    [
+      "scripts/workspace-navigation-browser.mjs",
+      "a9f8819b0adb09b5fe4feea11325ec32138047f63d5f63d88cf72f9c261a7b3c"
     ]
   ],
   "results": [
@@ -206,10 +1035,70 @@
         "run",
         "docs:check"
       ],
-      "startedAt": "2026-11-08T12:42:31.063Z",
-      "finishedAt": "2026-11-08T12:42:33.304Z",
+      "startedAt": "2026-11-15T00:42:18.618Z",
+      "finishedAt": "2026-11-15T00:42:21.556Z",
       "exitCode": 0,
       "evidence": "docs/verification/checks/traceability.log"
+    },
+    {
+      "name": "traceability-tests",
+      "command": [
+        "npm",
+        "run",
+        "docs:test"
+      ],
+      "startedAt": "2026-11-15T00:42:21.562Z",
+      "finishedAt": "2026-11-15T00:42:25.703Z",
+      "exitCode": 0,
+      "evidence": "docs/verification/checks/traceability-tests.log"
+    },
+    {
+      "name": "historical-import-templates",
+      "command": [
+        "npm",
+        "run",
+        "historical:templates:check"
+      ],
+      "startedAt": "2026-11-15T00:42:25.705Z",
+      "finishedAt": "2026-11-15T00:42:27.752Z",
+      "exitCode": 0,
+      "evidence": "docs/verification/checks/historical-import-templates.log"
+    },
+    {
+      "name": "historical-import-template-tests",
+      "command": [
+        "npm",
+        "run",
+        "historical:templates:test"
+      ],
+      "startedAt": "2026-11-15T00:42:27.759Z",
+      "finishedAt": "2026-11-15T00:42:30.251Z",
+      "exitCode": 0,
+      "evidence": "docs/verification/checks/historical-import-template-tests.log"
+    },
+    {
+      "name": "historical-import-staging-tests",
+      "command": [
+        "npm",
+        "run",
+        "historical:stage:test"
+      ],
+      "startedAt": "2026-11-15T00:42:30.256Z",
+      "finishedAt": "2026-11-15T00:42:57.701Z",
+      "exitCode": 0,
+      "evidence": "docs/verification/checks/historical-import-staging-tests.log"
+    },
+    {
+      "name": "evidence-backup-package-tests",
+      "command": [
+        "npm",
+        "run",
+        "evidence:backup:test"
+      ],
+      "startedAt": "2026-11-15T00:42:57.719Z",
+      "finishedAt": "2026-11-15T00:43:13.581Z",
+      "exitCode": 0,
+      "evidence": "docs/verification/checks/evidence-backup-package-tests.log"
     },
     {
       "name": "typecheck",
@@ -218,8 +1107,8 @@
         "run",
         "typecheck"
       ],
-      "startedAt": "2026-11-08T12:42:33.306Z",
-      "finishedAt": "2026-11-08T12:42:50.280Z",
+      "startedAt": "2026-11-15T00:43:13.584Z",
+      "finishedAt": "2026-11-15T00:43:51.366Z",
       "exitCode": 0,
       "evidence": "docs/verification/checks/typecheck.log"
     },
@@ -230,10 +1119,34 @@
         "run",
         "build"
       ],
-      "startedAt": "2026-11-08T12:42:50.282Z",
-      "finishedAt": "2026-11-08T12:43:14.945Z",
+      "startedAt": "2026-11-15T00:43:51.368Z",
+      "finishedAt": "2026-11-15T00:44:39.679Z",
       "exitCode": 0,
       "evidence": "docs/verification/checks/build.log"
+    },
+    {
+      "name": "cloudflare-real-api-proxy",
+      "command": [
+        "npm",
+        "run",
+        "verify:cloudflare-real-api-proxy"
+      ],
+      "startedAt": "2026-11-15T00:44:39.684Z",
+      "finishedAt": "2026-11-15T00:45:59.176Z",
+      "exitCode": 0,
+      "evidence": "docs/verification/checks/cloudflare-real-api-proxy.log"
+    },
+    {
+      "name": "responsive-sign-in-images",
+      "command": [
+        "npm",
+        "run",
+        "verify:responsive"
+      ],
+      "startedAt": "2026-11-15T00:45:59.178Z",
+      "finishedAt": "2026-11-15T00:49:56.629Z",
+      "exitCode": 0,
+      "evidence": "docs/verification/checks/responsive-sign-in-images.log"
     },
     {
       "name": "api-integration",
@@ -241,10 +1154,46 @@
         "npm",
         "test"
       ],
-      "startedAt": "2026-11-08T12:43:14.947Z",
-      "finishedAt": "2026-11-08T12:43:37.382Z",
+      "startedAt": "2026-11-15T00:49:56.631Z",
+      "finishedAt": "2026-11-15T00:57:07.248Z",
       "exitCode": 0,
       "evidence": "docs/verification/checks/api-integration.log"
+    },
+    {
+      "name": "evidence-browser-real-services",
+      "command": [
+        "npm",
+        "run",
+        "verify:evidence-browser-real"
+      ],
+      "startedAt": "2026-11-15T00:57:07.250Z",
+      "finishedAt": "2026-11-15T01:02:52.692Z",
+      "exitCode": 0,
+      "evidence": "docs/verification/checks/evidence-browser-real-services.log"
+    },
+    {
+      "name": "technician-assigned-tasks-browser",
+      "command": [
+        "npm",
+        "run",
+        "verify:my-assigned-tasks-browser"
+      ],
+      "startedAt": "2026-11-15T01:02:52.709Z",
+      "finishedAt": "2026-11-15T01:03:34.715Z",
+      "exitCode": 0,
+      "evidence": "docs/verification/checks/technician-assigned-tasks-browser.log"
+    },
+    {
+      "name": "queue-pagination-browser",
+      "command": [
+        "npm",
+        "run",
+        "verify:queue-pagination-browser"
+      ],
+      "startedAt": "2026-11-15T01:03:34.721Z",
+      "finishedAt": "2026-11-15T01:07:34.634Z",
+      "exitCode": 0,
+      "evidence": "docs/verification/checks/queue-pagination-browser.log"
     }
   ]
 }
