@@ -1,5 +1,7 @@
 # Verification record
 
+The local role-fixture generator now reserves ports recorded by stopped installations instead of reusing the first free values; see [port reservation verification](local-role-fixture-port-reservation-2026-11-15.md). This covers port selection only. The role-fixture lifecycle command, real-user provisioning and production sign-in remain unverified.
+
 The separate broad local browser smoke passed **64/64 checks** on 14 November 2026 with zero uncaught browser errors. It includes real local Keycloak staff sign-in, owner-session and account-isolation checks, accessible roleless fallback, intake and work-order flows, upload recovery and responsive/zoom profiles. Provider logout is mocked and production remains unverified; see [the detailed result and limits](browser-smoke-2026-11-14.md).
 
 The request-first-save follow-up now has API, timezone-conversion, draft migration and real-browser coverage; see [first-save follow-up verification](service-request-first-save-follow-up-2026-11-13.md). It proves planned callback state is stored with the inbound request while outbound contact history remains empty until a separate attempt.

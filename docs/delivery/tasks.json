@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-14",
+  "updatedAt": "2026-11-15",
   "goal": "Complete the authoritative VMMS requirements, historical import and agreed platform rollout with exercised product behaviour, security, recovery, staff acceptance and management operational approval.",
   "statusRule": "Verified requires reviewed acceptance evidence. Dependencies and completionGate requirements must be verified or explicitly owner-approved not applicable. Planned/deferred/configuration-required work never satisfies closure. Epic rollups require all applicable children; user-facing source scenarios require their own evidence.",
   "tasks": [
@@ -24096,7 +24096,7 @@
         "Use a narrow, authenticated server-to-server shared-auth provisioning contract through a durable idempotent workflow; do not call Keycloak Admin REST from a browser or normal VMMS request.",
         "Deny self-elevation, Operator delegation, role-definition or policy changes, identity-provider administration, and any technical, inspection, release, governance or financial sign-off grant mutation.",
         "Persist attributable account lifecycle audit records and ensure suspension revokes/invalidates VMMS access according to the approved session contract.",
-        "Do not provision named real users. Document and verify a separate controlled initial Operator bootstrap using synthetic identities in isolated development only."
+        "Provision only the owner-approved production roster through a reviewed shared-auth process; keep real identities out of source, fixtures, tests, tracker evidence and ordinary logs. Use synthetic accounts for local testing."
       ],
       "evidence": [
         "docs/architecture/operator-account-administration.md",
@@ -24730,7 +24730,7 @@
       "sourceRefs": [
         "user-workforce-organogram-2026-11-09"
       ],
-      "status": "planned",
+      "status": "in-progress",
       "acceptance": [
         "Provide explicit create, prepare, up, status, verify and down actions for a single private local installation.",
         "Before every mutation, prove exact fixture labels, compose project names, database name and OID, container ID, volume, loopback bindings and identity receipt; stop on drift without resetting credentials or records.",
@@ -24743,14 +24743,16 @@
         "docs/architecture/local-role-fixtures.md",
         "scripts/local-role-fixtures/create-instance.py",
         "scripts/local-role-fixtures/compose.yaml",
-        "docs/verification/checks/auth-role-fixture-2026-11-13.md"
+        "docs/verification/checks/auth-role-fixture-2026-11-13.md",
+        "scripts/local-role-fixtures/test_create_instance.py",
+        "docs/verification/local-role-fixture-port-reservation-2026-11-15.md"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "The 13 November rehearsal was recovered through individually guarded commands after startup exposed stale role-catalog, listener-port, identity-provider response and runtime-database configuration assumptions. The current fixture is running and verified, but a reviewed lifecycle CLI and repeatable startup guide are still needed."
+      "statusNote": "The new fixture allocator reads and validates existing private state and avoids ports reserved by stopped installations. Three focused tests pass, including the current instance-generation test; read-only validation of the three saved local configurations confirmed the new allocation avoids all seven distinct saved ports. The full create/prepare/up/status/verify/down lifecycle, runtime service checks, failure injection and teardown safety remain unimplemented; no local fixture was started or removed."
     },
     {
       "id": "E18",
@@ -27456,9 +27458,9 @@
       "configuration-required": 18,
       "deferred": 5,
       "implemented": 11,
-      "in-progress": 114,
+      "in-progress": 115,
       "not-applicable": 1,
-      "planned": 459,
+      "planned": 458,
       "verified": 76
     },
     "byPhase": {

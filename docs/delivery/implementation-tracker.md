@@ -17,9 +17,9 @@ The product goal remains open until the specification, approved rollout scope, o
 | Tasks including epics | configuration-required | 18 |
 | Tasks including epics | deferred | 5 |
 | Tasks including epics | implemented | 11 |
-| Tasks including epics | in-progress | 114 |
+| Tasks including epics | in-progress | 115 |
 | Tasks including epics | not-applicable | 1 |
-| Tasks including epics | planned | 459 |
+| Tasks including epics | planned | 458 |
 | Tasks including epics | verified | 76 |
 
 ## 0-discovery
@@ -171,7 +171,7 @@ The product goal remains open until the specification, approved rollout scope, o
 | BUILD-SEC-IDENTITY-DB-001 | Restrict runtime access to staff identity and sign-in data | verified |  | apps/api/migrations/047_identity_runtime_least_privilege.sql, apps/api/src/identity.ts, apps/api/src/oidc-login.ts, apps/api/src/app.ts |
 | CHECK-SEC-IDENTITY-DB-001 | Verify staff identity database boundaries | verified | BUILD-SEC-IDENTITY-DB-001 | apps/api/test/foundation.test.ts, apps/api/test/evidence.test.ts, docs/verification/checks/identity-runtime-boundary-2026-11-12.md |
 | AUTH-014 | Verify owner-to-team switching and shared-browser sign-out | in-progress | AUTH-007, CUST-009 | apps/api/test/foundation.test.ts: PostgreSQL dual-session revocation, CSRF, cookie path and idempotent repeat checks, apps/web/src/drafts.test.ts: VMMS-only draft cleanup regression, docs/verification/browser/shared-signout-owner-switch-pass-2026-11-12/results.json: 64 local browser checks including owner-to-team destination and same-origin multi-tab staff sign-out, docs/verification/checks/shared-browser-sign-out-2026-11-12.md |
-| AUTH-015 | Build a safe local role-fixture lifecycle command | planned | AUTH-013 | docs/architecture/local-role-fixtures.md, scripts/local-role-fixtures/create-instance.py, scripts/local-role-fixtures/compose.yaml, docs/verification/checks/auth-role-fixture-2026-11-13.md |
+| AUTH-015 | Build a safe local role-fixture lifecycle command | in-progress | AUTH-013 | docs/architecture/local-role-fixtures.md, scripts/local-role-fixtures/create-instance.py, scripts/local-role-fixtures/compose.yaml, docs/verification/checks/auth-role-fixture-2026-11-13.md, scripts/local-role-fixtures/test_create_instance.py, docs/verification/local-role-fixture-port-reservation-2026-11-15.md |
 
 ## 2-core-workflow
 

@@ -110,8 +110,10 @@ def _secret(length: int = 48) -> str:
     return "".join(value)
 
 
-def _available_port(start: int, end: int) -> int:
+def _available_port(start: int, end: int, reserved: set[int] | frozenset[int] = frozenset()) -> int:
     for port in range(start, end):
+        if port in reserved:
+            continue
         try:
             with socket.socket() as sock:
                 sock.bind(("127.0.0.1", port))
@@ -119,6 +121,65 @@ def _available_port(start: int, end: int) -> int:
         except OSError:
             continue
     raise FixtureError("No free loopback port is available in the rehearsal port range.")
+
+
+PORT_RANGES = {
+    "authPort": (18180, 18280),
+    "authDatabasePort": (58432, 58532),
+    "vmmsDatabasePort": (55440, 55540),
+    "apiPort": (14100, 14200),
+    "webPort": (15173, 15273),
+}
+
+
+def _reserved_fixture_ports(root: Path) -> set[int]:
+    """Reserve ports named by every existing installation, including stopped fixtures."""
+    if not root.exists():
+        return set()
+    if root.is_symlink() or (hasattr(root, "is_junction") and root.is_junction()):
+        raise FixtureError("The local fixture root cannot be a symbolic link or junction.")
+    _check_acl(root, directory=True)
+    reserved: set[int] = set()
+    for directory in root.iterdir():
+        if directory.is_symlink() or (hasattr(directory, "is_junction") and directory.is_junction()) or not directory.is_dir():
+            raise FixtureError("The local fixture root contains an unexpected entry; inspect it before creating another instance.")
+        try:
+            installation_id = str(uuid.UUID(directory.name))
+        except ValueError:
+            raise FixtureError("The local fixture root contains an unrecognized installation directory.") from None
+        state_path = directory / "state.json"
+        if state_path.is_symlink() or not state_path.is_file():
+            raise FixtureError("An existing fixture has incomplete or linked state; inspect it before creating another instance.")
+        _check_acl(directory, directory=True)
+        _check_acl(state_path)
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            raise FixtureError("An existing fixture state cannot be read; inspect it before creating another instance.") from None
+        if not isinstance(state, dict) or state.get("installationId") != installation_id or state.get("schemaVersion") != 1:
+            raise FixtureError("An existing fixture state has an unexpected owner or version.")
+        slug = installation_id.replace("-", "")[:8]
+        if state.get("instanceSlug") != slug:
+            raise FixtureError("An existing fixture state has a mismatched installation marker.")
+        instance_ports: set[int] = set()
+        for field, (start, end) in PORT_RANGES.items():
+            port = state.get(field)
+            if type(port) is not int or not start <= port < end or port in instance_ports:
+                raise FixtureError("An existing fixture contains an invalid or duplicate local port assignment.")
+            instance_ports.add(port)
+        reserved.update(instance_ports)
+    return reserved
+
+
+def _allocate_ports(reserved: set[int]) -> dict[str, int]:
+    """Choose five free ports without reusing ports held by existing fixture state."""
+    allocated: dict[str, int] = {}
+    occupied = set(reserved)
+    for field, (start, end) in PORT_RANGES.items():
+        port = _available_port(start, end, occupied)
+        allocated[field] = port
+        occupied.add(port)
+    return allocated
 
 
 def _safe_env_value(value: str) -> str:
@@ -137,14 +198,16 @@ def create_instance(instance_id: str | None = None) -> dict[str, str]:
         _restrict_directory(root)
     else:
         _check_acl(root, directory=True)
+    reserved_ports = _reserved_fixture_ports(root)
     state_dir = root / installation_id
     _private_directory(state_dir)
 
-    auth_port = _available_port(18180, 18280)
-    auth_database_port = _available_port(58432, 58532)
-    vmms_database_port = _available_port(55440, 55540)
-    api_port = _available_port(14100, 14200)
-    web_port = _available_port(15173, 15273)
+    allocated_ports = _allocate_ports(reserved_ports)
+    auth_port = allocated_ports["authPort"]
+    auth_database_port = allocated_ports["authDatabasePort"]
+    vmms_database_port = allocated_ports["vmmsDatabasePort"]
+    api_port = allocated_ports["apiPort"]
+    web_port = allocated_ports["webPort"]
     realm = f"vmms-role-review-{slug}"
     database_name = f"vmms_role_rehearsal_{slug}"
     auth_project = f"rg-auth-role-{slug}"
