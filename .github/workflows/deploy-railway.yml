@@ -48,3 +48,4 @@ jobs:
 
       - name: Deploy API service
         run: railway up --service vmms-api --detach
+        working-directory: apps/api
