@@ -1,15 +1,11 @@
 {
-  "buildCommand": "npm run build --workspace @vmms/web",
-  "outputDirectory": "apps/web/dist",
-  "installCommand": "npm ci",
-  "devCommand": "npm run dev:web",
+  "buildCommand": "npm run build --workspace=@vmms/web",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev --workspace=@vmms/web",
   "framework": "vite",
+  "rootDirectory": "apps/web",
   "regions": ["iad1"],
-  "functions": {
-    "apps/api/**/*.ts": {
-      "maxDuration": 30
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
