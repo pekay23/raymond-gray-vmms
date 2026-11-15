@@ -26,6 +26,7 @@ jobs:
       OIDC_CLIENT_ID: ${{ secrets.OIDC_CLIENT_ID }}
       OIDC_CLIENT_SECRET: ${{ secrets.OIDC_CLIENT_SECRET }}
       OIDC_CALLBACK_URL: ${{ secrets.OIDC_CALLBACK_URL }}
+      OIDC_LOGOUT_CALLBACK_URL: ${{ secrets.OIDC_LOGOUT_CALLBACK_URL }}
       VMMS_EVIDENCE_S3_ENDPOINT: ${{ secrets.VMMS_EVIDENCE_S3_ENDPOINT }}
       VMMS_EVIDENCE_S3_BUCKET: ${{ secrets.VMMS_EVIDENCE_S3_BUCKET }}
       VMMS_EVIDENCE_S3_REGION: ${{ secrets.VMMS_EVIDENCE_S3_REGION }}
@@ -36,6 +37,10 @@ jobs:
       VMMS_EVIDENCE_CLAMAV_HOST: ${{ secrets.VMMS_EVIDENCE_CLAMAV_HOST }}
       VMMS_EVIDENCE_CLAMAV_PORT: ${{ secrets.VMMS_EVIDENCE_CLAMAV_PORT }}
       TRUSTED_PROXY_CIDRS: ${{ secrets.TRUSTED_PROXY_CIDRS }}
+      NODE_ENV: staging
+      WEB_ORIGIN: https://vmms.raymond-gray.org
+      PORT: 4100
+      HOST: 0.0.0.0
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -49,3 +54,8 @@ jobs:
       - name: Deploy API service
         run: railway up --service vmms-api --detach
         working-directory: apps/api
+        env:
+          NODE_ENV: staging
+          WEB_ORIGIN: https://vmms.raymond-gray.org
+          PORT: 4100
+          HOST: 0.0.0.0
