@@ -44,7 +44,7 @@ jobs:
         run: npm install -g @railway/cli
 
       - name: Link to Railway project
-        run: railway link ${{ secrets.RAILWAY_PROJECT_ID }}
+        run: railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
 
       - name: Deploy API service
         run: railway up --service vmms-api --detach
