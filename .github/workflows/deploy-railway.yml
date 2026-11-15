@@ -46,6 +46,11 @@ jobs:
       - name: Link to Railway project
         run: railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
 
-      - name: Deploy API service (creates service from Dockerfile)
-        run: railway up --detach
+      - name: Create vmms-api service (if not exists)
+        run: |
+          railway service create vmms-api || echo "Service may already exist"
+        working-directory: apps/api
+
+      - name: Deploy API service
+        run: railway up --service vmms-api --detach
         working-directory: apps/api
