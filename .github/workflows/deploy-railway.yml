@@ -46,6 +46,6 @@ jobs:
       - name: Link to Railway project
         run: railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
 
-      - name: Deploy API service
-        run: railway up --service vmms-api --detach
+      - name: Deploy API service (creates service from Dockerfile)
+        run: railway up --detach
         working-directory: apps/api
