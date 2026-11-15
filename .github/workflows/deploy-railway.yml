@@ -46,10 +46,6 @@ jobs:
       - name: Link to Railway project
         run: railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
 
-      - name: Create vmms-api service
-        run: railway service vmms-api create || echo "Service may already exist"
-        working-directory: apps/api
-
       - name: Deploy API service
         run: railway up --service vmms-api --detach
         working-directory: apps/api
