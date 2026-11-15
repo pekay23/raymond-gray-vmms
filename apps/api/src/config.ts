@@ -28,7 +28,7 @@ const configSchema = z.object({
   TRUSTED_PROXY_CIDRS: z.string().default('').transform(value=>value.split(',').map(item=>item.trim()).filter(Boolean)).refine(values=>values.length<=64&&values.every(isIpRange),'TRUSTED_PROXY_CIDRS must be a comma-separated list of exact IP addresses or valid CIDR ranges.'),
   PORT: z.coerce.number().int().min(1024).max(65535).default(4100),
   HOST: z.string().default('127.0.0.1'),
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
   STAFF_MESSAGES_ENABLED: z.enum(['true','false']).default('false').transform(value=>value==='true'),
 });
 
@@ -42,10 +42,13 @@ export function readConfig(): Config {
     const callback = new URL(parsed.OIDC_CALLBACK_URL);
     const logoutCallback = new URL(parsed.OIDC_LOGOUT_CALLBACK_URL);
     const localHosts = new Set(['localhost', '127.0.0.1']);
-    const localDevelopment = parsed.NODE_ENV === 'development' && localHosts.has(issuer.hostname) && localHosts.has(callback.hostname);
+    const isLocalDev = parsed.NODE_ENV === 'development' && localHosts.has(issuer.hostname) && localHosts.has(callback.hostname);
+    const requiresHttps = parsed.NODE_ENV !== 'development' || !isLocalDev;
     const callbackUrlIsExact = (url: URL) => !url.username && !url.password && !url.search && !url.hash;
-    if ((!localDevelopment && (issuer.protocol !== 'https:' || callback.protocol !== 'https:' || logoutCallback.protocol !== 'https:'))
-      || issuer.username || issuer.password || issuer.search || issuer.hash
+    if (requiresHttps && (issuer.protocol !== 'https:' || callback.protocol !== 'https:' || logoutCallback.protocol !== 'https:')) {
+      throw new Error('OIDC issuer and callback must be exact HTTPS URLs outside local development.');
+    }
+    if (issuer.username || issuer.password || issuer.search || issuer.hash
       || !callbackUrlIsExact(callback) || !callbackUrlIsExact(logoutCallback)
       || callback.origin !== logoutCallback.origin
       || (parsed.NODE_ENV === 'production' && logoutCallback.origin !== new URL(parsed.WEB_ORIGIN).origin)) {
