@@ -1,0 +1,10 @@
+[build]
+builder = "docker"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "node dist/src/server.js"
+healthcheckPath = "/api/v1/health"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
