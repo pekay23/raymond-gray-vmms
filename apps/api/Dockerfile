@@ -1,7 +1,7 @@
 # VMMS API Dockerfile
 # Multi-stage build: deps -> build -> runtime
-# Base image pinned to Node 22 LTS (digest for reproducibility)
-FROM node:22-alpine@sha256:8d3e8b4c9e4a1f7b2c9d8e1f3a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b AS base
+# Base image pinned to Node 22 LTS
+FROM node:22-alpine AS base
 WORKDIR /app
 ENV NODE_ENV=production
 
