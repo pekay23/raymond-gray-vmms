@@ -23,6 +23,7 @@ export type SensitiveReadAction =
   | 'vehicle-learning-library-read-prepared'
   | 'finance-configuration-draft-read-prepared'
   | 'work-order-checklists-read-prepared'
+  | 'work-order-checklist-outcomes-read-prepared'
   | 'work-order-task-labor-read-prepared';
 
 /** Hold current membership through the read and its committed audit event. */

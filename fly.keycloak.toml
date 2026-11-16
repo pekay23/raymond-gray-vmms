@@ -1,0 +1,69 @@
+# Fly.io Keycloak + PostgreSQL Configuration
+# Deploy PostgreSQL first: fly postgres create --name vmms-auth-db --region iad --vm-size shared-cpu-1x --volume-size 1
+# Then deploy Keycloak: fly launch --no-deploy --name vmms-keycloak --region iad --copy-config
+# Then: fly deploy
+
+app = "vmms-keycloak"
+primary_region = "iad"
+
+[build]
+  image = "quay.io/keycloak/keycloak:26.0"
+
+[env]
+  KC_HOSTNAME = "auth.raymond-gray.org"
+  KC_HOSTNAME_STRICT = "false"
+  KC_HOSTNAME_STRICT_HTTPS = "true"
+  KC_HTTP_ENABLED = "true"
+  KC_HTTP_PORT = "8080"
+  KC_HTTPS_PORT = "8443"
+  KC_PROXY = "edge"
+  KC_HEALTH_ENABLED = "true"
+  KC_METRICS_ENABLED = "true"
+  KC_DB = "postgres"
+  KC_DB_URL_DATABASE = "keycloak"
+  KC_DB_URL_HOST = "vmms-auth-db.internal"
+  KC_DB_URL_PORT = "5432"
+  KC_DB_USERNAME = "postgres"
+  # KC_DB_PASSWORD set via fly secrets
+  KEYCLOAK_ADMIN = "admin"
+  # KEYCLOAK_ADMIN_PASSWORD set via fly secrets
+
+[services.http]
+  internal_port = 8080
+  protocol = "tcp"
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[services.http.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.http.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.http.tcp_checks]]
+    interval = 30000
+    timeout = 10000
+    grace_period = "30s"
+
+[services.https]
+  internal_port = 8443
+  protocol = "tcp"
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[services.https.ports]]
+    port = 8443
+    handlers = ["tls", "http"]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"
+  cpus = 1
+
+[mounts]
+  source = "keycloak_data"
+  destination = "/opt/keycloak/data"

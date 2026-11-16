@@ -143,6 +143,9 @@ try {
   const responsive = [];
   for (const width of viewportWidths) {
     await page.setViewportSize({ width, height: width < 500 ? 844 : 960 });
+    const openNavigation = page.getByRole('button', { name: 'Open navigation menu' });
+    if (await openNavigation.isVisible().catch(() => false)) await openNavigation.click();
+    await page.waitForTimeout(50);
     const geometry = await page.evaluate(() => ({
       width: window.innerWidth,
       documentWidth: document.documentElement.scrollWidth,

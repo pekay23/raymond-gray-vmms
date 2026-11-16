@@ -12,11 +12,12 @@ const ids = {
   operator: '10000000-0000-4000-8000-000000000003',
 };
 const roles = [
-  { name: 'Head with Operator', roleCodes: ['head-service-centre', 'vmms-operator'], siteId: ids.workshop, home: 'today', visible: ['Today', 'Requests and callbacks', 'Work orders', 'Vehicles and history'], hidden: [] },
+  { name: 'Head with Operator', roleCodes: ['head-service-centre', 'vmms-operator'], siteId: ids.workshop, home: 'today', visible: ['Today', 'Requests and callbacks', 'Work orders', 'Vehicles and history'], hidden: ['Finance setup'] },
   { name: 'Advisor', roleCodes: ['service-advisor'], siteId: ids.workshop, home: 'today', visible: ['Today', 'Requests and callbacks', 'Work orders'], hidden: ['Vehicles and history', 'Staff accounts'] },
   { name: 'Technician', roleCodes: ['technician-engineer-trainee'], siteId: ids.workshop, home: 'today', visible: ['My assigned tasks'], hidden: ['Vehicles and history', 'Staff accounts'] },
   { name: 'Sales-only', roleCodes: ['sales-representative'], siteId: ids.sales, home: 'sales-deliveries', visible: ['Requests and callbacks', 'Vehicles and history'], hidden: ['Work orders', 'Staff accounts'] },
   { name: 'Operator-only', roleCodes: ['vmms-operator'], siteId: ids.operator, home: 'staff/accounts', visible: ['Staff accounts'], hidden: ['Today', 'Requests and callbacks', 'Work orders'] },
+  { name: 'Finance-only', roleCodes: ['finance-billing'], siteId: ids.workshop, home: 'today', visible: ['Today', 'Requests and callbacks', 'Finance setup'], hidden: ['Work orders', 'Vehicles and history', 'Staff accounts'] },
 ];
 const results = [];
 
@@ -38,6 +39,11 @@ try {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({ requests: [], page: 1, pageSize: 25, totalCount: 0, totalPages: 0 }),
+    }));
+    await context.route('**/api/v1/sites/*/finance/configuration-drafts*', route => route.fulfill({
+      status: 403,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: { code: 'FINANCE_CONFIGURATION_GRANT_REQUIRED', message: 'A current Finance configuration grant is required for this action.' } }),
     }));
     await context.route(url => new URL(url).pathname.endsWith('/service-requests') && new URL(url).searchParams.has('filter'), route => {
       const filter = new URL(route.request().url()).searchParams.get('filter');
@@ -73,7 +79,8 @@ try {
     if (persona.name === 'Technician') await page.getByText('No overdue callbacks or callbacks due today.').waitFor();
     if (persona.name === 'Advisor') await page.getByRole('button', { name: 'Try again' }).waitFor();
     for (const label of persona.visible) {
-      if (label === 'My assigned tasks') await page.getByText('More', { exact: true }).click();
+      if (label === 'My assigned tasks' || label === 'Finance setup')
+        await page.locator('summary[aria-label="More sections"]').click();
       await page.getByRole('link', { name: new RegExp(label, 'i') }).first().waitFor();
     }
     for (const label of persona.hidden) {
@@ -86,7 +93,7 @@ try {
         assert(layout.document <= layout.viewport, `${persona.name} overflows at ${width}px: ${JSON.stringify(layout)}`);
       }
       assert.equal(await page.getByRole('link', { name: 'Today', exact: true }).getAttribute('aria-current'), 'page');
-      const more = page.getByText('More', { exact: true });
+      const more = page.locator('summary[aria-label="More sections"]');
       await more.focus();
       await page.keyboard.press('Enter');
       await page.getByRole('link', { name: /Service-centre overview/ }).waitFor();
@@ -105,6 +112,14 @@ try {
     if (persona.name === 'Operator-only') {
       await page.goto(new URL(`/sites/${persona.siteId}/today`, origin).href);
       await page.waitForURL(new RegExp(`/sites/${persona.siteId}/staff/accounts$`));
+    }
+    if (persona.name === 'Head with Operator') {
+      await page.goto(new URL(`/sites/${persona.siteId}/finance-setup`, origin).href);
+      await page.waitForURL(new RegExp(`/sites/${persona.siteId}/today$`));
+    }
+    if (persona.name === 'Finance-only') {
+      await page.goto(new URL(`/sites/${persona.siteId}/finance-setup`, origin).href);
+      await page.getByRole('heading', { name: /Finance setup/ }).waitFor();
     }
     assert.deepEqual(pageErrors, [], `${persona.name} raised browser errors.`);
     results.push({ persona: persona.name, result: 'VERIFIED' });

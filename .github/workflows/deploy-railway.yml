@@ -1,4 +1,4 @@
-name: Deploy API to Railway
+name: Deploy to Railway
 
 on:
   workflow_run:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
+  deploy-api:
     name: Deploy API to Railway
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
@@ -29,7 +29,7 @@ jobs:
       - name: Link to Railway project
         run: railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
 
-      - name: Set Railway environment variables
+      - name: Set Railway environment variables for API
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
@@ -81,5 +81,41 @@ jobs:
           railway variables set --service @vmms/api --json "$(cat /tmp/vars.json)"
 
       - name: Deploy API service
-        run: railway up --service @vmms/api --detach --dockerfile Dockerfile
-        working-directory: apps/api
+        run: railway up ./apps/api --path-as-root --service @vmms/api --environment production --detach --json
+
+  deploy-web:
+    name: Deploy Web to Railway
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    env:
+      RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+      RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Link to Railway project
+        run: railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
+
+      - name: Set Railway environment variables for Web
+        env:
+          WEB_ORIGIN: ${{ secrets.WEB_ORIGIN }}
+          API_ORIGIN: ${{ secrets.API_ORIGIN }}
+        run: |
+          node -e "
+          const vars = {
+            WEB_ORIGIN: process.env.WEB_ORIGIN,
+            API_ORIGIN: process.env.API_ORIGIN,
+            NODE_ENV: 'staging',
+            PORT: '8080',
+            HOST: '0.0.0.0'
+          };
+          console.log(JSON.stringify(vars));
+          " > /tmp/vars.json
+          railway variables set --service @vmms/web --json "$(cat /tmp/vars.json)"
+
+      - name: Deploy Web service
+        run: railway up ./apps/web --path-as-root --service @vmms/web --environment production --detach --json

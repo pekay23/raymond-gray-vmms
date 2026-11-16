@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { createServer } from "vite";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
-const modulePath = process.argv[2];
+const modulePath = process.argv.slice(2).find(argument => !argument.startsWith("--"));
 const { chromium } = await import(modulePath ? pathToFileURL(modulePath).href : "playwright");
 const channel = process.env.VMMS_BROWSER_CHANNEL || "msedge";
 let url = process.env.VMMS_WEB_URL;
@@ -118,7 +118,9 @@ async function inspect(page, label, expectedZoom = 1, audience = "staff", expect
   assert(backgroundResponseBytes <= 90 * 1024, `${label}: selected workshop image exceeds the 90 KiB budget`);
   assert(logoResponseBytes <= 45 * 1024, `${label}: selected logo exceeds the 45 KiB budget`);
   assert(backgroundResponseBytes + logoResponseBytes <= 135 * 1024, `${label}: above-fold image total exceeds the 135 KiB budget`);
-  assert(Math.abs(geometry.logo.width / geometry.logo.height - geometry.logo.naturalWidth / geometry.logo.naturalHeight) < 0.02, `${label}: logo is distorted`);
+  // naturalHeight is rounded to whole CSS pixels by the browser, so compare the
+  // rendered box with the manifest's source dimensions instead.
+  assert(Math.abs(geometry.logo.width / geometry.logo.height - selectedLogo.width / selectedLogo.height) < 0.025, `${label}: logo aspect ratio differs from its optimized source: ${JSON.stringify({ logo: geometry.logo, source: { width: selectedLogo.width, height: selectedLogo.height } })}`);
   assert(geometry.logo.left >= -1 && geometry.logo.right <= geometry.cssWidth + 1, `${label}: logo is cropped`);
   assert(geometry.main.left >= -1 && geometry.main.right <= geometry.cssWidth + 1, `${label}: main content exceeds viewport`);
   for (const control of geometry.controls) {
@@ -155,7 +157,10 @@ try {
     ["desktop-wide-2560", 2560, 1080],
     ["phone-retina-390", 390, 844, 2], ["desktop-retina-1440", 1440, 1000, 2],
   ];
-  for (const [label, width, height, dpr = 1] of viewports) {
+  const focusedViewport = process.argv.find(argument => argument.startsWith("--viewport="))?.slice("--viewport=".length);
+  const selectedViewports = focusedViewport ? viewports.filter(([label]) => label === focusedViewport) : viewports;
+  assert(!focusedViewport || selectedViewports.length === 1, `Unknown responsive viewport: ${focusedViewport}`);
+  for (const [label, width, height, dpr = 1] of selectedViewports) {
     const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dpr });
     const page = await context.newPage();
     await useUnauthenticatedSessions(page);

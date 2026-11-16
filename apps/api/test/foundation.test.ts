@@ -14,6 +14,7 @@ import { staffMessageSchema } from '../src/staff-messages.js';
 import { detailSchema } from '../src/schemas.js';
 import { controlledDocumentListSchema } from '../src/controlled-documents.js';
 import { readWorkOrderChecklists } from '../src/work-order-checklists.js';
+import { checklistOutcomeInputSchema, validateOutcomeAgainstItemRules } from '../src/work-order-checklist-outcomes.js';
 import { createVehicleLearningAssessment } from '../src/vehicle-learning-assessment.js';
 import { assignServiceRequest, claimServiceRequest, closeServiceRequest, contactAttemptSchema, correctServiceRequestContact, createServiceRequest, linkServiceRequestToWorkOrder, listRequestAssignees, listServiceRequests, listWorkOrderRequests, readServiceRequest, readServiceRequestContacts, readServiceRequestStatusHistory, recordServiceRequestContact, reopenServiceRequest, serviceRequestInputSchema, unlinkServiceRequest } from '../src/service-requests.js';
 import { assignTeamLead, handoffToSupervisor } from '../src/workshop.js';
@@ -886,7 +887,7 @@ test('checklist availability is exact-vehicle scoped, staff-only, audited and fa
     (error:unknown)=>(error as {code?:string}).code==='AFTER_SALES_ROLE_REQUIRED');
 });
 
-test('checklist instances bind to a work order and preserve item outcome history',async()=>{
+test('routine checklist outcomes require an assigned task and complete source binding',async()=>{
   const templateId=randomUUID(),checklistId=randomUUID(),itemId=randomUUID();
   await admin.query(`INSERT INTO public.workshop_checklist_template_revisions
     (id,organisation_id,site_id,template_code,revision,kind,vehicle_make,vehicle_model,vehicle_variant,powertrain,items)
@@ -903,18 +904,50 @@ test('checklist instances bind to a work order and preserve item outcome history
   await assert.rejects(admin.query(`INSERT INTO public.work_order_checklist_item_revisions
     (organisation_id,site_id,work_order_id,checklist_id,checklist_item_id,revision,result,actor_id,actor_placement_id)
     VALUES($1,$2,$3,$4,$5,1,'not-checked',$6,$7)`,[orgA,siteA,orderA.id,checklistId,itemId,actorA,hscPlacementId]),{code:'23514'});
-  await admin.query(`INSERT INTO public.work_order_checklist_item_revisions
+  await assert.rejects(admin.query(`INSERT INTO public.work_order_checklist_item_revisions
     (organisation_id,site_id,work_order_id,checklist_id,checklist_item_id,revision,result,reason,actor_id,actor_placement_id)
-    VALUES($1,$2,$3,$4,$5,1,'not-checked','Synthetic draft has no approved source',$6,$7)`,[orgA,siteA,orderA.id,checklistId,itemId,actorA,hscPlacementId]);
+    VALUES($1,$2,$3,$4,$5,1,'not-checked','Synthetic draft has no approved source',$6,$7)`,[orgA,siteA,orderA.id,checklistId,itemId,actorA,hscPlacementId]),{code:'23514'});
   const visible=await scoped(runtime,{actorId:actorA,organisationId:orgA,siteId:siteA},client=>client.query(
     `SELECT c.version,i.item_code,r.result,r.reason FROM public.work_order_checklists c
       JOIN public.work_order_checklist_items i ON i.organisation_id=c.organisation_id AND i.site_id=c.site_id AND i.work_order_id=c.work_order_id AND i.checklist_id=c.id
       JOIN public.work_order_checklist_item_revisions r ON r.organisation_id=i.organisation_id AND r.site_id=i.site_id AND r.work_order_id=i.work_order_id AND r.checklist_id=i.checklist_id AND r.checklist_item_id=i.id
       WHERE c.id=$1`,[checklistId]));
-  assert.deepEqual(visible.rows,[{version:1,item_code:'underbody',result:'not-checked',reason:'Synthetic draft has no approved source'}]);
+  assert.deepEqual(visible.rows,[],'PDI observations must not be written as workshop routine-maintenance outcomes.');
   await assert.rejects(scoped(runtime,{actorId:actorA,organisationId:orgA,siteId:siteA},client=>client.query(
     `UPDATE public.work_order_checklists SET state='approved',version=version+1 WHERE id=$1`,[checklistId])),/permission denied/i);
   await assert.rejects(admin.query('UPDATE public.work_order_checklist_items SET item_code=$1 WHERE id=$2',['changed',itemId]),{code:'55000'});
+  const outcomePath=`/api/v1/sites/${siteA}/my-tasks/${orderA.id}/${randomUUID()}/checklists/${checklistId}/items/${itemId}/outcomes`;
+  const denied=await app.inject({method:'POST',url:outcomePath,headers:headers(jarA),payload:{
+    expectedChecklistVersion:1,expectedWorkPlanRevisionId:randomUUID(),expectedAssignmentRevision:1,
+    result:'not-checked',reason:'Synthetic assignment missing.',applicabilityReason:null,comments:null,measurement:null,evidenceIds:[],supersedesRevisionId:null,correctionReason:null,
+  }});
+  assert.equal(denied.statusCode,409,denied.body);
+  assert.equal(denied.json().error.code,'CURRENT_TASK_ASSIGNMENT_REQUIRED');
+});
+
+test('checklist outcome rules accept only source-bound synthetic requirements and reject missing safeguards',async()=>{
+  const valid=checklistOutcomeInputSchema.parse({expectedChecklistVersion:1,expectedWorkPlanRevisionId:randomUUID(),expectedAssignmentRevision:2,
+    result:'completed',reason:null,applicabilityReason:null,comments:'Synthetic observed value.',
+    measurement:{field:'tire-pressure',value:'240',unit:'kPa'},evidenceIds:[randomUUID()],supersedesRevisionId:null,correctionReason:null});
+  assert.equal(validateOutcomeAgainstItemRules(valid,{id:'synthetic-pressure',label:'Synthetic configured measurement',
+    requiredQualifications:['EV-MAINTENANCE-LEVEL-1'],evidenceRequired:true,measurementRule:{field:'tire-pressure',unit:'kPa',required:true}}).measurementRule?.unit,'kPa');
+  assert.throws(()=>validateOutcomeAgainstItemRules({...valid,evidenceIds:[]},{id:'synthetic-pressure',requiredQualifications:['EV-MAINTENANCE-LEVEL-1'],evidenceRequired:true}),
+    (error:unknown)=>(error as {code?:string}).code==='CHECKLIST_EVIDENCE_REQUIRED');
+  assert.throws(()=>validateOutcomeAgainstItemRules({...valid,measurement:null},{id:'synthetic-pressure',requiredQualifications:['EV-MAINTENANCE-LEVEL-1'],measurementRule:{field:'tire-pressure',unit:'kPa',required:true}}),
+    (error:unknown)=>(error as {code?:string}).code==='CHECKLIST_MEASUREMENT_REQUIRED');
+  assert.throws(()=>validateOutcomeAgainstItemRules({...valid,result:'not-applicable',reason:'The procedure does not apply.',applicabilityReason:'Vehicle variant excludes this step.'},
+    {id:'synthetic-pressure',requiredQualifications:['EV-MAINTENANCE-LEVEL-1']}),
+    (error:unknown)=>(error as {code?:string}).code==='CHECKLIST_NOT_APPLICABLE_NOT_ALLOWED');
+  assert.throws(()=>validateOutcomeAgainstItemRules(valid,{id:'synthetic-pressure'}),
+    (error:unknown)=>(error as {code?:string}).code==='CHECKLIST_MODEL_RULES_INCOMPLETE');
+  for (const result of ['completed','failed','not-checked','not-completed','blocked','not-applicable'] as const) {
+    const candidate=checklistOutcomeInputSchema.parse({...valid,result,
+      reason:result==='completed'?null:`Synthetic ${result} reason.`,
+      applicabilityReason:result==='not-applicable'?'Synthetic applicability review.':null,
+      measurement:null,evidenceIds:[]});
+    assert.equal(validateOutcomeAgainstItemRules(candidate,{id:'synthetic-outcome',requiredQualifications:['EV-MAINTENANCE-LEVEL-1'],notApplicableAllowed:true}).id,'synthetic-outcome');
+  }
+  assert.equal(checklistOutcomeInputSchema.safeParse({...valid,result:'not-applicable',reason:'Needs an applicability reason.',applicabilityReason:null}).success,false);
 });
 
 test('repeat intake reuses explicitly selected same-site parties and rejects cross-site selection',async()=>{

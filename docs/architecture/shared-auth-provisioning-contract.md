@@ -1,21 +1,21 @@
 # VMMS account provisioning through shared auth
 
-**Status: Proposed for owner review.** This contract does not authorize provisioning real identities, sending invitations, or enabling a production service. The shared-auth repository requires a reviewed implementation plan before user provisioning.
+**Status: Isolated invitation staging verified; recipient enrollment and VMMS caller integration remain open.** The owner approved a private VMMS-only shared-auth API, a separate Operator/Head boundary, one-time bootstrap/recovery, verified recipients, an organization-controlled sender, 24-hour action-link expiry and at most one resend. Auth-side component tests and a synthetic Keycloak 26.8.2/PostgreSQL/Mailpit invitation run pass. This does not authorize production identities, real invitations, provider changes or deployment.
 
 ## Purpose and ownership
 
 VMMS Operators need a controlled way to request staff account setup without receiving identity-provider administrator access. VMMS already records an Operator request, audit event, idempotency receipt and outbox item in one transaction, and a separate leased worker can process that request. The shared-auth project currently has no product-facing provisioning API; its local Keycloak Admin REST scripts are test-fixture tools and are not the product integration.
 
-Shared auth owns central identity, authentication, enrollment and invitation delivery. VMMS owns its local staff record, organization/site memberships, role placements, qualifications, signed grants, local sessions and access decisions. A central invitation does not activate a VMMS account or grant any site, work role or authority.
+Shared auth owns central identity, authentication, enrollment and invitation delivery. VMMS owns its local staff record, organization/site memberships, role placements, qualifications, signed grants, local sessions and access decisions. A central invitation does not activate a VMMS account or grant any site, work role or authority. The staging implementation currently lives in `C:\Projects\raymond-gray-auth\provisioning`; VMMS has not connected its account worker to it.
 
 ## Recommended service shape
 
 Use a private, versioned, idempotent command API called only by the VMMS account worker. The shared-auth service persists the operation before starting identity or delivery work. Repeating the same command returns the same operation and current outcome; a changed request under the same idempotency key returns a conflict. Use this single command boundary first. Add a separate polling API only if an approved delivery provider's measured behavior requires it.
 
-Proposed endpoint:
+Staging endpoint (VMMS caller integration remains pending):
 
 ```http
-POST /internal/v1/vmms/account-provisioning-operations
+POST /internal/v1/vmms/invitations
 Idempotency-Key: <VMMS request UUID>
 Authorization: <dedicated VMMS worker identity>
 Content-Type: application/json
@@ -54,19 +54,20 @@ The API response never contains a password, passkey material, enrollment token o
 - A verified existing central identity returns `identity-conflict` for manual, authenticated review. Never attach an existing identity by email.
 - Persist remote operation state and delivery outcomes without passwords, passkey data, invitation secrets or raw provider errors. Audit service principal, operation ID, result code and timestamps only.
 - When delivery provider idempotency is available, pass the stable operation key through. Otherwise retain the delivery attempt and expose ambiguous outcomes for review; do not claim exactly-once email delivery.
-- Keep account-request approval, recipient verification, notice and retention, invitation expiry/resend, and account recovery as explicit policies. Until these are approved, provisioning and invitation delivery remain disabled; use fake adapters in tests.
+- Keep account-request approval, recipient verification, notice and retention, and account recovery as explicit policies. The 24-hour expiry and one-resend limit are approved for staging; production sender/content, destination verification procedure, support and recovery controls remain pending. Staging uses synthetic `.test` recipients and a local non-delivery mail capture only.
 
 ## Outcome mapping and lifecycle
 
 | Shared-auth outcome | VMMS handling |
 | --- | --- |
-| `invitation-dispatched` | Record the opaque reference and invitation-dispatched state; do not activate VMMS access or create a role/grant. |
-| `delivery-pending` | Keep the request visibly pending and retry the same operation ID. It needs a durable pending state before implementation. |
-| `identity-conflict` | Stop automatic retries and show a manual review outcome. Do not link by email. |
-| `rejected` | Store only an allowlisted error code and show the next approved action. |
-| `retryable` or network timeout | Retry the same operation ID under the VMMS worker lease/backoff policy. A lost response after remote commit must not duplicate the operation. |
+| `queued`, `identity_created` | Keep the VMMS account request pending and poll the same operation ID; do not activate access. |
+| `delivery_uncertain` | Keep pending and require the single explicit resend/review path; never automatically resend an email with an uncertain outcome. |
+| `invitation_sent` | Record that Keycloak accepted the action-email request; it does not prove receipt, enrollment or VMMS access. |
+| `enrolled` with issuer/subject | Make the immutable subject available for an explicit, reviewed VMMS identity-link operation only. Do not automatically create roles or memberships. |
+| `manual_review`, `expired`, `failed` | Stop automatic retries and show the corresponding review/expiry/failure state. Do not link by email. |
+| Network timeout before response | Retry the same operation ID; the auth ledger returns the current operation and avoids duplicate identity creation. Delivery timeouts remain uncertain and are not retried automatically. |
 
-After invitation acceptance, a separate identity-claim flow must prove the central subject and bind it to the intended local staff record. Only then may an Operator explicitly grant approved VMMS site access. The Head of Service Centre remains the only role that assigns existing operational role profiles. Neither flow edits permission definitions or grants technical, inspection, release, governance or financial authority.
+The auth operation returns `queued` and is asynchronous. VMMS must persist this remote-pending state before integration; it cannot map it to the current `invitation-issued` result or resend automatically after a timeout. After enrollment, a separate identity-claim flow must prove the central subject and bind it to the intended local staff record. Only then may an Operator explicitly grant approved VMMS site access. The Head of Service Centre remains the only role that assigns existing operational role profiles. Neither flow edits permission definitions or grants technical, inspection, release, governance or financial authority.
 
 ## Verification before enablement
 
@@ -78,13 +79,12 @@ Two service shapes were reviewed in [`candidates/shared-auth-provisioning-sync.m
 
 Direct Keycloak Admin REST from VMMS was rejected because it gives product code provider administration credentials. A second independent polling API was deferred because the VMMS worker already schedules retries and a remote operation ledger can make repeated commands idempotent. Shared tables were rejected because they couple product databases and identity internals.
 
-## Owner review required
+## Decisions still required before production
 
-1. Which service-auth mechanism and owner should be used after hosting is selected?
-2. Who must approve account creation and site access beyond the Operator's ability to submit a request?
-3. Which email/delivery provider, destination verification, invitation expiry/resend and support process are approved?
-4. Is the proposed `invitation-dispatched` meaning acceptable, and should asynchronous delivery use the additional VMMS pending state?
-5. What notice, retention and recovery rules apply to the email and identity-claim operation?
-6. Who owns the initial Operator bootstrap, subject-linking approval and recovery?
+1. Which production service-auth method, hosting location, private network policy, credential owner and rotation method will be used?
+2. Which organization-controlled sender and approved message will be used, and how are real destination addresses verified?
+3. What notice, retention, delivery-failure support and recovery rules apply to the email and identity-claim operation?
+4. Review the staging evidence and the exact production operation before enabling the production sender, service or worker.
+5. Who owns the one-time initial Operator bootstrap, subject-linking approval and recovery? No central subject or VMMS identity is to be created until verified.
 
-Until these decisions are reviewed, implement only isolated contract tests and synthetic adapters. Do not add an auth endpoint, provision real identities, send invitations, or enable the worker in production.
+Implement the service and verify it using only isolated synthetic accounts and local mail capture. Do not provision real identities, send real invitations, expose the service publicly or enable a production worker until the decisions above are reviewed.

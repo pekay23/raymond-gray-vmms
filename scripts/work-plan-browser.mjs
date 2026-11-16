@@ -150,7 +150,7 @@ async function assertAuthenticatedZoom(routeName, sourceContext, orderId, prepar
       assert.equal(layout.compact, layout.visualWidth <= 640, `${routeName} ${zoom * 100}%: compact workspace mode does not match the visible viewport.`);
       assert.equal(layout.zoomCompact, layout.visualWidth <= 640 && layout.dpr >= 2, `${routeName} ${zoom * 100}%: zoom-specific compact navigation mode does not match the effective viewport.`);
       if (layout.compact) assert.equal(layout.shellDisplay, 'block', `${routeName} ${zoom * 100}%: compact workspace is still using the desktop rail grid.`);
-      assert.equal(layout.navigationPosition, layout.zoomCompact ? 'static' : 'sticky', `${routeName} ${zoom * 100}%: navigation scroll behavior does not match the viewport and zoom mode.`);
+      assert.equal(layout.navigationPosition, layout.zoomCompact ? 'relative' : 'sticky', `${routeName} ${zoom * 100}%: navigation scroll behavior does not match the viewport and zoom mode.`);
       assert(layout.documentWidth <= layout.width + 1, `${routeName} ${zoom * 100}%: page overflows horizontally.`);
       assert(layout.controls.every(control => control.name.trim()), `${routeName} ${zoom * 100}%: a visible control has no accessible name.`);
       assert(layout.controls.every(control => control.left >= -1 && control.right <= layout.width + 1), `${routeName} ${zoom * 100}%: a visible control is clipped.`);
@@ -167,6 +167,8 @@ async function assertAuthenticatedZoom(routeName, sourceContext, orderId, prepar
       });
       assert(focus?.visible && focus.left >= -1 && focus.right <= layout.width + 1, `${routeName} ${zoom * 100}%: keyboard focus is not visible within the viewport.`);
       const navigationLinks = zoomPage.locator('#workspace-navigation nav[aria-label="Primary navigation"] a');
+      const mobileNavigationButton = zoomPage.getByRole('button', { name: 'Open navigation menu', exact: true });
+      if (await mobileNavigationButton.isVisible()) await mobileNavigationButton.click();
       const navigationLinkCount = await navigationLinks.count();
       assert(navigationLinkCount > 0, `${routeName} ${zoom * 100}%: workspace navigation has no links. ${JSON.stringify(await zoomPage.evaluate(async () => {
         const session = await fetch('/api/v1/session').then(response => response.json());
@@ -183,7 +185,29 @@ async function assertAuthenticatedZoom(routeName, sourceContext, orderId, prepar
       if (hasHiddenNavigationLink) {
         const more = zoomPage.locator('#workspace-navigation details');
         assert(await more.locator('summary').isVisible(), `${routeName} ${zoom * 100}%: More navigation control is hidden.`);
-        await more.locator('summary').click();
+        const summary = more.locator('summary');
+        try {
+          await summary.click();
+        } catch (error) {
+          const hitTest = await zoomPage.evaluate(() => {
+            const target = document.querySelector('#workspace-navigation details summary');
+            const selector = document.querySelector('#site-select');
+            if (!target) return { target: null };
+            const rect = target.getBoundingClientRect();
+            const selectorRect = selector?.getBoundingClientRect();
+            const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            return {
+              viewport: { width: innerWidth, height: innerHeight, visualWidth: visualViewport?.width, dpr: devicePixelRatio },
+              target: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
+              selector: selectorRect && { left: selectorRect.left, top: selectorRect.top, right: selectorRect.right, bottom: selectorRect.bottom },
+              hit: hit && { tag: hit.tagName, id: hit.id, text: hit.textContent?.trim().slice(0, 60) },
+              compact: document.documentElement.dataset.vmmsCompactViewport,
+              headerPosition: getComputedStyle(document.querySelector('.workspace-content > header')).position,
+              navigationPosition: getComputedStyle(document.querySelector('#workspace-navigation')).position,
+            };
+          });
+          throw new Error(`${routeName} ${zoom * 100}%: could not open More navigation; hit-test ${JSON.stringify(hitTest)}. ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
       for (let index = 0; index < navigationLinkCount; index++) {
         const link = navigationLinks.nth(index);
@@ -705,6 +729,32 @@ try {
   page = await lead.newPage();
   await page.goto(`${webOrigin}/sites/${runtime.siteId}/work-orders`);
   await page.getByRole('link', { name: 'Register a vehicle visit', exact: true }).waitFor();
+  const collapseNavigation = page.getByRole('button', { name: 'Collapse sidebar', exact: true });
+  await collapseNavigation.click();
+  const collapsedRailWidth = await page.locator('#workspace-navigation').evaluate(element => element.getBoundingClientRect().width);
+  assert.equal(collapsedRailWidth, 88);
+  assert(await page.getByRole('button', { name: 'Sign out', exact: true }).isVisible(), 'Sign out must remain visible in the collapsed rail.');
+  await page.getByRole('button', { name: 'Expand sidebar', exact: true }).click();
+  await page.setViewportSize({ width: 1440, height: 500 });
+  const scrollState = await page.evaluate(() => {
+    const content = document.querySelector('.workspace-content');
+    if (!(content instanceof HTMLElement)) throw new Error('Workspace content scroll region is missing.');
+    content.scrollTop = content.scrollHeight;
+    return { contentTop: content.scrollTop, documentTop: document.scrollingElement?.scrollTop ?? 0 };
+  });
+  assert(scrollState.contentTop > 0 && scrollState.documentTop === 0, `Workspace columns should scroll independently: ${JSON.stringify(scrollState)}`);
+  await page.evaluate(() => { const content = document.querySelector('.workspace-content'); if (content instanceof HTMLElement) content.scrollTop = 0; });
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobileMenu = page.getByRole('button', { name: 'Open navigation menu', exact: true });
+  await mobileMenu.waitFor();
+  assert.equal(await page.locator('#workspace-primary-navigation').isVisible(), false);
+  assert(await page.getByRole('button', { name: 'Sign out', exact: true }).isVisible(), 'Sign out must remain reachable on the compact layout.');
+  await mobileMenu.click();
+  assert(await page.getByRole('link', { name: 'Today', exact: true }).isVisible());
+  await page.getByRole('button', { name: 'Close navigation menu', exact: true }).click();
+  assert.equal(await page.locator('#workspace-primary-navigation').isVisible(), false);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  check('Desktop rail collapse, independent workspace scrolling, and compact navigation toggle keep account controls available');
   await page.waitForFunction(() => document.querySelector('#queue-filter')?.querySelectorAll('option').length === 8);
   const queueOptions = await page.getByLabel('Show jobs').locator('option').allTextContents();
   assert(queueOptions.includes('Jobs assigned to me as team lead'), JSON.stringify(queueOptions));
@@ -1021,7 +1071,7 @@ try {
   await technicianPage.unroute(`${webOrigin}${laborStartActionPath}`);
   const laborAccessibility = await new AxeBuilder({ page: technicianPage }).analyze();
   assert.deepEqual(laborAccessibility.violations.map(({ id, impact }) => ({ id, impact })), [],
-    'Task time controls must pass automated accessibility checks.');
+    `Task time controls must pass automated accessibility checks. ${JSON.stringify(laborAccessibility.violations.map(({ id, impact, nodes }) => ({ id, impact, nodes: nodes.map(node => ({ target: node.target, summary: node.failureSummary })) })))}`);
   const laborLayouts = [];
   for (const width of [280, 320, 390, 768, 1024, 1440]) {
     await technicianPage.setViewportSize({ width, height: 900 });

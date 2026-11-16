@@ -29,6 +29,7 @@
     "docs:check": "python scripts/project-status.py",
     "docs:generate": "python scripts/project-status.py --write",
     "docs:test": "python scripts/test-traceability.py",
+    "docs:html": "bun scripts/build-docs-html.mjs",
     "verify:responsive": "npm run verify:responsive --workspace @vmms/web",
     "verify:cloudflare-api-spike": "npm run cloudflare:spike:run --workspace @vmms/api",
     "verify:cloudflare-real-api-proxy": "npm run cloudflare:build --workspace @vmms/web && node --import tsx scripts/cloudflare-real-api-proxy.mjs",

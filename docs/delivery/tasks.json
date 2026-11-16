@@ -3,6 +3,31 @@
   "updatedAt": "2026-11-15",
   "goal": "Complete the authoritative VMMS requirements, historical import and agreed platform rollout with exercised product behaviour, security, recovery, staff acceptance and management operational approval.",
   "statusRule": "Verified requires reviewed acceptance evidence. Dependencies and completionGate requirements must be verified or explicitly owner-approved not applicable. Planned/deferred/configuration-required work never satisfies closure. Epic rollups require all applicable children; user-facing source scenarios require their own evidence.",
+  "deliveryFocus": {
+    "title": "Single-site workshop operations pilot",
+    "plan": "docs/delivery/operational-workshop-pilot-agent-plan.md",
+    "taskIds": [
+      "F-004", "F-005", "F-006", "F-007", "F-008", "F-009", "F-011",
+      "EVID-001", "EVID-002", "EVID-003", "EVID-004", "EVID-005", "EVID-007",
+      "BUILD-R-M-0035", "CHECK-R-M-0035", "BUILD-R-M-0036", "CHECK-R-M-0036",
+      "BUILD-R-M-0037", "CHECK-R-M-0037", "BUILD-R-M-0038", "CHECK-R-M-0038",
+      "BUILD-USER-027", "CHECK-USER-027", "BUILD-USER-038", "CHECK-USER-038",
+      "BUILD-USER-039", "CHECK-USER-039", "BUILD-USER-039-WORK-HISTORY-001", "CHECK-USER-039-WORK-HISTORY-001",
+      "BUILD-USER-040", "BUILD-USER-040-NAV-001", "BUILD-USER-040-CALLBACKS-TODAY-001",
+      "BUILD-USER-043-INSTANCE-001", "BUILD-USER-043-OUTCOMES-001", "BUILD-USER-043-REVIEW-001",
+      "BUILD-USER-043-REPORT-001", "BUILD-USER-043-UI-001", "CHECK-USER-043-CHECKLISTS-001",
+      "BUILD-USER-042-SOP-DRAFTS-001", "BUILD-USER-030", "CHECK-USER-030",
+      "IDP-002", "IDP-005", "IDP-006", "O-003", "O-005", "O-006", "O-008", "O-009",
+      "O-010", "O-011", "O-014", "O-015", "O-017", "O-018", "O-019", "O-020"
+    ],
+    "deferredAreas": [
+      "Sales recording, showroom imports, delivery preparation and sales-triggered PDI",
+      "Historical maintenance backlog import until the owner completes source inventory and mapping review",
+      "Full finance, invoicing, receipts, payment/email adapters, commercial reports and nonessential stock workflows",
+      "Smart POS features unrelated to day-to-day workshop maintenance",
+      "Customer portal expansion, native OS applications and full offline synchronization"
+    ]
+  },
   "tasks": [
     {
       "id": "E00",
@@ -427,7 +452,14 @@
           "BUILD-R-M-0134",
           "CHECK-R-M-0134",
           "BUILD-R-M-0168",
-          "CHECK-R-M-0168"
+          "CHECK-R-M-0168",
+          "DESIGN-PARTS-FOUNDATION-001",
+          "BUILD-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
+          "CHECK-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
+          "BUILD-PARTS-CATALOGUE-PROPOSAL-001",
+          "CHECK-PARTS-CATALOGUE-PROPOSAL-001",
+          "BUILD-PARTS-RECEIPT-QUARANTINE-001",
+          "CHECK-PARTS-RECEIPT-QUARANTINE-001"
         ],
         "requireAllApplicableChildren": true,
         "notApplicableRequiresOwnerDecision": true
@@ -1859,14 +1891,18 @@
         "docs/verification/browser/head-overview-browser-results.json",
         "docs/verification/browser/staff-messages-browser-results.json",
         "docs/verification/browser/staff-account-browser-results.json",
-        "docs/verification/full-local-verification-2026-11-14.md: responsive asset and sign-in checks plus operations/team-lead/supervisor queue browser layouts passed at five viewport widths and 200%/400% zoom; broader accessibility and device acceptance remain open."
+        "docs/verification/full-local-verification-2026-11-14.md: responsive asset and sign-in checks plus operations/team-lead/supervisor queue browser layouts passed at five viewport widths and 200%/400% zoom; broader accessibility and device acceptance remain open.",
+        "docs/verification/browser-work-plan/results.json: 58 browser assertions passed, zero errors; compact nav and task-time contrast fixes included",
+        "apps/web/src/styles.css: desktop split scrolling and compact 200%/400% navigation behavior",
+        "docs/verification/checks/responsive-image-audit-2026-11-10.json: 22 current sign-in responsive image checks verified; zero page errors and zero layout shift",
+        "npm run build (2026-11-15): API type build and web production build passed; Vite emitted only its informational plugin-timing summary"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Fresh local browser checks passed for workforce (16), Head overview/report (20), messages (7), Operator accounts (14) and the real-API work-plan workflow (43). Axe checks cover the first four named pages; the real workflow covers form labels/errors, focus recovery, 200%/400% zoom and 11 viewport profiles. Full screen-reader review, every role workflow, physical-device checks and staff UAT remain open."
+      "statusNote": "Fresh local browser checks passed for workforce (16), Head overview/report (20), messages (7), Operator accounts (14), the site-timezone slice, and the real-API work-plan workflow (58). This latest run covers collapsed/expanded desktop rail, independent column scrolling, compact menu state, 200%/400% zoom, WCAG scans, role boundaries, task activity, source reports, and purpose-built paginated PDFs. Full screen-reader review, physical devices, every staff role and staff UAT remain open."
     },
     {
       "id": "F-009",
@@ -18154,6 +18190,7 @@
         "AUTH-013",
         "AUTH-014",
         "AUTH-015",
+        "BUILD-AUTH-PROVISIONING-001",
         "BUILD-BR-01",
         "BUILD-BR-02",
         "BUILD-BR-03",
@@ -18234,6 +18271,7 @@
         "BUILD-R-M-0063",
         "BUILD-R-M-0064",
         "BUILD-R-M-0066",
+        "BUILD-R-M-0066-LABOR-001",
         "BUILD-R-M-0067",
         "BUILD-R-M-0068",
         "BUILD-R-M-0069",
@@ -18317,6 +18355,7 @@
         "BUILD-R-M-0179",
         "BUILD-R-M-0180",
         "BUILD-R-M-0181",
+        "BUILD-R-M-0181-TASK-PROGRESS-REPORT",
         "BUILD-R-M-0183",
         "BUILD-R-M-0184",
         "BUILD-R-M-0185",
@@ -18371,13 +18410,41 @@
         "BUILD-USER-035",
         "BUILD-USER-036",
         "BUILD-USER-037",
+        "BUILD-USER-037-DELIVERY-UNIQUENESS-001",
+        "BUILD-USER-037-PDI-CORRECTION-001",
+        "BUILD-USER-037-READ-ACCESS-001",
         "BUILD-USER-038",
+        "BUILD-USER-038-CONVERSION-001",
+        "BUILD-USER-038-FIRST-FOLLOWUP-001",
         "BUILD-USER-039",
         "BUILD-USER-039-OVERSIGHT-FEED",
-        "CHECK-USER-039-OVERSIGHT-FEED",
+        "BUILD-USER-039-SOURCE-REPORT-001",
+        "BUILD-USER-039-SUPERVISOR-FEED",
+        "BUILD-USER-039-TASK-ACTIVITY",
+        "BUILD-USER-039-TASK-EVIDENCE-001",
+        "BUILD-USER-039-WORK-HISTORY-001",
         "BUILD-USER-040",
+        "BUILD-USER-040-CALLBACKS-TODAY-001",
+        "BUILD-USER-040-CONTEXT-001",
+        "BUILD-USER-040-NAV-001",
         "BUILD-USER-040-ROLE-AWARE-PLAN-PANEL",
-        "CHECK-USER-040-ROLE-AWARE-PLAN-PANEL",
+        "BUILD-USER-041-VEHICLE-LEARNING-001",
+        "BUILD-USER-042-SOP-DRAFTS-001",
+        "BUILD-USER-043-CHECKLISTS-001",
+        "BUILD-USER-043-DELIVERY-PDI-001",
+        "BUILD-USER-043-INSTANCE-001",
+        "BUILD-USER-043-OUTCOMES-001",
+        "BUILD-USER-043-PREPARATION-001",
+        "BUILD-USER-043-REPORT-001",
+        "BUILD-USER-043-REVIEW-001",
+        "BUILD-USER-043-TEMPLATE-001",
+        "BUILD-USER-043-UI-001",
+        "BUILD-USER-044-FINANCE-DRAFT-REGISTRY-001",
+        "BUILD-USER-044-FINANCE-DRAFT-UI-001",
+        "BUILD-USER-044-INVOICE-PREVIEW-001",
+        "BUILD-USER-044-MANUAL-FINANCE-001",
+        "BUILD-USER-044-MONEY-001",
+        "BUILD-USER-045-PORTAL-SCREENS-001",
         "BUILD-WORK-PLAN-001",
         "CHECK-BR-01",
         "CHECK-BR-02",
@@ -18460,6 +18527,7 @@
         "CHECK-R-M-0063",
         "CHECK-R-M-0064",
         "CHECK-R-M-0066",
+        "CHECK-R-M-0066-LABOR-001",
         "CHECK-R-M-0067",
         "CHECK-R-M-0068",
         "CHECK-R-M-0069",
@@ -18544,6 +18612,7 @@
         "CHECK-R-M-0179",
         "CHECK-R-M-0180",
         "CHECK-R-M-0181",
+        "CHECK-R-M-0181-TASK-PROGRESS-REPORT",
         "CHECK-R-M-0183",
         "CHECK-R-M-0184",
         "CHECK-R-M-0185",
@@ -18603,9 +18672,32 @@
         "CHECK-USER-035",
         "CHECK-USER-036",
         "CHECK-USER-037",
+        "CHECK-USER-037-PDI-CORRECTION-001",
+        "CHECK-USER-037-READ-ACCESS-001",
+        "CHECK-USER-037-SALES-BROWSER-001",
         "CHECK-USER-038",
+        "CHECK-USER-038-CONVERSION-001",
+        "CHECK-USER-038-FIRST-FOLLOWUP-001",
         "CHECK-USER-039",
+        "CHECK-USER-039-OVERSIGHT-FEED",
+        "CHECK-USER-039-SOURCE-REPORT-001",
+        "CHECK-USER-039-SUPERVISOR-FEED",
+        "CHECK-USER-039-TASK-ACTIVITY",
+        "CHECK-USER-039-TASK-EVIDENCE-001",
+        "CHECK-USER-039-WORK-HISTORY-001",
         "CHECK-USER-040",
+        "CHECK-USER-040-CALLBACKS-TODAY-001",
+        "CHECK-USER-040-CONTEXT-001",
+        "CHECK-USER-040-NAV-001",
+        "CHECK-USER-040-ROLE-AWARE-PLAN-PANEL",
+        "CHECK-USER-041-VEHICLE-LEARNING-001",
+        "CHECK-USER-042-SOP-DRAFTS-001",
+        "CHECK-USER-043-CHECKLISTS-001",
+        "CHECK-USER-044-FINANCE-DRAFT-REGISTRY-001",
+        "CHECK-USER-044-FINANCE-DRAFT-UI-001",
+        "CHECK-USER-044-INVOICE-PREVIEW-001",
+        "CHECK-USER-044-MANUAL-FINANCE-001",
+        "CHECK-USER-044-MONEY-001",
         "CHECK-WORK-PLAN-001",
         "CONFIG-R-M-0008",
         "CONFIG-R-M-0016",
@@ -18744,60 +18836,13 @@
         "VERIFY-AT-19",
         "VERIFY-AT-20",
         "VISUAL-001",
-        "BUILD-USER-039-TASK-ACTIVITY",
-        "CHECK-USER-039-TASK-ACTIVITY",
-        "BUILD-USER-039-SUPERVISOR-FEED",
-        "CHECK-USER-039-SUPERVISOR-FEED",
-        "BUILD-USER-040-NAV-001",
-        "CHECK-USER-040-NAV-001",
-        "BUILD-USER-037-READ-ACCESS-001",
-        "CHECK-USER-037-READ-ACCESS-001",
-        "BUILD-USER-037-DELIVERY-UNIQUENESS-001",
-        "CHECK-USER-037-SALES-BROWSER-001",
-        "BUILD-R-M-0181-TASK-PROGRESS-REPORT",
-        "CHECK-R-M-0181-TASK-PROGRESS-REPORT",
-        "BUILD-USER-040-CALLBACKS-TODAY-001",
-        "CHECK-USER-040-CALLBACKS-TODAY-001",
-        "CHECK-USER-039-WORK-HISTORY-001",
-        "BUILD-USER-038-FIRST-FOLLOWUP-001",
-        "CHECK-USER-038-FIRST-FOLLOWUP-001",
-        "BUILD-USER-037-PDI-CORRECTION-001",
-        "CHECK-USER-037-PDI-CORRECTION-001",
-        "BUILD-USER-039-TASK-EVIDENCE-001",
-        "CHECK-USER-039-TASK-EVIDENCE-001",
-        "BUILD-USER-039-SOURCE-REPORT-001",
-        "CHECK-USER-039-SOURCE-REPORT-001",
-        "BUILD-USER-041-VEHICLE-LEARNING-001",
-        "CHECK-USER-041-VEHICLE-LEARNING-001",
-        "BUILD-USER-042-SOP-DRAFTS-001",
-        "CHECK-USER-042-SOP-DRAFTS-001",
-        "BUILD-USER-043-CHECKLISTS-001",
-        "CHECK-USER-043-CHECKLISTS-001",
-        "BUILD-USER-043-PREPARATION-001",
-        "BUILD-USER-043-DELIVERY-PDI-001",
-        "BUILD-USER-044-MANUAL-FINANCE-001",
-        "CHECK-USER-044-MANUAL-FINANCE-001",
-        "BUILD-USER-043-TEMPLATE-001",
-        "BUILD-USER-043-INSTANCE-001",
-        "BUILD-USER-043-OUTCOMES-001",
-        "BUILD-USER-043-REVIEW-001",
-        "BUILD-USER-043-REPORT-001",
-        "BUILD-USER-043-UI-001",
-        "BUILD-USER-044-MONEY-001",
-        "CHECK-USER-044-MONEY-001",
-        "BUILD-USER-044-FINANCE-DRAFT-REGISTRY-001",
-        "CHECK-USER-044-FINANCE-DRAFT-REGISTRY-001",
-        "CHECK-USER-044-FINANCE-DRAFT-UI-001",
-        "BUILD-USER-044-FINANCE-DRAFT-UI-001",
-        "BUILD-USER-044-INVOICE-PREVIEW-001",
-        "CHECK-USER-044-INVOICE-PREVIEW-001",
-        "BUILD-USER-040-CONTEXT-001",
-        "CHECK-USER-040-CONTEXT-001",
-        "BUILD-USER-039-WORK-HISTORY-001",
-        "BUILD-R-M-0066-LABOR-001",
-        "BUILD-USER-038-CONVERSION-001",
-        "CHECK-R-M-0066-LABOR-001",
-        "CHECK-USER-038-CONVERSION-001"
+        "DESIGN-PARTS-FOUNDATION-001",
+        "BUILD-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
+        "CHECK-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
+        "BUILD-PARTS-CATALOGUE-PROPOSAL-001",
+        "CHECK-PARTS-CATALOGUE-PROPOSAL-001",
+        "BUILD-PARTS-RECEIPT-QUARANTINE-001",
+        "CHECK-PARTS-RECEIPT-QUARANTINE-001"
       ],
       "requirementIds": [
         "USER-009"
@@ -18838,6 +18883,7 @@
           "AUTH-013",
           "AUTH-014",
           "AUTH-015",
+          "BUILD-AUTH-PROVISIONING-001",
           "BUILD-BR-01",
           "BUILD-BR-02",
           "BUILD-BR-03",
@@ -19091,6 +19137,7 @@
           "BUILD-USER-044-INVOICE-PREVIEW-001",
           "BUILD-USER-044-MANUAL-FINANCE-001",
           "BUILD-USER-044-MONEY-001",
+          "BUILD-USER-045-PORTAL-SCREENS-001",
           "BUILD-WORK-PLAN-001",
           "CHECK-BR-01",
           "CHECK-BR-02",
@@ -19481,7 +19528,14 @@
           "VERIFY-AT-18",
           "VERIFY-AT-19",
           "VERIFY-AT-20",
-          "VISUAL-001"
+          "VISUAL-001",
+          "DESIGN-PARTS-FOUNDATION-001",
+          "BUILD-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
+          "CHECK-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
+          "BUILD-PARTS-CATALOGUE-PROPOSAL-001",
+          "CHECK-PARTS-CATALOGUE-PROPOSAL-001",
+          "BUILD-PARTS-RECEIPT-QUARANTINE-001",
+          "CHECK-PARTS-RECEIPT-QUARANTINE-001"
         ],
         "requiredRequirementIds": [
           "AT-01",
@@ -19739,7 +19793,8 @@
           "USER-041",
           "USER-042",
           "USER-043",
-          "USER-044"
+          "USER-044",
+          "USER-045"
         ],
         "acceptedTerminalStatuses": [
           "verified",
@@ -27449,26 +27504,332 @@
         "BUILD-R-M-0066-LABOR-001"
       ],
       "statusNote": "The isolated PostgreSQL task-allocation scenario and real-browser timer journey passed. Checks include concurrent start, strict server timestamps, changed stale input denial, post-reassignment owner stop, cross-user/cross-site denial, immutable records, outbox rollback, unchanged work-order version, reload recovery, keyboard use, an announced stale-assignment error, automated WCAG checks and six responsive widths. Production, managed-PostgreSQL concurrency and staff UAT are not claimed."
+    },
+    {
+      "id": "BUILD-USER-045-PORTAL-SCREENS-001",
+      "title": "Implement role-based portal screen catalogue and audit views",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "1-foundation",
+      "parentId": "E01",
+      "dependencies": [],
+      "requirementIds": [
+        "USER-045"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-15-role-screen-catalog-audit-screens"
+      ],
+      "status": "in-progress",
+      "acceptance": [
+        "Keep docs/product/portal-and-role-screen-catalog.md complete for every portal and all current role profiles, clearly labeling present, planned and not-yet-authorized screens.",
+        "Add an Operator account lifecycle audit screen and a Head of Service Centre site activity audit screen with separate server-side scopes, read-only history and audited reads/exports.",
+        "Provide privacy-safe search, stable pagination and event detail appropriate to each role; never expose credentials, invitation tokens or unrelated customer data.",
+        "Test direct route access and API denial for unauthorized roles/sites, plus combined-role behavior and keyboard/responsive use.",
+        "Keep role labels separate from technical, inspection, release, financial and governance grants."
+      ],
+      "evidence": [
+        "docs/product/portal-and-role-screen-catalog.md",
+        "apps/web/src/workspace.tsx",
+        "apps/web/src/workspace-navigation.ts",
+        "apps/web/src/workspace-navigation.test.ts",
+        "scripts/workspace-navigation-browser.mjs",
+        "docs/verification/role-aware-navigation-2026-11-15.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "The catalogue now names each current portal and labels present, planned and unavailable screens. Navigation unit and synthetic browser checks cover Head, Advisor, Technician, Sales, Operator, Finance, and multi-site behavior; Finance setup is limited to Finance/Billing and direct Head access redirects. The Service Advisor history gap and combined Compliance/Records/HR profile are documented accurately. Server role tests, Operator and Head audit viewers, and production event coverage, retention and field redaction remain open."
+    },
+    {
+      "id": "BUILD-AUTH-PROVISIONING-001",
+      "title": "Build isolated shared-auth provisioning API and invitation lifecycle",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "1-foundation",
+      "parentId": "E01",
+      "dependencies": [
+        "AUTH-001"
+      ],
+      "requirementIds": [
+        "USER-032"
+      ],
+      "sourceRefs": [
+        "user-approved-shared-auth-staging-2026-11-15"
+      ],
+      "status": "in-progress",
+      "acceptance": [
+        "Implement a private, versioned service API called only by the VMMS account worker; validate a short-lived token against the exact issuer, audience, client and single provisioning permission.",
+        "Persist the canonical request digest, operation state, Keycloak user reference, fixed expiry, resend count, audit metadata and transactional outbox in a separate auth provisioning PostgreSQL database.",
+        "Identical operation replay returns the current operation; changed-payload replay conflicts; concurrent duplicates create at most one central user and one initial delivery operation.",
+        "Use the pinned Keycloak Admin REST API through an isolated adapter; never expose provider administrator credentials, passwords, invitation URLs or tokens to VMMS callers, browsers or logs.",
+        "Require recipient email verification and password enrollment; set the action link expiry to 24 hours and permit no more than one resend without extending expiry.",
+        "Keep delivery, enrollment and VMMS activation as separate states; an existing central identity requires manual review and is never linked by email.",
+        "Run staging checks only with synthetic .test users and locally captured non-delivery mail; do not access production identity, send real email, deploy or create real users.",
+        "Verify authorization denials, replay/conflict/concurrency, worker restart after remote commit, identity conflict, expiry, resend cap, one-time token completion, redaction and zero role/site/authority side effects."
+      ],
+      "evidence": [
+        "docs/architecture/shared-auth-provisioning.md",
+        "docs/architecture/shared-auth-provisioning-contract.md",
+        "docs/architecture/candidates/shared-auth-provisioning-service-synthesis-2026-11-15.md",
+        "C:/Projects/raymond-gray-auth/docs/user-provisioning-plan.md",
+        "C:/Projects/raymond-gray-auth/provisioning/src/app.mjs",
+        "C:/Projects/raymond-gray-auth/provisioning/src/repository.mjs",
+        "C:/Projects/raymond-gray-auth/provisioning/src/keycloak-admin.mjs",
+        "C:/Projects/raymond-gray-auth/provisioning/test"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Auth-side Node API, separate PostgreSQL ledger/outbox, Keycloak adapter and caller-token checks are implemented. Component tests pass (14 passed; one PostgreSQL test skipped without a URL); local Keycloak 26.8.2, isolated PostgreSQL and Mailpit staging passed Admin REST permission checks, synthetic invitation capture, fixed expiry and the one-resend limit. The stage uses explicit admin role scopes, fullScopeAllowed=false and the kc-admin-api client scope. Recipient enrollment completion, the separate migration/runtime privilege check, VMMS caller integration, production sender/host/credentials/recipient verification/recovery/deployment remain open and unauthorized. No real account, identity or message was changed. See C:/Projects/raymond-gray-auth/docs/verification/provisioning-staging-2026-11-15.md."
+    },
+    {
+      "id": "DESIGN-PARTS-FOUNDATION-001",
+      "title": "Select parts proposal and receipt-quarantine contract",
+      "kind": "task",
+      "workType": "coordination",
+      "phase": "4-commercial",
+      "parentId": "E06",
+      "dependencies": [],
+      "requirementIds": [
+        "R-M-0078",
+        "R-M-0080",
+        "BR-11"
+      ],
+      "sourceRefs": [
+        "master-0078",
+        "master-0080",
+        "master-0120"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Compare structurally distinct designs and record a cross-judged synthesis.",
+        "Specify site scope, named grants, audited reads, append-only provenance, concurrency, quarantine boundary, required checks and unresolved owner decisions.",
+        "Do not infer fitment, procurement, inspection, stock release, costing or financial authority."
+      ],
+      "evidence": [
+        "docs/architecture/parts-receipt-foundation.md",
+        "docs/architecture/candidates/parts-foundation-candidate-a-2026-11-15.md",
+        "docs/architecture/candidates/parts-foundation-candidate-b-2026-11-15.md",
+        "docs/architecture/candidates/parts-foundation-cross-judge-2026-11-15.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": []
+    },
+    {
+      "id": "BUILD-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
+      "title": "Associate existing suppliers with a service site",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "4-commercial",
+      "parentId": "E06",
+      "dependencies": [
+        "DESIGN-PARTS-FOUNDATION-001",
+        "F-002",
+        "F-009",
+        "F-003",
+        "F-005",
+        "F-006"
+      ],
+      "requirementIds": [
+        "R-M-0080"
+      ],
+      "sourceRefs": [
+        "master-0080"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Create a canonical-party association scoped to one organisation and service site using a separately named capability grant; do not broaden customer, owner or visit-contact lookup.",
+        "Preserve creator, grant ID/revision, reason, timestamp, correction history and domain audit/outbox state atomically.",
+        "Allow only bounded supplier identifiers and fields; do not add supplier onboarding, payment terms, procurement approval or spend authority."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": []
+    },
+    {
+      "id": "CHECK-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
+      "title": "Verify supplier site association scope and authority",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "4-commercial",
+      "parentId": "E06",
+      "dependencies": [
+        "BUILD-PARTS-SUPPLIER-SITE-ASSOCIATION-001"
+      ],
+      "requirementIds": [
+        "R-M-0080"
+      ],
+      "sourceRefs": [
+        "master-0080"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Verify allowed and denied associations, wrong-site and wrong-organisation reads, current named grants, revocation serialization, idempotency and append-only correction history under the PostgreSQL runtime role.",
+        "Verify audit and outbox atomicity, forced RLS, accessible search/read states, and that customer lookup responses are unchanged."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": []
+    },
+    {
+      "id": "BUILD-PARTS-CATALOGUE-PROPOSAL-001",
+      "title": "Record versioned part catalogue proposals",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "4-commercial",
+      "parentId": "E06",
+      "dependencies": [
+        "DESIGN-PARTS-FOUNDATION-001",
+        "F-002",
+        "F-009",
+        "F-003",
+        "F-005",
+        "F-006"
+      ],
+      "requirementIds": [
+        "R-M-0078"
+      ],
+      "sourceRefs": [
+        "master-0078"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Record immutable catalogue proposal revisions with manufacturer part number, unapproved vehicle-variant claims, source references, accepted evidence references, actor and grant snapshot.",
+        "Require expected revision on changes; preserve prior revisions and reject stale writes or changed-payload idempotency replay.",
+        "No proposal or evidence can become approved fitment or equivalent by implication."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": []
+    },
+    {
+      "id": "CHECK-PARTS-CATALOGUE-PROPOSAL-001",
+      "title": "Verify catalogue proposal history and access",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "4-commercial",
+      "parentId": "E06",
+      "dependencies": [
+        "BUILD-PARTS-CATALOGUE-PROPOSAL-001"
+      ],
+      "requirementIds": [
+        "R-M-0078"
+      ],
+      "sourceRefs": [
+        "master-0078"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Verify exact revision binding, stale conflict, replay, grant rotation/revocation, cross-site denial, accepted-evidence scope, read audit, forced RLS and restricted runtime privileges with PostgreSQL.",
+        "Verify accessible pagination and truthful unapproved wording; no browser-provided value grants technical approval."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": []
+    },
+    {
+      "id": "BUILD-PARTS-RECEIPT-QUARANTINE-001",
+      "title": "Record goods receipts as unavailable quarantined stock",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "4-commercial",
+      "parentId": "E06",
+      "dependencies": [
+        "DESIGN-PARTS-FOUNDATION-001",
+        "F-002",
+        "F-009",
+        "F-003",
+        "F-005",
+        "F-006",
+        "BUILD-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
+        "BUILD-PARTS-CATALOGUE-PROPOSAL-001"
+      ],
+      "requirementIds": [
+        "R-M-0080"
+      ],
+      "sourceRefs": [
+        "master-0080"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Capture supplier, source document reference, receipt-time claim and server-recorded time, exact catalogue revision, quantity and unit, lot/serial claims, accepted evidence references, actor and grant snapshot.",
+        "All captured quantities are fixed as quarantined with derived available quantity zero; no request, SQL grant or route can accept or release them.",
+        "Preserve receipt facts and append corrections only after correction semantics are approved; provide no issue, reservation, costing, invoice or gate transition."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": []
+    },
+    {
+      "id": "CHECK-PARTS-RECEIPT-QUARANTINE-001",
+      "title": "Verify receipt provenance and quarantine boundary",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "4-commercial",
+      "parentId": "E06",
+      "dependencies": [
+        "BUILD-PARTS-RECEIPT-QUARANTINE-001"
+      ],
+      "requirementIds": [
+        "R-M-0080"
+      ],
+      "sourceRefs": [
+        "master-0080"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Verify receipt, proposal, supplier and evidence scope, exact revision, provenance, zero availability, denied operations, stale version, replay, rollback, outbox/audit, RLS and runtime privileges under real PostgreSQL.",
+        "Test concurrent receipt/reference/serial cases only under semantics approved in REV-048; leave ambiguous uniqueness cases explicitly unverified.",
+        "Verify browser loading, empty, failure, conflict, pagination, keyboard, zoom and responsive states without implying stock acceptance."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": []
     }
   ],
   "counts": {
-    "tasks": 684,
+    "tasks": 693,
     "epics": 22,
     "byStatus": {
       "configuration-required": 18,
       "deferred": 5,
       "implemented": 11,
-      "in-progress": 115,
+      "in-progress": 117,
       "not-applicable": 1,
-      "planned": 458,
-      "verified": 76
+      "planned": 464,
+      "verified": 77
     },
     "byPhase": {
       "0-discovery": 20,
-      "1-foundation": 121,
+      "1-foundation": 123,
       "2-core-workflow": 92,
       "3-safety-qa": 127,
-      "4-commercial": 111,
+      "4-commercial": 118,
       "5-governance": 37,
       "6-historical-import": 33,
       "6-launch": 117,

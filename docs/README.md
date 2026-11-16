@@ -23,10 +23,10 @@ The source manifest contains SHA-256 hashes. `scripts/extract-specifications.py`
 | Staff authority and qualification scope | [Authority and qualification model](architecture/staff-authority-and-qualification.md); [authority decision contract](architecture/authority-decision-contract.md); [partial implementation review](verification/authority-decision-contract-2026-11-14.md) |
 | Read-only staff assignment protection | [Writable-membership assignment check](verification/checks/assignment-writable-membership-2026-11-11.md) |
 | Google, passkeys, passwords and approved access | [Authentication design](architecture/authentication.md) |
-| Shared sign-in across Raymond Gray products | [Shared identity architecture](architecture/shared-identity.md); standalone service at `C:\Projects\raymond-gray-auth`; [fresh local sign-in recheck](verification/oidc-local-2026-11-14.md); [RP-initiated sign-out check](verification/oidc-rp-logout-2026-11-14.md) |
+| Shared sign-in across Raymond Gray products | [Shared identity architecture](architecture/shared-identity.md); [staging provisioning design](architecture/shared-auth-provisioning.md); [VMMS caller contract](architecture/shared-auth-provisioning-contract.md); standalone service at `C:\Projects\raymond-gray-auth`; [fresh local sign-in recheck](verification/oidc-local-2026-11-14.md); [RP-initiated sign-out check](verification/oidc-rp-logout-2026-11-14.md) |
 | Shared sign-in theme and local persistence | [Responsive theme check](verification/checks/shared-auth-theme-2026-11-11.md); [restart and teardown check](verification/checks/shared-auth-persistence-2026-11-11.md) |
 | VMMS Operator account lifecycle | [Operator account administration contract](architecture/operator-account-administration.md) |
-| Proposed shared-auth provisioning API and enrollment lifecycle | [VMMS/shared-auth contract](architecture/shared-auth-provisioning-contract.md) (owner review pending: REV-045) |
+| Shared-auth provisioning API and enrollment lifecycle | [VMMS/shared-auth contract](architecture/shared-auth-provisioning-contract.md); auth-side staging implementation in `C:\Projects\raymond-gray-auth\provisioning`; production review still pending under REV-045 |
 | Isolated synthetic role test accounts | [Local role rehearsal design](architecture/local-role-fixtures.md) |
 | Operator account request verification | [Local request-slice check](verification/checks/operator-account-request-slice-2026-11-10.md) |
 | Saved intake and evidence draft recovery | [Saved-draft recovery check](verification/checks/saved-draft-recovery-2026-11-11.md) |
@@ -69,6 +69,7 @@ The source manifest contains SHA-256 hashes. `scripts/extract-specifications.py`
 | Manual invoices, external payment verification, receipts and client email | [Selected commercial contract](architecture/manual-finance.md); [design plan](architecture/manual-finance-design-plan.md); [cross-judged synthesis](architecture/candidates/manual-finance-synthesis.md); [draft SOP-004](operations/sops/SOP-004-invoice-payment-receipt-and-vehicle-handover.md) |
 | Non-effective Finance configuration proposals | [Draft registry contract](architecture/finance-configuration-drafts.md); [PostgreSQL/API verification](verification/finance-configuration-drafts-2026-11-14.md) |
 | Finance setup proposal workspace | [Proposal UI contract](architecture/finance-configuration-draft-ui.md); [browser/API verification](verification/finance-configuration-draft-ui-2026-11-14.md) |
+| Parts catalogue proposals and goods receipts | [Selected quarantine foundation](architecture/parts-receipt-foundation.md); [Candidate A](architecture/candidates/parts-foundation-candidate-a-2026-11-15.md); [Candidate B](architecture/candidates/parts-foundation-candidate-b-2026-11-15.md); [cross-judge](architecture/candidates/parts-foundation-cross-judge-2026-11-15.md); owner decisions remain pending under REV-048 |
 | Sensitive work-order detail reads | [Read audit design](architecture/sensitive-read-audit.md) |
 | Sensitive staff queues and directory reads | [Read audit design](architecture/sensitive-read-audit.md); [queue and lookup verification](verification/checks/sensitive-queue-and-lookup-audit-2026-11-09.md) |
 | Customer identity and repeat visits | [Identity boundary and phased CRM design](architecture/customer-and-repeat-visits.md) |
@@ -91,6 +92,7 @@ The source manifest contains SHA-256 hashes. `scripts/extract-specifications.py`
 | Optional camera VIN scan | [VIN barcode scan](architecture/vin-barcode-scan.md) |
 | Versioned historical import templates | [Template package v1](import/historical/v1/README.md) |
 | Delivery sequence and completion gates | [Implementation plan](delivery/implementation-plan.md) |
+| Owner-prioritized workshop operations pilot and agent build plan | [Operational workshop pilot plan](delivery/operational-workshop-pilot-agent-plan.md); live task status remains in [task data](delivery/tasks.json) and the generated [tracker](delivery/implementation-tracker.md) |
 | Documentation, traceability and graph workflow verification | [Source of truth and tracker check](verification/source-of-truth-and-tracker-2026-11-14.md) |
 | All tasks | [Task data](delivery/tasks.json) and generated [tracker](delivery/implementation-tracker.md) |
 | Requirement traceability | [Requirements](requirements/README.md) and [requirement data](requirements/requirements.json) |
@@ -102,10 +104,19 @@ The source manifest contains SHA-256 hashes. `scripts/extract-specifications.py`
 | Operator and Head role-boundary evidence | [Operator account boundary check](verification/checks/operator-account-boundary-2026-11-10.md) |
 | Local setup and operations | [Development guide](guides/development.md) |
 | Plain-language labels and descriptions | [Plain-language interface](guides/plain-language-interface.md) |
+| Portal and every-role screen catalogue, including Operator and Head audit screens | [Portal and role screen catalogue](product/portal-and-role-screen-catalog.md); [role navigation browser recheck](verification/role-aware-navigation-2026-11-15.md) |
 | Work-order search wording check | [Search wording and accessible name](verification/plain-language-work-order-search-2026-11-14.md) |
 | Staff workflow overview | [How work moves through VMMS](guides/how-work-moves-through-vmms.md) |
 | Current after-sales report awaiting VIN check | [Pending report intake](operations/pending-report-2026-11-12.md) |
 | Procedure-library wording and responsive checks | [Plain-language procedure library verification](verification/checks/plain-language-procedure-library-2026-11-11.md) |
 | Decisions and progress | [Run plan](delivery/run-plan.md), [decision trail](delivery/decisions.tsv) |
 
-The JSON requirement and task records are canonical. Human-readable trackers are generated from them. Architecture decisions define implementation policy; review items explicitly marked pending do not constitute management approval.
+## Browse as HTML
+
+Generate a self-contained, gitignored HTML copy of these docs for easier reading:
+
+```bash
+npm run docs:html
+```
+
+Output goes to `docs/html/` (ignored by Git). Open `docs/html/index.html` in any browser. Re-run after doc changes.

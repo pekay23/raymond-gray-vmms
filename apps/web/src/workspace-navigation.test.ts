@@ -73,10 +73,18 @@ test("vehicle learning is available to every after-sales role including Head, te
   assert.equal(workspaceCapabilities(site(["vmms-operator"])).canOpenVehicleLearning,false);
 });
 
-test("Finance setup is discoverable to staff but does not grant access to Operator-only accounts", () => {
-  assert.equal(workspaceCapabilities(site(["head-service-centre"])).canOpenFinanceSetup, true);
+test("Finance setup is limited to the Finance/Billing role", () => {
+  assert.equal(workspaceCapabilities(site(["head-service-centre"])).canOpenFinanceSetup, false);
   assert.equal(workspaceCapabilities(site(["finance-billing"])).canOpenFinanceSetup, true);
-  assert.equal(workspaceCapabilities(site(["sales-representative"])).canOpenFinanceSetup, true);
+  assert.equal(workspaceCapabilities(site(["head-service-centre", "finance-billing"])).canOpenFinanceSetup, true);
+  assert.equal(workspaceCapabilities(site(["finance-billing"])).canOpenWorkOrders, false);
+  assert.equal(workspaceCapabilities(site(["finance-billing"])).canOpenVehicleLearning, true);
+  assert.equal(workspaceCapabilities(site(["service-advisor"])).canOpenFinanceSetup, false);
+  assert.equal(workspaceCapabilities(site(["technician-engineer-trainee"])).canOpenFinanceSetup, false);
+  assert.equal(workspaceCapabilities(site(["compliance-records-hr"])).canOpenWorkOrders, false);
+  assert.equal(workspaceCapabilities(site(["compliance-records-hr"])).canOpenVehicleLearning, true);
+  assert.equal(workspaceCapabilities(site(["compliance-records-hr"])).canOpenFinanceSetup, false);
+  assert.equal(workspaceCapabilities(site(["sales-representative"])).canOpenFinanceSetup, false);
   assert.equal(workspaceCapabilities(site(["vmms-operator"])).canOpenFinanceSetup, false);
   assert.equal(workspaceCapabilities(site([])).canOpenFinanceSetup, false);
 });

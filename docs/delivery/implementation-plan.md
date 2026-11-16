@@ -12,6 +12,16 @@ Completion includes staff and approved vehicle-owner portal access, cross-owner 
 
 The owner also requires actual historical records to be used for validation when approved mappings are available, followed by a pre-pilot operational-data reconciliation that removes synthetic test/seed records while preserving approved live records, identifiers, audit history and attachments. This cleanup is an explicit launch gate (`USER-030`, `BUILD-USER-030`, `CHECK-USER-030`); it must run only against a reviewed environment and exact allowlist with recovery evidence. Synthetic fixtures remain confined to isolated development and test environments.
 
+## Next delivery: workshop operations pilot
+
+The owner has reprioritized delivery: build the staff-facing, day-to-day workshop maintenance journey first, deploy the tested web/API/auth changes to production promptly after the local release checks, and add Finance, Sales and Smart POS-adjacent features later. The full-specification completion goal above remains active; this is a near-term release milestone, not a reduced definition of the full product. The detailed scope, acceptance path, work packages and deferred areas are in the [Workshop Operations Pilot agent plan](operational-workshop-pilot-agent-plan.md).
+
+The pilot focuses on service requests/callbacks, reception, Operations review and Team Lead assignment, work planning and Supervisor handoff, assigned Technician/Engineer updates, attributed repair history and Daily Service Report, gated G2/G3/G4, the separate Head post-release inspection before advisor completion contact, and routine-maintenance work-order checklists. Preserve the already-working intake, work-plan, messaging, evidence, assignment and role navigation flows; audit them and close their actual gaps rather than rebuilding them.
+
+The pilot must retain site isolation, authenticated actor attribution, evidence/privacy controls and fail-closed safety/authority checks. User-directed sequence is Supervisor completion → Team Lead release to collection zone → Head inspection/sign-off → Service Advisor customer update. The post-release Head inspection is a distinct step; it does not replace G4. Until the signed authority schedule, effective SOPs, exact vehicle procedures, inspection policy and equipment requirements are approved, the affected commands remain visibly blocked. Deferring the full Finance module does not permit physical vehicle departure without a recorded payment or approved showroom guarantee.
+
+For this first release, defer sales and delivery/PDI entry, historical backlog import, full financial functionality, Smart POS transfers, customer portal expansion and native/OS-specific clients. Keep the one-site operational data allowlist clean; protect records with a verified restore path. Production deployment after local tests is authorized by the owner's latest instruction, subject to the exact deployment review and the applicable safety, identity, data and recovery gates in the linked plan.
+
 ## Delivery sequence
 
 | Phase | Deliverable | Exit evidence | Dependencies |

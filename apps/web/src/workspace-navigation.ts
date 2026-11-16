@@ -1,6 +1,6 @@
 import type { Site } from "./api";
 
-const workshopRoleCodes = [
+const workOrderRoleCodes = [
   "head-service-centre",
   "ev-team-lead",
   "ice-team-lead",
@@ -10,6 +10,10 @@ const workshopRoleCodes = [
   "quality-inspector",
   "parts-inventory",
   "warranty-customer-support",
+] as const;
+
+const vehicleLearningRoleCodes = [
+  ...workOrderRoleCodes,
   "finance-billing",
   "compliance-records-hr",
 ] as const;
@@ -23,17 +27,17 @@ const vehicleHistoryRoleCodes = [
 export function workspaceCapabilities(site: Pick<Site, "roleCodes" | "canWrite">) {
   const roles = new Set(site.roleCodes);
   const hasStaffRole = site.roleCodes.some((role) => role !== "vmms-operator");
-  const hasWorkshopRole = workshopRoleCodes.some((role) => roles.has(role));
+  const hasWorkOrderRole = workOrderRoleCodes.some((role) => roles.has(role));
   const canViewVehicleHistory = vehicleHistoryRoleCodes.some((role) => roles.has(role));
   const hasOperatorRole = roles.has("vmms-operator");
   const operatorOnly = hasOperatorRole && !hasStaffRole;
 
   return {
     hasStaffRole,
-    hasWorkshopRole,
+    hasWorkOrderRole,
     canOpenToday: hasStaffRole,
     canOpenRequests: hasStaffRole,
-    canOpenWorkOrders: hasWorkshopRole,
+    canOpenWorkOrders: hasWorkOrderRole,
     canOpenVehicleHistory: canViewVehicleHistory,
     canOpenMyTasks: roles.has("technician-engineer-trainee"),
     canOpenHeadOverview: roles.has("head-service-centre"),
@@ -41,9 +45,9 @@ export function workspaceCapabilities(site: Pick<Site, "roleCodes" | "canWrite">
     canSendStaffMessages: roles.has("head-service-centre"),
     canManageStaffAccounts: hasOperatorRole,
     canOpenDocuments: hasStaffRole || operatorOnly,
-    canOpenVehicleLearning: hasWorkshopRole,
-    canOpenFinanceSetup: hasStaffRole,
-    canRegisterVisit: hasWorkshopRole && site.canWrite,
+    canOpenVehicleLearning: vehicleLearningRoleCodes.some((role) => roles.has(role)),
+    canOpenFinanceSetup: roles.has("finance-billing"),
+    canRegisterVisit: hasWorkOrderRole && site.canWrite,
     operatorOnly,
   };
 }
@@ -51,7 +55,7 @@ export function workspaceCapabilities(site: Pick<Site, "roleCodes" | "canWrite">
 export function workspaceHomePath(site: Site): string {
   const capabilities = workspaceCapabilities(site);
   if (capabilities.operatorOnly) return `/sites/${site.id}/staff/accounts`;
-  if (!capabilities.hasWorkshopRole && capabilities.canOpenVehicleHistory)
+  if (!capabilities.hasWorkOrderRole && capabilities.canOpenVehicleHistory)
     return `/sites/${site.id}/sales-deliveries`;
   return `/sites/${site.id}/today`;
 }

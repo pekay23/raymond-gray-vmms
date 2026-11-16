@@ -119,6 +119,7 @@ export function TaskAllocations({ siteId, workOrderId, workOrderVersion }: Props
     queryFn: () => request(path, taskAllocationsSchema),
     enabled: online,
     retry: false,
+    placeholderData: (previousData) => previousData,
   });
 
   useEffect(() => setSelected({}), [workOrderVersion]);

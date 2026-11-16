@@ -16807,6 +16807,58 @@
         "note": "Manual external payment verification is selected; collecting/processing payments remains out of scope."
       },
       "statusNote": "Exact money, the non-effective Finance proposal registry and grant-aware setup page are implemented and verified. The current task-work model contains narrative findings/actions, not chargeable labour; compatible part catalogue, issue and traceability records are also not implemented. Invoice preview depends on those source records. Financial policy, grants, templates, recipient rules and sender configuration remain pending; the full manual Finance workflow is incomplete."
+    },
+    {
+      "id": "USER-045",
+      "title": "Define role-based portal screens and scoped audit logs",
+      "kind": "user-direction",
+      "module": "CORE",
+      "status": "in-progress",
+      "sourceRefs": [
+        "user-request-2026-11-15-role-screen-catalog-audit-screens"
+      ],
+      "sourceText": [
+        {
+          "id": "user-request-2026-11-15-role-screen-catalog-audit-screens",
+          "text": "Create a document listing the screens for every portal and every role, including the lowest-level technicians, accountants, administrators and all other roles. The VMMS Operator and Head of Service Centre must have audit-log screens."
+        }
+      ],
+      "acceptance": [
+        "Maintain a complete screen catalogue for each portal and every role profile, including combined role behavior and owner access.",
+        "Clearly distinguish implemented routes from requested, planned and unavailable screens.",
+        "Provide a read-only Operator audit screen for account lifecycle events and a read-only Head of Service Centre audit screen for site operational events, each independently scoped and audited.",
+        "Enforce screen and data access on the server; navigation visibility alone is not authorization.",
+        "Define pagination, filters, privacy/redaction, export and audit-read rules before exposing audit events.",
+        "Do not infer technical, inspection, release, financial or policy authority from a role label."
+      ],
+      "existingEvidence": {
+        "classification": "SCREEN CATALOG DOCUMENTED; AUDIT VIEWERS NOT IMPLEMENTED",
+        "references": [
+          "apps/web/src/workspace-navigation.ts",
+          "apps/web/src/workspace.tsx",
+          "docs/product/portal-and-role-screen-catalog.md"
+        ]
+      },
+      "plannedImplementation": "Keep the catalogue in docs/product as the product source of truth. Add route-level checks and role-by-role browser coverage. Implement separated Operator account-audit and Head site-activity views only after event coverage, privacy, retention and export policy are specified.",
+      "migration": "No audit data migration is authorized by this requirement.",
+      "serverControl": "Derive organisation, site and actor from the authenticated session; enforce read grants, append read/export audit events, redact secrets and sensitive fields, use stable pagination, and never mutate audit history.",
+      "uatCaseIds": [],
+      "verificationCaseIds": [
+        "BUILD-USER-045-PORTAL-SCREENS-001"
+      ],
+      "configurationDependencies": [
+        "REV-045: shared-auth account enrollment plan review"
+      ],
+      "evidence": [
+        "docs/product/portal-and-role-screen-catalog.md",
+        "apps/web/src/workspace-navigation.ts",
+        "apps/web/src/workspace.tsx"
+      ],
+      "owner": {
+        "role": "product-owner",
+        "person": null
+      },
+      "statusNote": "The first role-by-screen catalog is checked against current navigation. Unit and synthetic browser checks now cover Finance/Billing route access, Head direct-route denial, and work-order route boundaries for Finance and the combined Compliance/Records/HR profile. Server role authorization, audit viewers and role-by-role API acceptance are incomplete."
     }
   ],
   "sourceCoverage": [
@@ -19615,13 +19667,13 @@
     }
   ],
   "counts": {
-    "requirements": 256,
+    "requirements": 257,
     "sourceBlocks": 350,
     "mappedSourceBlocks": 295,
     "contextBlocks": 55,
     "byModule": {
       "CONFIG": 10,
-      "CORE": 18,
+      "CORE": 19,
       "CUSTOMER": 1,
       "DELIVERY": 24,
       "FINANCE": 1,
@@ -19643,7 +19695,7 @@
     "byStatus": {
       "configuration-required": 10,
       "deferred": 1,
-      "in-progress": 46,
+      "in-progress": 47,
       "not-applicable": 1,
       "planned": 192,
       "verified": 6

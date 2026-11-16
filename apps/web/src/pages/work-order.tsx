@@ -780,7 +780,7 @@ function Order({ order, refresh }: { order: WorkOrder; refresh: () => void }) {
             <h2 className="text-sm font-semibold text-zinc-800">
               A draft is the starting point
             </h2>
-            <p className="mt-2 text-xs leading-6 text-zinc-500">
+            <p className="mt-2 text-xs leading-6 text-zinc-700">
               Record concerns, proposed tasks and holds here. Approved scope,
               technical completion, quality release and commercial closure need
               separate decisions.

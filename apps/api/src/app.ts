@@ -44,6 +44,7 @@ import { readWorkOrderSourceReports, recordWorkOrderSourceReport, sourceReportIn
 import { assignRequestSchema, assignServiceRequest, claimRequestSchema, claimServiceRequest, closeRequestSchema, closeServiceRequest, contactAttemptSchema, correctContactSchema, correctServiceRequestContact, createServiceRequest, linkRequestSchema, linkServiceRequestToWorkOrder, listRequestAssignees, listServiceRequests, listWorkOrderRequests, readServiceRequest, readServiceRequestContacts, readServiceRequestStatusHistory, recordServiceRequestContact, reopenRequestSchema, reopenServiceRequest, serviceRequestInputSchema, unlinkRequestSchema, unlinkServiceRequest } from './service-requests.js';
 import { listFinanceConfigurationDrafts, saveFinanceConfigurationDraft } from './finance-configuration.js';
 import { readMyActiveTaskLaborSession, startMyTaskLaborSession, stopMyTaskLaborSession } from './work-order-task-labor.js';
+import { checklistOutcomeInputSchema, readMyTaskChecklistOutcomeHistory, recordMyTaskChecklistOutcome } from './work-order-checklist-outcomes.js';
 
 async function clearBrowserSessions(pool: Database, request: FastifyRequest, reply: FastifyReply, config: Config) {
   const staffCookie=request.cookies.vmms_session;
@@ -379,6 +380,17 @@ export async function createApp(config:Config,pool:Database=makePool(config.DATA
     requireCsrf(request,config);
     const {siteId,workOrderId,taskId}=z.object({siteId:uuid,workOrderId:uuid,taskId:uuid}).parse(request.params);
     return recordMyTaskWorkEntry(pool,await authorisedScope(pool,request,siteId,true),uuid.parse(request.headers['idempotency-key']),workOrderId,taskId,taskWorkEntryInputSchema.parse(request.body));
+  });
+  app.get('/api/v1/sites/:siteId/my-tasks/:workOrderId/:taskId/checklists/:checklistId/items/:itemId/outcomes',async (request,reply)=>{
+    const {siteId,workOrderId,taskId,checklistId,itemId}=z.object({siteId:uuid,workOrderId:uuid,taskId:uuid,checklistId:uuid,itemId:uuid}).parse(request.params);
+    const query=z.object({page:z.coerce.number().int().min(1).max(10000).default(1),pageSize:z.coerce.number().int().min(1).max(100).default(25)}).strict().parse(request.query);
+    reply.header('Cache-Control','no-store');
+    return readMyTaskChecklistOutcomeHistory(pool,await authorisedScope(pool,request,siteId,false),workOrderId,taskId,checklistId,itemId,request.id,query.page,query.pageSize);
+  });
+  app.post('/api/v1/sites/:siteId/my-tasks/:workOrderId/:taskId/checklists/:checklistId/items/:itemId/outcomes',async request=>{
+    requireCsrf(request,config);
+    const {siteId,workOrderId,taskId,checklistId,itemId}=z.object({siteId:uuid,workOrderId:uuid,taskId:uuid,checklistId:uuid,itemId:uuid}).parse(request.params);
+    return recordMyTaskChecklistOutcome(pool,await authorisedScope(pool,request,siteId,true),uuid.parse(request.headers['idempotency-key']),workOrderId,taskId,checklistId,itemId,checklistOutcomeInputSchema.parse(request.body));
   });
   app.get('/api/v1/sites/:siteId/work-orders/:id',async request=>{
     const {siteId,id}=z.object({siteId:uuid,id:uuid}).parse(request.params);

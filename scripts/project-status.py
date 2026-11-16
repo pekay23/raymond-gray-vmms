@@ -107,6 +107,12 @@ def validate():
         errors.append("Duplicate requirement IDs")
     if len(task_ids) != len(tasks):
         errors.append("Duplicate task IDs")
+    focus = tasks_doc.get("deliveryFocus", {})
+    focus_task_ids = focus.get("taskIds", [])
+    if len(focus_task_ids) != len(set(focus_task_ids)):
+        errors.append("deliveryFocus.taskIds contains duplicate task IDs")
+    if set(focus_task_ids) - task_ids:
+        errors.append(f"deliveryFocus references unknown tasks: {sorted(set(focus_task_ids) - task_ids)}")
     source_ids = set()
     for key in ("master", "upgrade"):
         source_ids.update(b["id"] for b in read_json(f"docs/sources/{key}.json")["blocks"])
@@ -237,6 +243,20 @@ def render(requirements_doc, tasks_doc):
     for kind, records in (("Requirements", requirements), ("Tasks including epics", tasks)):
         for status, count in sorted(Counter(r["status"] for r in records).items()):
             lines.append(f"| {kind} | {cell(status)} | {count} |")
+    focus = tasks_doc.get("deliveryFocus")
+    if focus:
+        by_id = {task["id"]: task for task in tasks}
+        plan = focus.get("plan", "")
+        plan_link = f"[{cell(plan)}](../../{cell(plan)})" if plan else ""
+        lines.extend(["", f"## Next delivery: {cell(focus['title'])}", "", f"Build order and acceptance criteria: {plan_link}.", "", "| ID | Task | Status | Dependencies | Evidence |", "| --- | --- | --- | --- | --- |"])
+        for task_id in focus.get("taskIds", []):
+            task = by_id[task_id]
+            evidence = ", ".join(e if isinstance(e, str) else json.dumps(e, ensure_ascii=False) for e in task["evidence"])
+            lines.append(f"| {task['id']} | {cell(task['title'])} | {cell(task['status'])} | {cell(', '.join(task['dependencies']))} | {cell(evidence)} |")
+        deferred = focus.get("deferredAreas", [])
+        if deferred:
+            lines.extend(["", "Deferred after the workshop operations pilot:", ""])
+            lines.extend(f"- {cell(item)}" for item in deferred)
     for phase in dict.fromkeys(t["phase"] for t in tasks):
         lines.extend(["", f"## {phase}", "", "| ID | Task | Status | Dependencies | Evidence |", "| --- | --- | --- | --- | --- |"])
         for task in (t for t in tasks if t["phase"] == phase):

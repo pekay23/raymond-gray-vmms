@@ -1,0 +1,158 @@
+{
+  "findings": [
+    {
+      "file": "apps/api/Dockerfile",
+      "severity": "critical",
+      "category": "correctness",
+      "description": "CMD references 'dist/server.js' but TypeScript output places server.js at 'dist/src/server.js' (rootDir: '.', outDir: 'dist'). Container will fail to start with 'Error: Cannot find module'.",
+      "suggestion": "Change CMD to ['node', 'dist/src/server.js'] or adjust tsconfig.json to have rootDir: 'src' and update include paths accordingly."
+    },
+    {
+      "file": "apps/api/Dockerfile",
+      "severity": "critical",
+      "category": "correctness",
+      "description": "COPY --from=build /app/migrations ./migrations will fail - migrations directory (SQL files) is not included in TypeScript compilation output. The build stage only outputs src/, scripts/, test/ under dist/.",
+      "suggestion": "Either add a step to copy migrations in the build stage (e.g., RUN cp -r migrations dist/), or copy directly from source in runtime stage: COPY --from=build /app/migrations ./migrations (but source must be available). Better: COPY migrations ./migrations in runtime stage from build context."
+    },
+    {
+      "file": "apps/api/Dockerfile",
+      "severity": "high",
+      "category": "completeness",
+      "description": "No HEALTHCHECK instruction despite the project having a health endpoint at /api/v1/health that checks DB connectivity. Container orchestration (K8s, Docker Swarm, etc.) cannot perform liveness/readiness probes.",
+      "suggestion": "Add HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 CMD node -e \"fetch('http://localhost:4100/api/v1/health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))\" or use wget/curl if available."
+    },
+    {
+      "file": "apps/api/Dockerfile",
+      "severity": "medium",
+      "category": "security",
+      "description": "Uses node:24-alpine (Node 24 is not an LTS release). Production workloads should use LTS versions (Node 22 as of 2024-2026). Non-LTS versions may have unpatched vulnerabilities and shorter support windows.",
+      "suggestion": "Change to node:22-alpine (current LTS) or node:20-alpine (previous LTS). Update root package.json engines field accordingly."
+    },
+    {
+      "file": "apps/api/Dockerfile",
+      "severity": "medium",
+      "category": "maintainability",
+      "description": "No .dockerignore file exists for apps/api. The build stage 'COPY . .' sends entire workspace (including node_modules, dist, .git, tests, docs) to Docker daemon, slowing builds and potentially leaking secrets.",
+      "suggestion": "Create apps/api/.dockerignore with at minimum: node_modules/, dist/, .git/, *.log, .env*, coverage/, test-results/, .vscode/, *.md, docs/"
+    },
+    {
+      "file": "apps/api/Dockerfile",
+      "severity": "low",
+      "category": "maintainability",
+      "description": "COPY package.json package-lock.json* uses wildcard which could match multiple files (package-lock.json, package-lock.json.backup, etc.). Non-deterministic.",
+      "suggestion": "Use explicit COPY package.json package-lock.json ./ (npm ci will fail if package-lock.json missing, which is correct behavior)."
+    },
+    {
+      "file": "apps/api/Dockerfile",
+      "severity": "low",
+      "category": "fit",
+      "description": "Copies scripts/ and migrations/ to runtime image but these are development/operational scripts (seed, migrate, fixtures). Runtime container only needs server.js and dependencies. Increases attack surface and image size.",
+      "suggestion": "Remove COPY scripts/ and COPY migrations/ from runtime stage unless the container entrypoint runs migrations (it doesn't - migrations run separately per context). Keep only dist/ and node_modules/."
+    },
+    {
+      "file": "apps/web/wrangler.production.jsonc",
+      "severity": "medium",
+      "category": "correctness",
+      "description": "$schema references 'node_modules/wrangler/config-schema.json' which does not exist in deployed Cloudflare Worker environment. This is only for local IDE validation and will be ignored by Wrangler, but indicates misunderstanding of schema usage.",
+      "suggestion": "Remove $schema line or use a valid HTTPS schema URL. Wrangler does not require or use this field at deploy time."
+    },
+    {
+      "file": "apps/web/wrangler.production.jsonc",
+      "severity": "low",
+      "category": "completeness",
+      "description": "No environment-specific secrets configuration shown (e.g., KV namespaces, D1 databases, secret bindings). While secrets are set in Cloudflare dashboard, the config should document expected bindings for maintainability.",
+      "suggestion": "Add commented example bindings or a separate wrangler.secrets.jsonc template showing expected KV/D1/R2/secret bindings for onboarding."
+    },
+    {
+      "file": ".github/workflows/deploy-web.yml",
+      "severity": "high",
+      "category": "correctness",
+      "description": "cache-dependency-path points to 'apps/web/package-lock.json' but project uses npm workspaces with a single root package-lock.json. Web app has no package-lock.json (dependencies hoisted to root). npm cache will not work correctly.",
+      "suggestion": "Change cache-dependency-path to 'package-lock.json' (root) or use 'pnpm-lock.yaml' if migrating to pnpm. Current setup defeats caching."
+    },
+    {
+      "file": ".github/workflows/deploy-web.yml",
+      "severity": "high",
+      "category": "correctness",
+      "description": "wrangler-action command uses 'pages deploy apps/web/dist' with workingDirectory: apps/web. This resolves to apps/web/apps/web/dist which doesn't exist. Should be './dist' or 'dist'.",
+      "suggestion": "Change command to 'pages deploy ./dist --project-name=raymond-gray-vmms --branch=${{ github.ref_name }}'"
+    },
+    {
+      "file": ".github/workflows/deploy-web.yml",
+      "severity": "medium",
+      "category": "security",
+      "description": "Path filter includes 'pnpm-lock.yaml' but project uses npm workspaces (not pnpm). Changes to pnpm-lock.yaml (if it exists as orphan) would trigger web deploy unnecessarily. Confusing for maintainers.",
+      "suggestion": "Remove 'pnpm-lock.yaml' from path filters unless migrating to pnpm. Keep only 'package-lock.json' at root."
+    },
+    {
+      "file": ".github/workflows/deploy-web.yml",
+      "severity": "medium",
+      "category": "completeness",
+      "description": "No preview deployment for pull requests. Only deploys on push to main. PR previews are standard practice for frontend review.",
+      "suggestion": "Add 'pull_request' trigger with separate preview deployment using Cloudflare Pages preview URLs (wrangler pages deploy --branch=preview-${{ github.event.number }})"
+    },
+    {
+      "file": ".github/workflows/deploy-web.yml",
+      "severity": "low",
+      "category": "fit",
+      "description": "Uses node-version: 24 but root package.json engines specifies '>=24 <27'. Node 24 is not LTS. Should align with LTS version used in Dockerfile.",
+      "suggestion": "Change to node-version: '22' (current LTS) across all workflows and Dockerfile."
+    },
+    {
+      "file": ".github/workflows/deploy-web.yml",
+      "severity": "low",
+      "category": "completeness",
+      "description": "Verification step only echoes URLs - does not actually verify deployment health (HTTP check, content check). Silent failures possible.",
+      "suggestion": "Add curl/wget check against deployed URL with expected status code and content match. Use Cloudflare Pages deployment output URL."
+    },
+    {
+      "file": ".github/workflows/build-api.yml",
+      "severity": "high",
+      "category": "completeness",
+      "description": "No test step before building and pushing container. Failed tests would still produce and push a broken image to GHCR.",
+      "suggestion": "Add test step: 'run: npm test --prefix apps/api' (or appropriate test command) before docker/build-push-action. Fail build on test failure."
+    },
+    {
+      "file": ".github/workflows/build-api.yml",
+      "severity": "high",
+      "category": "security",
+      "description": "No container image vulnerability scanning (e.g., Trivy, Grype, Docker Scout). Images pushed to GHCR without security validation.",
+      "suggestion": "Add Trivy scan step after build: uses: aquasecurity/trivy-action@master with format: 'sarif' and upload to GitHub Security tab."
+    },
+    {
+      "file": ".github/workflows/build-api.yml",
+      "severity": "medium",
+      "category": "security",
+      "description": "No SLSA provenance/attestation generation. Cannot verify supply chain integrity of published images.",
+      "suggestion": "Add provenance: true to docker/build-push-action and use docker/attest-action for SLSA Level 1+ attestation."
+    },
+    {
+      "file": ".github/workflows/build-api.yml",
+      "severity": "medium",
+      "category": "correctness",
+      "description": "IMAGE_NAME uses '${{ github.repository_owner }}/vmms-api'. For user-owned repos this is username, for org-owned it's org name. May not match intended registry path. Hard to predict without knowing repo ownership.",
+      "suggestion": "Use explicit org/name: 'raymond-gray/vmms-api' or make configurable via repository variable."
+    },
+    {
+      "file": ".github/workflows/build-api.yml",
+      "severity": "medium",
+      "category": "completeness",
+      "description": "No multi-architecture build (amd64/arm64). Image only works on linux/amd64 runners. Limits deployment flexibility (Apple Silicon dev, ARM servers).",
+      "suggestion": "Add platforms: linux/amd64,linux/arm64 to docker/build-push-action and ensure base image supports both (node:22-alpine does)."
+    },
+    {
+      "file": ".github/workflows/build-api.yml",
+      "severity": "low",
+      "category": "fit",
+      "description": "Path filter includes 'pnpm-lock.yaml' but project uses npm. Same issue as web workflow - inconsistent package manager references.",
+      "suggestion": "Remove 'pnpm-lock.yaml' from path filters. Use 'package-lock.json' only."
+    },
+    {
+      "file": ".github/workflows/build-api.yml",
+      "severity": "low",
+      "category": "maintainability",
+      "description": "Workflow only builds and pushes to GHCR but does not deploy. Deployment is separate (not shown). No tag promotion strategy (e.g., promote 'sha-*' to 'latest' after successful deploy).",
+      "suggestion": "Document deployment process separately or add a deploy workflow that pulls specific tag. Consider tag promotion via GitHub API after successful staging deployment."
+    }
+  ]
+}

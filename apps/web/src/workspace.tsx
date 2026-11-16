@@ -21,6 +21,10 @@ import {
   ClipboardList,
   Gauge,
   LogOut,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  X,
   MessageSquareText,
   Settings2,
   UsersRound,
@@ -401,7 +405,7 @@ function Brand({ dark = false, compact = false }: { dark?: boolean; compact?: bo
         />
       </picture>
       <p
-        className={cn("mt-2 text-xs", dark ? "text-zinc-200" : "text-zinc-500", compact && "hidden")}
+        className={cn("brand-caption mt-2 text-xs", dark ? "text-zinc-200" : "text-zinc-500", compact && "hidden")}
       >
         Vehicle maintenance management
       </p>
@@ -450,9 +454,9 @@ function SignIn({ initialAudience }: { initialAudience: SignInAudience }) {
     <div className="sign-in-layout grid w-full min-w-0 grid-cols-[minmax(0,1fr)] min-h-dvh lg:grid-cols-2">
       <div className="sign-in-visual relative isolate flex min-w-0 flex-col overflow-hidden bg-zinc-950 p-6 text-white sm:p-10 lg:p-16">
         <WorkshopPicture />
-        <div className="absolute inset-0 -z-10 bg-zinc-950/20" aria-hidden="true" />
-        <Brand dark compact />
-        <div className="w-full min-w-0 max-w-lg py-10 [overflow-wrap:anywhere] lg:pb-10 lg:pt-20">
+        <div className="sign-in-image-wash absolute inset-0 z-10" aria-hidden="true" />
+        <div className="relative z-20"><Brand dark /></div>
+        <div className="relative z-20 w-full min-w-0 max-w-lg py-10 [overflow-wrap:anywhere] lg:pb-10 lg:pt-20">
           <div className="mb-5 flex w-fit max-w-full flex-wrap items-center gap-2 text-sm text-emerald-200 [overflow-wrap:anywhere]">
             <span className="size-1.5 rounded-full bg-emerald-400" />
             Raymond Gray VMMS
@@ -465,7 +469,7 @@ function SignIn({ initialAudience }: { initialAudience: SignInAudience }) {
             service records shared with them.
           </p>
         </div>
-        <div className="mt-auto hidden w-fit items-center gap-2 rounded-md bg-zinc-950/70 px-3 py-2 text-xs text-zinc-100 lg:flex">
+        <div className="relative z-20 mt-auto hidden w-fit items-center gap-2 rounded-md bg-zinc-950/70 px-3 py-2 text-xs text-zinc-100 lg:flex">
           <ShieldCheck className="size-4" aria-hidden="true" />
           Individual account access
         </div>
@@ -650,6 +654,7 @@ function SignOut({
   return (
     <div>
       <button
+        aria-label={logout.isPending ? "Signing out" : "Sign out"}
         className={cn(
           "flex min-h-11 items-center gap-2 text-sm",
           compact ? "text-zinc-400 hover:text-white" : "mt-6 text-zinc-600",
@@ -658,7 +663,7 @@ function SignOut({
         disabled={logout.isPending}
       >
         <LogOut className="size-4" aria-hidden="true" />
-        {logout.isPending ? "Signing out…" : "Sign out"}
+        <span className="workspace-signout-label">{logout.isPending ? "Signing out…" : "Sign out"}</span>
       </button>
       <FormError error={logout.error} />
     </div>
@@ -673,6 +678,9 @@ function Workspace({ session }: { session: StaffSession }) {
   const client = useQueryClient();
   const online = useOnline();
   const [switchError, setSwitchError] = useState<string | null>(null);
+  const [navigationCollapsed, setNavigationCollapsed] = useState(false);
+  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
+  const [moreExpanded, setMoreExpanded] = useState(false);
   if (!site) return <Navigate to="/" replace />;
   const capabilities = workspaceCapabilities(site);
   const accountOnly = capabilities.operatorOnly;
@@ -680,7 +688,7 @@ function Workspace({ session }: { session: StaffSession }) {
   const documentsPath = `/sites/${site.id}/documents`;
   const documentsPage = location.pathname === documentsPath;
   const primaryPath = workspaceHomePath(site);
-  const moreOpen = location.pathname.includes("/overview") || location.pathname.includes("/my-tasks") || documentsPage || location.pathname.includes("/staff") || location.pathname.includes("/messages") || location.pathname.includes("/finance-setup");
+  const moreOpen = moreExpanded || location.pathname.includes("/overview") || location.pathname.includes("/my-tasks") || documentsPage || location.pathname.includes("/staff") || location.pathname.includes("/messages") || location.pathname.includes("/finance-setup");
   if (accountOnly && location.pathname !== accountPath && location.pathname !== `${accountPath}/` && !documentsPage) {
     return <Navigate to={accountPath} replace />;
   }
@@ -704,60 +712,69 @@ function Workspace({ session }: { session: StaffSession }) {
       <a className="skip-link" href="#workspace-main">
         Skip to content
       </a>
-      <div id="workspace-shell" className="min-h-dvh min-[900px]:grid min-[900px]:grid-cols-[248px_minmax(0,1fr)]">
-        <aside id="workspace-navigation" className="sticky top-0 z-30 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 self-start overscroll-contain bg-zinc-950 px-4 py-3 text-zinc-300 max-h-dvh overflow-y-auto min-[900px]:sticky min-[900px]:top-0 min-[900px]:flex min-[900px]:h-dvh min-[900px]:flex-col min-[900px]:self-stretch min-[900px]:overflow-y-auto min-[900px]:overscroll-contain min-[900px]:p-6">
+      <div id="workspace-shell" data-navigation-collapsed={navigationCollapsed} data-mobile-navigation-open={mobileNavigationOpen} className="min-h-dvh min-[900px]:grid min-[900px]:grid-cols-[272px_minmax(0,1fr)] min-[900px]:h-dvh min-[900px]:overflow-hidden">
+        <aside id="workspace-navigation" className="workspace-sidebar sticky top-0 z-30 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 self-start overscroll-contain bg-slate-950 px-4 py-3 text-slate-200 max-h-dvh overflow-y-auto min-[900px]:sticky min-[900px]:top-0 min-[900px]:flex min-[900px]:h-dvh min-[900px]:min-h-0 min-[900px]:flex-col min-[900px]:self-stretch min-[900px]:overflow-hidden min-[900px]:overscroll-contain min-[900px]:p-5">
           <Link
             to={primaryPath}
-            aria-label="Raymond Gray VMMS"
-            className="col-start-1 row-start-1 min-w-0 min-[900px]:max-w-full"
+            className="workspace-brand-link col-start-1 row-start-1 min-w-0 min-[900px]:max-w-full"
           >
-            <Brand dark compact />
+            <Brand dark />
           </Link>
-          <div className="col-span-2 row-start-2 min-w-0 min-[900px]:mt-7 min-[900px]:w-full min-[900px]:border-t min-[900px]:border-zinc-800 min-[900px]:pt-5">
-            <p className="text-xs font-medium text-zinc-400">WORKSPACE</p>
-            <p className="mt-1 truncate text-sm font-medium text-white min-[900px]:mt-2">{site.name}</p>
-            <p className="mt-1 hidden text-xs text-zinc-400 min-[900px]:block">{site.code}</p>
+          <button type="button" className="workspace-collapse-toggle hidden min-[900px]:inline-flex" aria-label={navigationCollapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!navigationCollapsed} aria-controls="workspace-primary-navigation" title={navigationCollapsed ? "Expand sidebar" : "Collapse sidebar"} onClick={() => setNavigationCollapsed(value => !value)}>
+            {navigationCollapsed ? <PanelLeftOpen className="size-5" aria-hidden="true" /> : <PanelLeftClose className="size-5" aria-hidden="true" />}
+          </button>
+          <button type="button" className="workspace-mobile-menu-toggle hidden" aria-label={mobileNavigationOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={mobileNavigationOpen} aria-controls="workspace-primary-navigation" onClick={() => setMobileNavigationOpen(value => !value)}>
+            {mobileNavigationOpen ? <X className="size-5" aria-hidden="true" /> : <Menu className="size-5" aria-hidden="true" />}<span>{mobileNavigationOpen ? "Close" : "Menu"}</span>
+          </button>
+          <div className="workspace-site-context col-span-2 row-start-2 min-w-0 min-[900px]:mt-7 min-[900px]:w-full min-[900px]:border-t min-[900px]:border-slate-700 min-[900px]:pt-5">
+            <p className="workspace-site-kicker text-xs font-medium text-slate-400">WORKSPACE</p>
+            <p className="workspace-site-name mt-1 truncate text-sm font-medium text-white min-[900px]:mt-2">{site.name}</p>
+            <p className="workspace-site-code mt-1 hidden text-xs text-slate-400 min-[900px]:block">{site.code}</p>
           </div>
           <nav
+            id="workspace-primary-navigation"
             aria-label="Primary navigation"
-            className="col-span-2 row-start-3 flex min-w-0 flex-wrap gap-2 min-[900px]:mt-5 min-[900px]:min-h-0 min-[900px]:w-full min-[900px]:flex-1 min-[900px]:flex-col min-[900px]:overflow-y-auto"
+            className="workspace-primary-nav col-span-2 row-start-3 flex min-w-0 flex-wrap gap-2 min-[900px]:mt-5 min-[900px]:min-h-0 min-[900px]:w-full min-[900px]:flex-1 min-[900px]:flex-col min-[900px]:overflow-y-auto"
+            onClick={(event) => {
+              if ((event.target as HTMLElement).closest("a")) setMobileNavigationOpen(false);
+            }}
           >
-            {capabilities.canOpenToday && <NavLink end to={`/sites/${site.id}/today`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}>
-              <Gauge className="size-4" aria-hidden="true" />Today
+            {capabilities.canOpenToday && <NavLink end aria-label="Today" title="Today" to={`/sites/${site.id}/today`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}>
+              <Gauge className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Today</span>
             </NavLink>}
-            {capabilities.canOpenRequests && <NavLink to={`/sites/${site.id}/requests`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}>
-              <ClipboardList className="size-4" aria-hidden="true" />Requests and callbacks
+            {capabilities.canOpenRequests && <NavLink aria-label="Requests and callbacks" title="Requests and callbacks" to={`/sites/${site.id}/requests`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}>
+              <ClipboardList className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Requests and callbacks</span>
             </NavLink>}
-            {capabilities.canOpenWorkOrders && <NavLink to={`/sites/${site.id}/work-orders`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}>
-              <ClipboardCheck className="size-4" aria-hidden="true" />Work orders
+            {capabilities.canOpenWorkOrders && <NavLink aria-label="Work orders" title="Work orders" to={`/sites/${site.id}/work-orders`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}>
+              <ClipboardCheck className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Work orders</span>
             </NavLink>}
-            {capabilities.canOpenVehicleHistory && <NavLink to={`/sites/${site.id}/sales-deliveries`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}>
-              <CarFront className="size-4" aria-hidden="true" />Vehicles and history
+            {capabilities.canOpenVehicleHistory && <NavLink aria-label="Vehicles and history" title="Vehicles and history" to={`/sites/${site.id}/sales-deliveries`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}>
+              <CarFront className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Vehicles and history</span>
             </NavLink>}
-            {(capabilities.canOpenHeadOverview || capabilities.canOpenMyTasks || capabilities.canOpenDocuments || capabilities.canManageTeam || capabilities.canSendStaffMessages || capabilities.canManageStaffAccounts || capabilities.canOpenVehicleLearning || capabilities.canOpenFinanceSetup) && <details open={moreOpen} className="min-w-0 basis-full min-[900px]:basis-auto">
-              <summary className="nav-link min-h-11 cursor-pointer list-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white [&::-webkit-details-marker]:hidden">More</summary>
+            {(capabilities.canOpenHeadOverview || capabilities.canOpenMyTasks || capabilities.canOpenDocuments || capabilities.canManageTeam || capabilities.canSendStaffMessages || capabilities.canManageStaffAccounts || capabilities.canOpenVehicleLearning || capabilities.canOpenFinanceSetup) && <details open={moreOpen} onToggle={event => setMoreExpanded(event.currentTarget.open)} className="min-w-0 basis-full min-[900px]:basis-auto">
+              <summary aria-label="More sections" title="More sections" className="nav-link min-h-11 cursor-pointer list-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white [&::-webkit-details-marker]:hidden"><BookOpen className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">More sections</span></summary>
               <div className="mt-2 flex min-w-0 flex-wrap gap-2 min-[900px]:flex-col">
-                {capabilities.canOpenHeadOverview && <NavLink to={`/sites/${site.id}/overview`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><Gauge className="size-4" aria-hidden="true" />Service-centre overview</NavLink>}
-                {capabilities.canOpenMyTasks && <NavLink to={`/sites/${site.id}/my-tasks`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><ClipboardCheck className="size-4" aria-hidden="true" />My assigned tasks</NavLink>}
-                {capabilities.canOpenDocuments && <NavLink to={documentsPath} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><BookOpen className="size-4" aria-hidden="true" />Documents</NavLink>}
-                {capabilities.canOpenVehicleLearning && <NavLink to={`/sites/${site.id}/vehicle-learning`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><BookOpen className="size-4" aria-hidden="true" />Vehicle learning</NavLink>}
-                {capabilities.canOpenFinanceSetup && <NavLink to={`/sites/${site.id}/finance-setup`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><Settings2 className="size-4" aria-hidden="true" />Finance setup</NavLink>}
-                {capabilities.canManageTeam && <NavLink to={`/sites/${site.id}/staff`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><UsersRound className="size-4" aria-hidden="true" />People and roles</NavLink>}
-                {capabilities.canSendStaffMessages && <NavLink to={`/sites/${site.id}/messages`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><MessageSquareText className="size-4" aria-hidden="true" />Staff messages</NavLink>}
-                {capabilities.canManageStaffAccounts && <NavLink to={accountPath} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><UserRoundPlus className="size-4" aria-hidden="true" />Staff accounts</NavLink>}
+                {capabilities.canOpenHeadOverview && <NavLink aria-label="Service-centre overview" title="Service-centre overview" to={`/sites/${site.id}/overview`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><Gauge className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Service-centre overview</span></NavLink>}
+                {capabilities.canOpenMyTasks && <NavLink aria-label="My assigned tasks" title="My assigned tasks" to={`/sites/${site.id}/my-tasks`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><ClipboardCheck className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">My assigned tasks</span></NavLink>}
+                {capabilities.canOpenDocuments && <NavLink aria-label="Documents" title="Documents" to={documentsPath} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><BookOpen className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Documents</span></NavLink>}
+                {capabilities.canOpenVehicleLearning && <NavLink aria-label="Vehicle learning" title="Vehicle learning" to={`/sites/${site.id}/vehicle-learning`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><BookOpen className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Vehicle learning</span></NavLink>}
+                {capabilities.canOpenFinanceSetup && <NavLink aria-label="Finance setup" title="Finance setup" to={`/sites/${site.id}/finance-setup`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><Settings2 className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Finance setup</span></NavLink>}
+                {capabilities.canManageTeam && <NavLink aria-label="People and roles" title="People and roles" to={`/sites/${site.id}/staff`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><UsersRound className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">People and roles</span></NavLink>}
+                {capabilities.canSendStaffMessages && <NavLink aria-label="Staff messages" title="Staff messages" to={`/sites/${site.id}/messages`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><MessageSquareText className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Staff messages</span></NavLink>}
+                {capabilities.canManageStaffAccounts && <NavLink aria-label="Staff accounts" title="Staff accounts" to={accountPath} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><UserRoundPlus className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Staff accounts</span></NavLink>}
               </div>
             </details>}
           </nav>
-          <div className="col-start-2 row-start-1 mt-0 min-w-0 min-[900px]:mt-auto min-[900px]:w-full min-[900px]:shrink-0 min-[900px]:border-t min-[900px]:border-zinc-800 min-[900px]:pt-5">
-            <p className="hidden text-sm font-medium text-zinc-200 min-[900px]:block">
+          <div className="workspace-sidebar-account col-start-3 row-start-1 mt-0 min-w-0 min-[900px]:mt-auto min-[900px]:w-full min-[900px]:shrink-0 min-[900px]:border-t min-[900px]:border-slate-700 min-[900px]:pt-5">
+            <p className="workspace-user-name hidden text-sm font-medium text-slate-100 min-[900px]:block">
               {session.user.displayName}
             </p>
-            <p className="mt-1 hidden text-xs text-zinc-400 min-[900px]:block">Personal staff account</p>
+            <p className="workspace-user-caption mt-1 hidden text-xs text-slate-400 min-[900px]:block">Personal staff account</p>
             <SignOut compact />
           </div>
         </aside>
-        <div className="min-w-0">
-          <header className="flex min-h-20 flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-white px-5 py-3 sm:px-8">
+        <div className="workspace-content min-w-0">
+          <header className="flex min-h-20 flex-wrap items-center justify-between gap-3 border-b border-stone-200 bg-[#fbfaf7] px-5 py-3 sm:px-8 min-[900px]:sticky min-[900px]:top-0 min-[900px]:z-20">
             <div className="text-sm text-zinc-500">
               {documentsPage ? "Service-centre reference" : accountOnly ? "Account access" : "Raymond Gray VMMS"}
               <span className="mx-2 text-zinc-300">/</span>{" "}

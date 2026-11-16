@@ -348,8 +348,20 @@ async function verifyAuthenticatedZoom(routeName, pathname, audience = 'staff', 
 }
 
 async function verifyContinuousStaffNavigationResize() {
+  await page.setViewportSize({ width: 1440, height: 768 });
+  const collapse = page.getByRole('button', { name: 'Collapse sidebar', exact: true });
+  await collapse.click();
+  const railWidth = await page.locator('#workspace-navigation').evaluate(element => element.getBoundingClientRect().width);
+  assert.equal(railWidth, 88, 'The collapsed desktop rail must retain a consistent icon width.');
+  assert(await page.getByRole('button', { name: 'Expand sidebar', exact: true }).isVisible());
+  await page.getByRole('button', { name: 'Expand sidebar', exact: true }).click();
+  check('Desktop navigation retracts to an icon rail and expands with accessible controls');
   for (const width of [280, 320, 390, 540, 768, 820, ...Array.from({ length: 11 }, (_, index) => 880 + index * 4), ...Array.from({ length: 17 }, (_, index) => 960 + index * 8), 899, 900]) {
     await page.setViewportSize({ width, height: 768 });
+    if (width < 900) {
+      const menu = page.getByRole('button', { name: /navigation menu/i });
+      if (await menu.isVisible() && await menu.getAttribute('aria-expanded') === 'false') await menu.click();
+    }
     const state = await page.evaluate(() => {
       const sidebar = document.querySelector('aside');
       const nav = sidebar?.querySelector('nav[aria-label="Primary navigation"]');

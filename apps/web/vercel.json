@@ -40,7 +40,7 @@
   "rewrites": [
     {
       "source": "/api/v1/(.*)",
-      "destination": "https://api.raymond-gray.org/api/v1/$1"
+      "destination": "https://vmmsapi-production.up.railway.app/api/v1/$1"
     },
     {
       "source": "/(.*)",

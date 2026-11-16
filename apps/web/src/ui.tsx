@@ -283,14 +283,14 @@ export function PageHeading({
   return (
     <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase text-zinc-500">
+        <p className="mb-2 text-xs font-semibold uppercase text-zinc-600">
           {eyebrow}
         </p>
         <h1 className="text-balance text-3xl font-semibold text-zinc-950 sm:text-4xl">
           {title}
         </h1>
         {children && (
-          <p className="mt-3 max-w-2xl text-pretty text-sm leading-6 text-zinc-500">
+          <p className="mt-3 max-w-2xl text-pretty text-sm leading-6 text-zinc-600">
             {children}
           </p>
         )}
