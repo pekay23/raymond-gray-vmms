@@ -1,5 +1,7 @@
 # Raymond Gray VMMS documentation
 
+New hosting direction: [16 November managed-services redesign](delivery/managed-services-redesign-plan-2026-11-16.md) and [provider comparison](discovery/managed-auth-and-storage-2026-11-16.md). The owner excludes Railway and user-managed containers. Supabase/Vercel/Cloudflare is a provisional target, with explicit identity-policy and provider-capability gates.
+
 This folder is the project record for the new Raymond Gray Vehicle Maintenance Management System. Start with the [implementation plan](delivery/implementation-plan.md) and [system design](architecture/system-design.md). Agents must follow the accepted decisions, update the tracker, and attach evidence before marking work complete.
 
 ## Authority

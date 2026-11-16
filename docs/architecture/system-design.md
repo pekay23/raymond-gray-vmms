@@ -1,5 +1,7 @@
 # VMMS system design
 
+16 November 2026 target amendment: the owner rejects Railway and user-managed containers. Follow the [managed-services redesign plan](../delivery/managed-services-redesign-plan-2026-11-16.md) for the proposed replacement. The conditional Supabase/Vercel/Cloudflare recommendation supersedes earlier future-hosting assumptions; existing implementation and verification described below remain historical/current facts until migration is proved. No provider or DNS change is implied.
+
 Status: accepted engineering baseline for implementation, 7 November 2026. Operational policies and production launch still require the decisions in the [review register](../decisions/review-register.md). The implementation must satisfy the [master specification](../sources/master.md), the user's greenfield override and the [historical-backlog requirement](historical-import.md).
 
 ## Chosen design

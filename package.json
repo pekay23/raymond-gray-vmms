@@ -51,5 +51,8 @@
     "dev:seed-browser-switch": "npm run dev:seed-browser-switch --workspace @vmms/api",
     "verify:service-requests-browser": "node --import tsx scripts/service-requests-real-browser.mjs --run",
     "verify:sales-deliveries-browser": "node --import tsx scripts/sales-deliveries-real-browser.mjs --run"
+  },
+  "dependencies": {
+    "railway": "^3.17.0"
   }
 }

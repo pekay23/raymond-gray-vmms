@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-14",
+  "updatedAt": "2026-11-16",
   "authority": {
     "first": "Current user directions including USER-001 greenfield, USER-002 empty prototype, USER-015 backlog and USER-019 owner launch access",
     "second": "docs/sources/master.md",
@@ -15262,7 +15262,7 @@
       "acceptance": [
         "Record Cloudflare as the preferred edge and web platform where runtime and operations are proven.",
         "Evaluate each project and its database independently; do not force incompatible services onto Workers.",
-        "Select a secure persistent runtime and supported PostgreSQL service for shared Keycloak.",
+        "Select managed shared identity and supported PostgreSQL under USER-046; the earlier persistent Keycloak/container recommendation is superseded by the owner on 16 November 2026.",
         "Production provider, hosting cost, secret setup and DNS remain unapproved until a concrete deployment plan is reviewed."
       ],
       "existingEvidence": {
@@ -15272,7 +15272,7 @@
         ],
         "note": "Current vendor capabilities were reviewed; no service has been deployed or migrated."
       },
-      "plannedImplementation": "Use Cloudflare Workers for the web edge with a fixed same-origin proxy to a restricted Node API candidate. Keep the API on a conventional Node container because the local Fastify Worker spike is incompatible; complete remote private-ingress, database pooling, storage/scanner, provider operations and rollback evidence before production review.",
+      "plannedImplementation": "Follow USER-046 and docs/delivery/managed-services-redesign-plan-2026-11-16.md for future hosting: conditional Supabase Auth/PostgreSQL, Vercel Node and Cloudflare R2/Workers/Queues; preserve the prior compatibility findings as historical evidence.",
       "migration": "No production workload has been moved. Keep local runtime and deployment contracts provider-neutral while evaluating adapters.",
       "serverControl": "Keep secrets in the selected provider secret manager and database origins private; test connection pooling, backup and restore.",
       "uatCaseIds": [],
@@ -15289,7 +15289,9 @@
         "scripts/cloudflare-real-api-proxy.mjs",
         "docs/verification/checks/cloudflare-real-api-proxy-2026-11-12.md",
         "docs/verification/checks/cloudflare-proxy-failure-cleanup-2026-11-12.md",
-        "docs/verification/checks/results.json"
+        "docs/verification/checks/results.json",
+        "docs/delivery/managed-services-redesign-plan-2026-11-16.md",
+        "docs/discovery/managed-auth-and-storage-2026-11-16.md"
       ],
       "owner": {
         "role": "implementation-agent",
@@ -15305,7 +15307,8 @@
         "decisionReference": "USER-001",
         "referenceAudit": "docs/discovery/legacy-portal-audit.md",
         "note": "No prototype deployment is treated as evidence of the new architecture."
-      }
+      },
+      "statusNote": "Provider/container recommendation superseded by USER-046 on 16 November 2026. Prior Worker incompatibility and proxy checks remain historical facts; no managed replacement is deployed or verified."
     },
     {
       "id": "USER-025",
@@ -16859,6 +16862,71 @@
         "person": null
       },
       "statusNote": "The first role-by-screen catalog is checked against current navigation. Unit and synthetic browser checks now cover Finance/Billing route access, Head direct-route denial, and work-order route boundaries for Finance and the combined Compliance/Records/HR profile. Server role authorization, audit viewers and role-by-role API acceptance are incomplete."
+    },
+    {
+      "id": "USER-046",
+      "title": "Redesign VMMS and shared auth for managed services without Railway or containers",
+      "kind": "user-direction",
+      "module": "PLATFORMS",
+      "status": "in-progress",
+      "sourceRefs": [
+        "user-managed-services-redesign-2026-11-16"
+      ],
+      "sourceText": [
+        {
+          "id": "user-managed-services-redesign-2026-11-16",
+          "text": "I do not want to use Railway anymore or containers. Research Neon Auth and Supabase Auth for auth.raymond-gray.org and create the redesign plan for both VMMS and auth using Vercel, Neon/Supabase and Cloudflare Workers/storage. Keys are available for Neon and Cloudflare; use one or both storage services where justified."
+        }
+      ],
+      "acceptance": [
+        "Compare current managed auth providers against closed enrollment, Google, password fallback, passkeys/MFA, exact domain, explicit identity linking and cross-product OIDC/session/revocation requirements; record unsupported capabilities honestly.",
+        "Write coordinated architecture, cost, migration, verification, recovery and retirement plans in both repositories; preserve the approved branding and workshop pilot scope.",
+        "The replacement deployment, development, staging and rollback workflow requires no Railway or user-managed containers.",
+        "Preserve canonical business IDs, local memberships/grants, server-owned G1-G5 gates and atomic mutation/audit/receipt/outbox transactions with non-owner PostgreSQL roles and tenant/site isolation.",
+        "Select one primary private evidence store and prove exact-byte quarantine, managed malware verdicts, authenticated revocation-safe downloads, bounded job recovery and SQL/object restore.",
+        "Prepare concrete provider/region/plan/secret-name/DNS/callback/mail/scan-processor changes before external authorization; do not treat research or available keys as permission to change production."
+      ],
+      "existingEvidence": {
+        "classification": "RESEARCHED PLAN; REPLACEMENT NOT IMPLEMENTED",
+        "references": [
+          "docs/delivery/managed-services-redesign-plan-2026-11-16.md",
+          "docs/discovery/managed-auth-and-storage-2026-11-16.md",
+          "../raymond-gray-auth/docs/managed-services-redesign-plan-2026-11-16.md"
+        ],
+        "note": "Supabase-centred candidate is conditional. Automatic same-email linking conflicts with the current policy; OAuth is beta and passkeys experimental. No provider resources, credentials, DNS or users changed."
+      },
+      "plannedImplementation": "Prove managed identity fit, then implement Vercel Node API/auth website, managed PostgreSQL, R2 authenticated evidence transport and bounded Workers/Queues with private managed scanning. Rehearse identity mapping, restore and no-container cutover before retirement.",
+      "migration": "Explicit old/new issuer-subject mappings preserve existing local UUIDs and audit references. No email merge or credential/session portability assumption. One authoritative database and one issuer per environment.",
+      "serverControl": "Retain action-time grants, site/tenant context, RLS and transactional commands. Provider admin credentials are isolated from browser and business runtime. Non-clean evidence remains unavailable.",
+      "configurationSoftwareRequired": true,
+      "uatCaseIds": [],
+      "verificationCaseIds": [
+        "CHECK-MANAGED-IDP-001",
+        "CHECK-MANAGED-AUTH-001",
+        "CHECK-MANAGED-API-001",
+        "CHECK-MANAGED-EVIDENCE-001",
+        "CHECK-MANAGED-JOBS-001",
+        "CHECK-MANAGED-CUTOVER-001"
+      ],
+      "configurationDependencies": [
+        "REV-058: supported managed auth/linking/maturity/assurance",
+        "REV-059: exact provider plans/regions/hostnames/recovery/admin isolation",
+        "REV-060: storage/scan processor/retention and SQL-object restore"
+      ],
+      "evidence": [
+        "docs/delivery/managed-services-redesign-plan-2026-11-16.md",
+        "docs/discovery/managed-auth-and-storage-2026-11-16.md",
+        "../raymond-gray-auth/docs/managed-services-redesign-plan-2026-11-16.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "decision": {
+        "status": "resolved-for-design",
+        "reference": "user-managed-services-redesign-2026-11-16"
+      },
+      "statusNote": "No-Railway/no-container direction is accepted. Provider selection and implementation are unverified; planning evidence does not complete auth, hosting, security or UAT."
     }
   ],
   "sourceCoverage": [
@@ -19667,7 +19735,7 @@
     }
   ],
   "counts": {
-    "requirements": 257,
+    "requirements": 258,
     "sourceBlocks": 350,
     "mappedSourceBlocks": 295,
     "contextBlocks": 55,
@@ -19688,14 +19756,14 @@
       "M09": 7,
       "M10": 25,
       "OPERATIONS": 31,
-      "PLATFORMS": 12,
+      "PLATFORMS": 13,
       "SECURITY": 15,
       "WORKSHOP": 1
     },
     "byStatus": {
       "configuration-required": 10,
       "deferred": 1,
-      "in-progress": 47,
+      "in-progress": 48,
       "not-applicable": 1,
       "planned": 192,
       "verified": 6
@@ -19926,7 +19994,8 @@
     "USER-034",
     "USER-041",
     "USER-043",
-    "USER-044"
+    "USER-044",
+    "USER-046"
   ],
   "fullCompletionRequirementIds": [
     "AT-01",
@@ -20177,6 +20246,7 @@
     "USER-041",
     "USER-042",
     "USER-043",
-    "USER-044"
+    "USER-044",
+    "USER-046"
   ]
 }

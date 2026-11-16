@@ -1,24 +1,81 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-15",
+  "updatedAt": "2026-11-16",
   "goal": "Complete the authoritative VMMS requirements, historical import and agreed platform rollout with exercised product behaviour, security, recovery, staff acceptance and management operational approval.",
   "statusRule": "Verified requires reviewed acceptance evidence. Dependencies and completionGate requirements must be verified or explicitly owner-approved not applicable. Planned/deferred/configuration-required work never satisfies closure. Epic rollups require all applicable children; user-facing source scenarios require their own evidence.",
   "deliveryFocus": {
     "title": "Single-site workshop operations pilot",
     "plan": "docs/delivery/operational-workshop-pilot-agent-plan.md",
     "taskIds": [
-      "F-004", "F-005", "F-006", "F-007", "F-008", "F-009", "F-011",
-      "EVID-001", "EVID-002", "EVID-003", "EVID-004", "EVID-005", "EVID-007",
-      "BUILD-R-M-0035", "CHECK-R-M-0035", "BUILD-R-M-0036", "CHECK-R-M-0036",
-      "BUILD-R-M-0037", "CHECK-R-M-0037", "BUILD-R-M-0038", "CHECK-R-M-0038",
-      "BUILD-USER-027", "CHECK-USER-027", "BUILD-USER-038", "CHECK-USER-038",
-      "BUILD-USER-039", "CHECK-USER-039", "BUILD-USER-039-WORK-HISTORY-001", "CHECK-USER-039-WORK-HISTORY-001",
-      "BUILD-USER-040", "BUILD-USER-040-NAV-001", "BUILD-USER-040-CALLBACKS-TODAY-001",
-      "BUILD-USER-043-INSTANCE-001", "BUILD-USER-043-OUTCOMES-001", "BUILD-USER-043-REVIEW-001",
-      "BUILD-USER-043-REPORT-001", "BUILD-USER-043-UI-001", "CHECK-USER-043-CHECKLISTS-001",
-      "BUILD-USER-042-SOP-DRAFTS-001", "BUILD-USER-030", "CHECK-USER-030",
-      "IDP-002", "IDP-005", "IDP-006", "O-003", "O-005", "O-006", "O-008", "O-009",
-      "O-010", "O-011", "O-014", "O-015", "O-017", "O-018", "O-019", "O-020"
+      "PLAN-MANAGED-001",
+      "BUILD-MANAGED-IDP-001",
+      "CHECK-MANAGED-IDP-001",
+      "BUILD-MANAGED-AUTH-001",
+      "CHECK-MANAGED-AUTH-001",
+      "BUILD-MANAGED-API-001",
+      "CHECK-MANAGED-API-001",
+      "BUILD-MANAGED-EVIDENCE-001",
+      "CHECK-MANAGED-EVIDENCE-001",
+      "BUILD-MANAGED-JOBS-001",
+      "CHECK-MANAGED-JOBS-001",
+      "CHECK-MANAGED-CUTOVER-001",
+      "F-004",
+      "F-005",
+      "F-006",
+      "F-007",
+      "F-008",
+      "F-009",
+      "F-011",
+      "EVID-001",
+      "EVID-002",
+      "EVID-003",
+      "EVID-004",
+      "EVID-005",
+      "EVID-007",
+      "BUILD-R-M-0035",
+      "CHECK-R-M-0035",
+      "BUILD-R-M-0036",
+      "CHECK-R-M-0036",
+      "BUILD-R-M-0037",
+      "CHECK-R-M-0037",
+      "BUILD-R-M-0038",
+      "CHECK-R-M-0038",
+      "BUILD-USER-027",
+      "CHECK-USER-027",
+      "BUILD-USER-038",
+      "CHECK-USER-038",
+      "BUILD-USER-039",
+      "CHECK-USER-039",
+      "BUILD-USER-039-WORK-HISTORY-001",
+      "CHECK-USER-039-WORK-HISTORY-001",
+      "BUILD-USER-040",
+      "BUILD-USER-040-NAV-001",
+      "BUILD-USER-040-CALLBACKS-TODAY-001",
+      "BUILD-USER-043-INSTANCE-001",
+      "BUILD-USER-043-OUTCOMES-001",
+      "BUILD-USER-043-REVIEW-001",
+      "BUILD-USER-043-REPORT-001",
+      "BUILD-USER-043-UI-001",
+      "CHECK-USER-043-CHECKLISTS-001",
+      "BUILD-USER-042-SOP-DRAFTS-001",
+      "BUILD-USER-030",
+      "CHECK-USER-030",
+      "IDP-002",
+      "IDP-005",
+      "IDP-006",
+      "O-003",
+      "O-005",
+      "O-006",
+      "O-008",
+      "O-009",
+      "O-010",
+      "O-011",
+      "O-014",
+      "O-015",
+      "O-017",
+      "O-018",
+      "O-019",
+      "O-020"
     ],
     "deferredAreas": [
       "Sales recording, showroom imports, delivery preparation and sales-triggered PDI",
@@ -26,7 +83,8 @@
       "Full finance, invoicing, receipts, payment/email adapters, commercial reports and nonessential stock workflows",
       "Smart POS features unrelated to day-to-day workshop maintenance",
       "Customer portal expansion, native OS applications and full offline synchronization"
-    ]
+    ],
+    "infrastructurePlan": "docs/delivery/managed-services-redesign-plan-2026-11-16.md"
   },
   "tasks": [
     {
@@ -182,7 +240,11 @@
           "RESP-002",
           "RESP-003",
           "RESP-004",
-          "RESP-005"
+          "RESP-005",
+          "BUILD-MANAGED-IDP-001",
+          "CHECK-MANAGED-IDP-001",
+          "BUILD-MANAGED-AUTH-001",
+          "CHECK-MANAGED-AUTH-001"
         ],
         "requireAllApplicableChildren": true,
         "notApplicableRequiresOwnerDecision": true
@@ -797,7 +859,15 @@
           "O-020",
           "O-021",
           "OPS-022",
-          "CHECK-USER-017"
+          "CHECK-USER-017",
+          "PLAN-MANAGED-001",
+          "BUILD-MANAGED-API-001",
+          "CHECK-MANAGED-API-001",
+          "BUILD-MANAGED-EVIDENCE-001",
+          "CHECK-MANAGED-EVIDENCE-001",
+          "BUILD-MANAGED-JOBS-001",
+          "CHECK-MANAGED-JOBS-001",
+          "CHECK-MANAGED-CUTOVER-001"
         ],
         "requireAllApplicableChildren": true,
         "notApplicableRequiresOwnerDecision": true
@@ -18219,6 +18289,14 @@
         "BUILD-HIST-09",
         "BUILD-HIST-10",
         "BUILD-HIST-11",
+        "BUILD-MANAGED-API-001",
+        "BUILD-MANAGED-AUTH-001",
+        "BUILD-MANAGED-EVIDENCE-001",
+        "BUILD-MANAGED-IDP-001",
+        "BUILD-MANAGED-JOBS-001",
+        "BUILD-PARTS-CATALOGUE-PROPOSAL-001",
+        "BUILD-PARTS-RECEIPT-QUARANTINE-001",
+        "BUILD-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
         "BUILD-POLICY-001",
         "BUILD-POLICY-002",
         "BUILD-QUEUE-TECH-SEARCH-001",
@@ -18474,7 +18552,16 @@
         "CHECK-HIST-09",
         "CHECK-HIST-10",
         "CHECK-HIST-11",
+        "CHECK-MANAGED-API-001",
+        "CHECK-MANAGED-AUTH-001",
+        "CHECK-MANAGED-CUTOVER-001",
+        "CHECK-MANAGED-EVIDENCE-001",
+        "CHECK-MANAGED-IDP-001",
+        "CHECK-MANAGED-JOBS-001",
         "CHECK-ORG-001",
+        "CHECK-PARTS-CATALOGUE-PROPOSAL-001",
+        "CHECK-PARTS-RECEIPT-QUARANTINE-001",
+        "CHECK-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
         "CHECK-POLICY-001",
         "CHECK-POLICY-002",
         "CHECK-QUEUE-TECH-SEARCH-001",
@@ -18727,6 +18814,7 @@
         "D-005",
         "D-006",
         "D-007",
+        "DESIGN-PARTS-FOUNDATION-001",
         "DESIGN-R-M-0037-0038",
         "DESIGN-R-M-0048",
         "ENTRY-001",
@@ -18804,6 +18892,7 @@
         "P-008",
         "P-009",
         "P-010",
+        "PLAN-MANAGED-001",
         "RESP-001",
         "RESP-002",
         "RESP-003",
@@ -18835,14 +18924,7 @@
         "VERIFY-AT-18",
         "VERIFY-AT-19",
         "VERIFY-AT-20",
-        "VISUAL-001",
-        "DESIGN-PARTS-FOUNDATION-001",
-        "BUILD-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
-        "CHECK-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
-        "BUILD-PARTS-CATALOGUE-PROPOSAL-001",
-        "CHECK-PARTS-CATALOGUE-PROPOSAL-001",
-        "BUILD-PARTS-RECEIPT-QUARANTINE-001",
-        "CHECK-PARTS-RECEIPT-QUARANTINE-001"
+        "VISUAL-001"
       ],
       "requirementIds": [
         "USER-009"
@@ -18912,6 +18994,14 @@
           "BUILD-HIST-09",
           "BUILD-HIST-10",
           "BUILD-HIST-11",
+          "BUILD-MANAGED-API-001",
+          "BUILD-MANAGED-AUTH-001",
+          "BUILD-MANAGED-EVIDENCE-001",
+          "BUILD-MANAGED-IDP-001",
+          "BUILD-MANAGED-JOBS-001",
+          "BUILD-PARTS-CATALOGUE-PROPOSAL-001",
+          "BUILD-PARTS-RECEIPT-QUARANTINE-001",
+          "BUILD-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
           "BUILD-POLICY-001",
           "BUILD-POLICY-002",
           "BUILD-QUEUE-TECH-SEARCH-001",
@@ -19167,7 +19257,16 @@
           "CHECK-HIST-09",
           "CHECK-HIST-10",
           "CHECK-HIST-11",
+          "CHECK-MANAGED-API-001",
+          "CHECK-MANAGED-AUTH-001",
+          "CHECK-MANAGED-CUTOVER-001",
+          "CHECK-MANAGED-EVIDENCE-001",
+          "CHECK-MANAGED-IDP-001",
+          "CHECK-MANAGED-JOBS-001",
           "CHECK-ORG-001",
+          "CHECK-PARTS-CATALOGUE-PROPOSAL-001",
+          "CHECK-PARTS-RECEIPT-QUARANTINE-001",
+          "CHECK-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
           "CHECK-POLICY-001",
           "CHECK-POLICY-002",
           "CHECK-QUEUE-TECH-SEARCH-001",
@@ -19420,6 +19519,7 @@
           "D-005",
           "D-006",
           "D-007",
+          "DESIGN-PARTS-FOUNDATION-001",
           "DESIGN-R-M-0037-0038",
           "DESIGN-R-M-0048",
           "ENTRY-001",
@@ -19497,6 +19597,7 @@
           "P-008",
           "P-009",
           "P-010",
+          "PLAN-MANAGED-001",
           "RESP-001",
           "RESP-002",
           "RESP-003",
@@ -19528,14 +19629,7 @@
           "VERIFY-AT-18",
           "VERIFY-AT-19",
           "VERIFY-AT-20",
-          "VISUAL-001",
-          "DESIGN-PARTS-FOUNDATION-001",
-          "BUILD-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
-          "CHECK-PARTS-SUPPLIER-SITE-ASSOCIATION-001",
-          "BUILD-PARTS-CATALOGUE-PROPOSAL-001",
-          "CHECK-PARTS-CATALOGUE-PROPOSAL-001",
-          "BUILD-PARTS-RECEIPT-QUARANTINE-001",
-          "CHECK-PARTS-RECEIPT-QUARANTINE-001"
+          "VISUAL-001"
         ],
         "requiredRequirementIds": [
           "AT-01",
@@ -19794,7 +19888,8 @@
           "USER-042",
           "USER-043",
           "USER-044",
-          "USER-045"
+          "USER-045",
+          "USER-046"
         ],
         "acceptedTerminalStatuses": [
           "verified",
@@ -21020,6 +21115,8 @@
         "AUTH-008",
         "AUTH-009",
         "AUTH-010",
+        "AUTH-011",
+        "AUTH-013",
         "BUILD-BR-01",
         "BUILD-BR-02",
         "BUILD-BR-03",
@@ -21047,6 +21144,11 @@
         "BUILD-HIST-09",
         "BUILD-HIST-10",
         "BUILD-HIST-11",
+        "BUILD-MANAGED-API-001",
+        "BUILD-MANAGED-AUTH-001",
+        "BUILD-MANAGED-EVIDENCE-001",
+        "BUILD-MANAGED-IDP-001",
+        "BUILD-MANAGED-JOBS-001",
         "BUILD-R-M-0007",
         "BUILD-R-M-0008",
         "BUILD-R-M-0010",
@@ -21215,6 +21317,12 @@
         "BUILD-USER-027",
         "BUILD-USER-028",
         "BUILD-USER-029",
+        "BUILD-USER-041-VEHICLE-LEARNING-001",
+        "BUILD-USER-043-CHECKLISTS-001",
+        "BUILD-USER-043-DELIVERY-PDI-001",
+        "BUILD-USER-043-PREPARATION-001",
+        "BUILD-USER-044-MANUAL-FINANCE-001",
+        "BUILD-WORK-PLAN-001",
         "CHECK-BR-01",
         "CHECK-BR-02",
         "CHECK-BR-03",
@@ -21242,6 +21350,13 @@
         "CHECK-HIST-09",
         "CHECK-HIST-10",
         "CHECK-HIST-11",
+        "CHECK-MANAGED-API-001",
+        "CHECK-MANAGED-AUTH-001",
+        "CHECK-MANAGED-CUTOVER-001",
+        "CHECK-MANAGED-EVIDENCE-001",
+        "CHECK-MANAGED-IDP-001",
+        "CHECK-MANAGED-JOBS-001",
+        "CHECK-ORG-001",
         "CHECK-R-M-0007",
         "CHECK-R-M-0008",
         "CHECK-R-M-0010",
@@ -21415,6 +21530,10 @@
         "CHECK-USER-027",
         "CHECK-USER-028",
         "CHECK-USER-029",
+        "CHECK-USER-041-VEHICLE-LEARNING-001",
+        "CHECK-USER-043-CHECKLISTS-001",
+        "CHECK-USER-044-MANUAL-FINANCE-001",
+        "CHECK-WORK-PLAN-001",
         "CONFIG-R-M-0008",
         "CONFIG-R-M-0016",
         "CONFIG-R-M-0032",
@@ -21482,9 +21601,14 @@
         "O-017",
         "O-018",
         "OPS-022",
+        "ORG-001",
+        "ORG-002",
+        "ORG-003",
+        "ORG-004",
         "P-001",
         "P-002",
         "P-004",
+        "PLAN-MANAGED-001",
         "RESP-001",
         "RESP-002",
         "RESP-003",
@@ -21514,24 +21638,7 @@
         "VERIFY-AT-17",
         "VERIFY-AT-18",
         "VERIFY-AT-19",
-        "VERIFY-AT-20",
-        "BUILD-WORK-PLAN-001",
-        "CHECK-WORK-PLAN-001",
-        "AUTH-011",
-        "ORG-001",
-        "ORG-002",
-        "ORG-003",
-        "ORG-004",
-        "CHECK-ORG-001",
-        "AUTH-013",
-        "BUILD-USER-041-VEHICLE-LEARNING-001",
-        "CHECK-USER-041-VEHICLE-LEARNING-001",
-        "BUILD-USER-043-CHECKLISTS-001",
-        "CHECK-USER-043-CHECKLISTS-001",
-        "BUILD-USER-043-PREPARATION-001",
-        "BUILD-USER-043-DELIVERY-PDI-001",
-        "BUILD-USER-044-MANUAL-FINANCE-001",
-        "CHECK-USER-044-MANUAL-FINANCE-001"
+        "VERIFY-AT-20"
       ],
       "requirementIds": [
         "USER-003",
@@ -21580,6 +21687,8 @@
           "AUTH-008",
           "AUTH-009",
           "AUTH-010",
+          "AUTH-011",
+          "AUTH-013",
           "BUILD-BR-01",
           "BUILD-BR-02",
           "BUILD-BR-03",
@@ -21607,6 +21716,11 @@
           "BUILD-HIST-09",
           "BUILD-HIST-10",
           "BUILD-HIST-11",
+          "BUILD-MANAGED-API-001",
+          "BUILD-MANAGED-AUTH-001",
+          "BUILD-MANAGED-EVIDENCE-001",
+          "BUILD-MANAGED-IDP-001",
+          "BUILD-MANAGED-JOBS-001",
           "BUILD-R-M-0007",
           "BUILD-R-M-0008",
           "BUILD-R-M-0010",
@@ -21775,6 +21889,12 @@
           "BUILD-USER-027",
           "BUILD-USER-028",
           "BUILD-USER-029",
+          "BUILD-USER-041-VEHICLE-LEARNING-001",
+          "BUILD-USER-043-CHECKLISTS-001",
+          "BUILD-USER-043-DELIVERY-PDI-001",
+          "BUILD-USER-043-PREPARATION-001",
+          "BUILD-USER-044-MANUAL-FINANCE-001",
+          "BUILD-WORK-PLAN-001",
           "CHECK-BR-01",
           "CHECK-BR-02",
           "CHECK-BR-03",
@@ -21802,6 +21922,13 @@
           "CHECK-HIST-09",
           "CHECK-HIST-10",
           "CHECK-HIST-11",
+          "CHECK-MANAGED-API-001",
+          "CHECK-MANAGED-AUTH-001",
+          "CHECK-MANAGED-CUTOVER-001",
+          "CHECK-MANAGED-EVIDENCE-001",
+          "CHECK-MANAGED-IDP-001",
+          "CHECK-MANAGED-JOBS-001",
+          "CHECK-ORG-001",
           "CHECK-R-M-0007",
           "CHECK-R-M-0008",
           "CHECK-R-M-0010",
@@ -21975,6 +22102,10 @@
           "CHECK-USER-027",
           "CHECK-USER-028",
           "CHECK-USER-029",
+          "CHECK-USER-041-VEHICLE-LEARNING-001",
+          "CHECK-USER-043-CHECKLISTS-001",
+          "CHECK-USER-044-MANUAL-FINANCE-001",
+          "CHECK-WORK-PLAN-001",
           "CONFIG-R-M-0008",
           "CONFIG-R-M-0016",
           "CONFIG-R-M-0032",
@@ -22042,9 +22173,14 @@
           "O-017",
           "O-018",
           "OPS-022",
+          "ORG-001",
+          "ORG-002",
+          "ORG-003",
+          "ORG-004",
           "P-001",
           "P-002",
           "P-004",
+          "PLAN-MANAGED-001",
           "RESP-001",
           "RESP-002",
           "RESP-003",
@@ -22074,24 +22210,7 @@
           "VERIFY-AT-17",
           "VERIFY-AT-18",
           "VERIFY-AT-19",
-          "VERIFY-AT-20",
-          "BUILD-WORK-PLAN-001",
-          "CHECK-WORK-PLAN-001",
-          "AUTH-011",
-          "ORG-001",
-          "ORG-002",
-          "ORG-003",
-          "ORG-004",
-          "CHECK-ORG-001",
-          "AUTH-013",
-          "BUILD-USER-041-VEHICLE-LEARNING-001",
-          "CHECK-USER-041-VEHICLE-LEARNING-001",
-          "BUILD-USER-043-CHECKLISTS-001",
-          "CHECK-USER-043-CHECKLISTS-001",
-          "BUILD-USER-043-PREPARATION-001",
-          "BUILD-USER-043-DELIVERY-PDI-001",
-          "BUILD-USER-044-MANUAL-FINANCE-001",
-          "CHECK-USER-044-MANUAL-FINANCE-001"
+          "VERIFY-AT-20"
         ],
         "requiredRequirementIds": [
           "AT-02",
@@ -22318,7 +22437,8 @@
           "USER-034",
           "USER-041",
           "USER-043",
-          "USER-044"
+          "USER-044",
+          "USER-046"
         ],
         "acceptedTerminalStatuses": [
           "verified",
@@ -23291,14 +23411,16 @@
         "apps/web/src/api-proxy.ts",
         "apps/web/src/worker.ts",
         "apps/web/src/worker.test.ts",
-        "docs/verification/checks/hosting-compatibility-2026-11-14.md"
+        "docs/verification/checks/hosting-compatibility-2026-11-14.md",
+        "docs/delivery/managed-services-redesign-plan-2026-11-16.md",
+        "docs/discovery/managed-auth-and-storage-2026-11-16.md"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "The 2026-11-14 review records a per-service hybrid recommendation and updated provider limits/costs. VMMS frontend preview and fixed-origin proxy have prior local synthetic evidence; direct Fastify Worker compatibility re-failed at router registration before tenant routes, commands or uploads. Platform source review flags secondary DB fire-and-forget writes and disabled TLS certificate validation for remediation/review; remote support forwarded-address/timeout/protection gaps and vehicle-services geolocation/CSP conflict and placeholder protected routes are documented. Shared auth is local-only Keycloak/PostgreSQL. No production deployment, DNS, secret or online DB was touched. Remaining: finish API behavior matrix on a viable host, durable storage/scanner and max upload path, per-service browser/build checks, region/price/availability decisions, restricted staging, restore and rollback. See docs/verification/checks/hosting-compatibility-2026-11-14.md."
+      "statusNote": "The 2026-11-14 review records a per-service hybrid recommendation and updated provider limits/costs. VMMS frontend preview and fixed-origin proxy have prior local synthetic evidence; direct Fastify Worker compatibility re-failed at router registration before tenant routes, commands or uploads. Platform source review flags secondary DB fire-and-forget writes and disabled TLS certificate validation for remediation/review; remote support forwarded-address/timeout/protection gaps and vehicle-services geolocation/CSP conflict and placeholder protected routes are documented. Auth README/Dockerfile now describe Railway-hosted Keycloak/PostgreSQL; DEPLOYMENT.md limits runtime/persistence verification. No production deployment, DNS, secret or online DB was touched. Remaining: finish API behavior matrix on a viable host, durable storage/scanner and max upload path, per-service browser/build checks, region/price/availability decisions, restricted staging, restore and rollback. See docs/verification/checks/hosting-compatibility-2026-11-14.md. USER-046 supersedes the future Railway/container recommendation; managed replacement checks are separate and planned."
     },
     {
       "id": "HOST-002",
@@ -23322,12 +23444,15 @@
         "Prove staging build and critical workflow tests on selected runtimes using synthetic data.",
         "Obtain owner review before creating production provider resources or changing DNS."
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/delivery/managed-services-redesign-plan-2026-11-16.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
-      "blockedBy": []
+      "blockedBy": [],
+      "statusNote": "16 November managed-services plan prepared. Exact accounts/regions/budgets and hosted acceptance evidence are still missing; no staging or production deployment claimed."
     },
     {
       "id": "VISUAL-001",
@@ -27810,10 +27935,371 @@
         "person": null
       },
       "blockedBy": []
+    },
+    {
+      "id": "PLAN-MANAGED-001",
+      "title": "Document the managed-services architecture and provider comparison",
+      "kind": "task",
+      "workType": "design",
+      "phase": "6-launch",
+      "parentId": "E12",
+      "dependencies": [],
+      "requirementIds": [
+        "USER-046"
+      ],
+      "sourceRefs": [
+        "user-managed-services-redesign-2026-11-16"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Compare two complete provider designs and record independent review, capability conflicts and synthesis.",
+        "Write coordinated plans in both repositories and link new work into requirement/launch/completion gates.",
+        "Validate documentation, tracker integrity and local links; do not change provider resources."
+      ],
+      "evidence": [
+        "docs/delivery/managed-services-redesign-plan-2026-11-16.md",
+        "docs/discovery/managed-auth-and-storage-2026-11-16.md",
+        "../raymond-gray-auth/docs/managed-services-redesign-plan-2026-11-16.md",
+        "docs/verification/checks/managed-services-plan-2026-11-16.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Two candidates and final plans independently reviewed; expected hash validation and durable-promotion-before-acceptance corrections applied. Documentation/traceability/link/whitespace checks passed. No provider runtime or production behavior is verified."
+    },
+    {
+      "id": "BUILD-MANAGED-IDP-001",
+      "title": "Prove managed identity capability and policy fit",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "1-foundation",
+      "parentId": "E01",
+      "dependencies": [
+        "PLAN-MANAGED-001"
+      ],
+      "requirementIds": [
+        "USER-046"
+      ],
+      "sourceRefs": [
+        "user-managed-services-redesign-2026-11-16"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Create a supported isolated synthetic configuration only after exact resource review; no Railway or containers.",
+        "Resolve same-email linking conflict without a hidden policy exception; prove closed signup, Google/password, required passkey RP/user verification and MFA assurance with the maintained OIDC client.",
+        "Record beta/experimental features, token custody and central revocation gaps; no cutover if unsupported."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "See docs/delivery/managed-services-redesign-plan-2026-11-16.md. Provider runtime evidence and production authorization remain separate."
+    },
+    {
+      "id": "CHECK-MANAGED-IDP-001",
+      "title": "Verify managed identity methods, OIDC and policy denials",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "1-foundation",
+      "parentId": "E01",
+      "dependencies": [
+        "BUILD-MANAGED-IDP-001"
+      ],
+      "requirementIds": [
+        "USER-046"
+      ],
+      "sourceRefs": [
+        "user-managed-services-redesign-2026-11-16"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Exercise wrong issuer/audience/redirect, replayed state/nonce/PKCE, account collision, invitation-only enrollment, Google/password/passkeys/MFA/recovery and two-product OIDC.",
+        "Prove required exact RP/origin and user verification on supported browsers; document untested physical devices and unresolved policy gates."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "See docs/delivery/managed-services-redesign-plan-2026-11-16.md. Provider runtime evidence and production authorization remain separate."
+    },
+    {
+      "id": "BUILD-MANAGED-AUTH-001",
+      "title": "Build the Vercel shared auth site and managed provisioning adapter",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "1-foundation",
+      "parentId": "E01",
+      "dependencies": [
+        "CHECK-MANAGED-IDP-001"
+      ],
+      "requirementIds": [
+        "USER-046"
+      ],
+      "sourceRefs": [
+        "user-managed-services-redesign-2026-11-16"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Preserve approved auth branding and host-only server-held sessions; isolate encrypted provider tokens and admin credentials.",
+        "Migrate caller and service to one versioned provisioning contract with 24h original expiry, at most one non-extending resend, explicit mapping and no business authority side effects.",
+        "Implement bounded provisioning/revocation delivery and callback race barriers; no Keycloak or container runtime."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "See docs/delivery/managed-services-redesign-plan-2026-11-16.md. Provider runtime evidence and production authorization remain separate."
+    },
+    {
+      "id": "CHECK-MANAGED-AUTH-001",
+      "title": "Verify shared auth sessions, provisioning, recovery and revocation",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "1-foundation",
+      "parentId": "E01",
+      "dependencies": [
+        "BUILD-MANAGED-AUTH-001"
+      ],
+      "requirementIds": [
+        "USER-046"
+      ],
+      "sourceRefs": [
+        "user-managed-services-redesign-2026-11-16"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Exercise staff/owner and two-product login, refresh races, enrollment collision/retry/expiry/resend, recovery, local/global logout and callback-vs-revocation races.",
+        "Prove server-only secrets, scoped admin denials and immediate product revocation including provider-console changes and outages; no real messages."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "See docs/delivery/managed-services-redesign-plan-2026-11-16.md. Provider runtime evidence and production authorization remain separate."
+    },
+    {
+      "id": "BUILD-MANAGED-API-001",
+      "title": "Adapt Fastify and PostgreSQL to Vercel Node and managed persistence",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "6-launch",
+      "parentId": "E12",
+      "dependencies": [
+        "CHECK-MANAGED-IDP-001"
+      ],
+      "requirementIds": [
+        "USER-046"
+      ],
+      "sourceRefs": [
+        "user-managed-services-redesign-2026-11-16"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Preserve domain commands, non-owner RLS roles and atomic mutation/event/receipt/outbox operations; isolate migrations and provider admin keys.",
+        "Configure measured connection limits, transaction-local tenant/site scope, TLS, same-origin routing and verified ingress handling; no evidence bytes through Vercel bodies."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "See docs/delivery/managed-services-redesign-plan-2026-11-16.md. Provider runtime evidence and production authorization remain separate."
+    },
+    {
+      "id": "CHECK-MANAGED-API-001",
+      "title": "Verify hosted Vercel and managed PostgreSQL security and concurrency",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "6-launch",
+      "parentId": "E12",
+      "dependencies": [
+        "BUILD-MANAGED-API-001"
+      ],
+      "requirementIds": [
+        "USER-046"
+      ],
+      "sourceRefs": [
+        "user-managed-services-redesign-2026-11-16"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Run actual managed PostgreSQL role/RLS/context-reuse, locks, duplicate/stale commands, rollback and membership/grant-revocation race checks.",
+        "Exercise both login audiences, CSRF/session isolation, exact ingress paths and runtime failure recovery on the selected Vercel Node deployment; local/SQLite checks are not hosted proof."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "See docs/delivery/managed-services-redesign-plan-2026-11-16.md. Provider runtime evidence and production authorization remain separate."
+    },
+    {
+      "id": "BUILD-MANAGED-EVIDENCE-001",
+      "title": "Build private R2 transport and managed malware acceptance",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "6-launch",
+      "parentId": "E12",
+      "dependencies": [
+        "CHECK-MANAGED-API-001"
+      ],
+      "requirementIds": [
+        "USER-046"
+      ],
+      "sourceRefs": [
+        "user-managed-services-redesign-2026-11-16"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Implement direct signed staging uploads, separate sealed write-once keys, server hashes/type/size checks and authenticated exact-object scan-result binding.",
+        "Stream accepted downloads through a gateway that rechecks current product authorization and appends access audit; no public buckets or bearer download bypass.",
+        "Keep scanner failures quarantined; isolate capabilities, approved retention, SQL/object manifests and restore operations; no scan daemon/container."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "See docs/delivery/managed-services-redesign-plan-2026-11-16.md. Provider runtime evidence and production authorization remain separate."
+    },
+    {
+      "id": "CHECK-MANAGED-EVIDENCE-001",
+      "title": "Verify R2 evidence races, scans, authorization and restore",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "6-launch",
+      "parentId": "E12",
+      "dependencies": [
+        "BUILD-MANAGED-EVIDENCE-001"
+      ],
+      "requirementIds": [
+        "USER-046"
+      ],
+      "sourceRefs": [
+        "user-managed-services-redesign-2026-11-16"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Exercise default/max upload paths, expired/reused URLs, staging overwrite during/after scan, duplicate/reordered/missing events, hash mismatch, malicious/unsupported/error verdicts and promotion interruption.",
+        "Prove cross-site denial and revoke-before-download behavior, signed callback replay denial and exact SQL/object restore with synthetic files on the actual selected services."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "See docs/delivery/managed-services-redesign-plan-2026-11-16.md. Provider runtime evidence and production authorization remain separate."
+    },
+    {
+      "id": "BUILD-MANAGED-JOBS-001",
+      "title": "Replace resident workers with bounded outbox and queue handlers",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "6-launch",
+      "parentId": "E12",
+      "dependencies": [
+        "CHECK-MANAGED-API-001",
+        "CHECK-MANAGED-AUTH-001"
+      ],
+      "requirementIds": [
+        "USER-046"
+      ],
+      "sourceRefs": [
+        "user-managed-services-redesign-2026-11-16"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Use committed outbox/leases as durable authority and Workers/Queues for wakeups; isolate provider administration and secret-free job references.",
+        "Handle crash before/after external success, duplicate publish/delivery, lease expiry, dead-letter recovery and reconciliation without resident processes or real notifications."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "See docs/delivery/managed-services-redesign-plan-2026-11-16.md. Provider runtime evidence and production authorization remain separate."
+    },
+    {
+      "id": "CHECK-MANAGED-JOBS-001",
+      "title": "Verify bounded job retries, leases and dead-letter recovery",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "6-launch",
+      "parentId": "E12",
+      "dependencies": [
+        "BUILD-MANAGED-JOBS-001"
+      ],
+      "requirementIds": [
+        "USER-046"
+      ],
+      "sourceRefs": [
+        "user-managed-services-redesign-2026-11-16"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Run crash/restart and duplicate/reorder drills proving no lost committed jobs, duplicate invitations/acceptance or authority side effects.",
+        "Prove stalled/poison jobs are visible and recoverable, queues contain no secrets, and revocation failure follows the documented fail-closed policy."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "See docs/delivery/managed-services-redesign-plan-2026-11-16.md. Provider runtime evidence and production authorization remain separate."
+    },
+    {
+      "id": "CHECK-MANAGED-CUTOVER-001",
+      "title": "Rehearse managed identity/data cutover, restore and container-free retirement",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "6-launch",
+      "parentId": "E12",
+      "dependencies": [
+        "CHECK-MANAGED-IDP-001",
+        "CHECK-MANAGED-AUTH-001",
+        "CHECK-MANAGED-API-001",
+        "CHECK-MANAGED-EVIDENCE-001",
+        "CHECK-MANAGED-JOBS-001"
+      ],
+      "requirementIds": [
+        "USER-046"
+      ],
+      "sourceRefs": [
+        "user-managed-services-redesign-2026-11-16"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Inventory actual current users/clients/data/files through approved access; prove reviewed issuer/subject mappings preserve local IDs, grants, history and one business writer.",
+        "Rehearse SQL/object recovery, synthetic two-product sign-in and managed-release/closed-access rollback without Railway/Keycloak/containers.",
+        "Prepare exact provider plans/regions/DNS/callbacks/secret names/processor/mail/budget changes for authorization before production switch or old-resource deletion."
+      ],
+      "evidence": [],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "See docs/delivery/managed-services-redesign-plan-2026-11-16.md. Provider runtime evidence and production authorization remain separate."
     }
   ],
   "counts": {
-    "tasks": 693,
+    "tasks": 705,
     "epics": 22,
     "byStatus": {
       "configuration-required": 18,
@@ -27821,18 +28307,18 @@
       "implemented": 11,
       "in-progress": 117,
       "not-applicable": 1,
-      "planned": 464,
-      "verified": 77
+      "planned": 475,
+      "verified": 78
     },
     "byPhase": {
       "0-discovery": 20,
-      "1-foundation": 123,
+      "1-foundation": 127,
       "2-core-workflow": 92,
       "3-safety-qa": 127,
       "4-commercial": 118,
       "5-governance": 37,
       "6-historical-import": 33,
-      "6-launch": 117,
+      "6-launch": 125,
       "7-platforms": 26
     }
   },

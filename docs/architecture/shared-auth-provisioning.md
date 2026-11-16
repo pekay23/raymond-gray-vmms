@@ -1,5 +1,7 @@
 # Shared identity provisioning boundary
 
+16 November 2026 target amendment: the owner rejects Railway and user-managed containers. Follow the [managed-services redesign plan](../delivery/managed-services-redesign-plan-2026-11-16.md) for the proposed replacement. The conditional Supabase/Vercel/Cloudflare recommendation supersedes earlier future-hosting assumptions; existing implementation and verification described below remain historical/current facts until migration is proved. No provider or DNS change is implied.
+
 **Status:** Synthetic Keycloak 26.8.2/PostgreSQL/Mailpit invitation staging is verified. Recipient enrollment, VMMS caller integration and production remain gated. Last reviewed 15 November 2026.
 
 ## Caller flow

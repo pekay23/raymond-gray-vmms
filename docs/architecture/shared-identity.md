@@ -1,5 +1,7 @@
 # Raymond Gray shared identity service
 
+16 November 2026 target amendment: the owner rejects Railway and user-managed containers. Follow the [managed-services redesign plan](../delivery/managed-services-redesign-plan-2026-11-16.md) for the proposed replacement. The conditional Supabase/Vercel/Cloudflare recommendation supersedes earlier future-hosting assumptions; existing implementation and verification described below remain historical/current facts until migration is proved. No provider or DNS change is implied.
+
 Status: shared-identity baseline, with local VMMS integration evidence and a limited production OIDC preflight. The owner selected `auth.raymond-gray.org`. Public issuer discovery and the exact VMMS authorization redirect were verified on 14 November 2026; a hostile redirect was rejected. Full production sign-in, code exchange, VMMS callback/session, logout, recovery and deployment operations remain unverified. See [production preflight evidence](../verification/oidc-production-preflight-2026-11-14.md) and REV-056.
 
 ## Purpose

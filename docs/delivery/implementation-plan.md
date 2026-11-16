@@ -1,5 +1,7 @@
 # VMMS implementation plan
 
+Infrastructure direction, 16 November 2026: complete the [managed-services redesign units](managed-services-redesign-plan-2026-11-16.md) alongside the workshop pilot. Railway and user-managed containers are excluded from the replacement target. Provider selection is conditional and historical auth/storage checks do not verify it.
+
 This is the execution plan for the new Raymond Gray VMMS. The complete product goal remains active. The first usable delivery is a staff web application for one service centre, with organisation/site boundaries for later expansion. The owner confirmed reliable internet, saved drafts, no real records in the prototype portal, and a separate historical maintenance backlog to import later.
 
 The [system design](../architecture/system-design.md) fixes the engineering shape. The [requirement inventory](../requirements/requirements.json) fixes traceability. [Task data](tasks.json) fixes execution status and dependencies; the [generated tracker](implementation-tracker.md) is its readable view. Pending business choices belong in the [review register](../decisions/review-register.md). The two source DOCX files and their hashes are retained under `docs/sources`.

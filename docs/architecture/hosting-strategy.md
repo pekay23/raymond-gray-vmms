@@ -1,5 +1,7 @@
 # Raymond Gray project hosting strategy
 
+16 November 2026 target amendment: the owner rejects Railway and user-managed containers. Follow the [managed-services redesign plan](../delivery/managed-services-redesign-plan-2026-11-16.md) for the proposed replacement. The conditional Supabase/Vercel/Cloudflare recommendation supersedes earlier future-hosting assumptions; existing implementation and verification described below remain historical/current facts until migration is proved. No provider or DNS change is implied.
+
 Status: provisional engineering recommendation, updated 14 November 2026. No provider, account, deployment, domain record or secret has been changed. The current per-service assessment and new findings are recorded in the [14 November hosting compatibility review](../verification/checks/hosting-compatibility-2026-11-14.md). Cloudflare remains the preferred edge and VMMS web candidate; keep the VMMS API/scanner on a conventional Node container behind its tested fixed-origin proxy for now. The direct Fastify Worker spike again failed during route registration because `workerd` rejected router `new Function` code generation; tenant commands and uploads did not run. HOST-001 remains in progress.
 
 ## Owner preference
