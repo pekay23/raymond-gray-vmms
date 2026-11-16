@@ -81,5 +81,5 @@ jobs:
           railway variables set --service @vmms/api --json "$(cat /tmp/vars.json)"
 
       - name: Deploy API service
-        run: railway up --service @vmms/api --detach
+        run: railway up --service @vmms/api --detach --dockerfile Dockerfile
         working-directory: apps/api
