@@ -1,0 +1,35 @@
+# apps/web/.dockerignore
+node_modules/
+dist/
+*.tsbuildinfo
+
+.env
+.env.*
+!.env.example
+
+.git/
+.gitignore
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+*.log
+npm-debug.log*
+
+coverage/
+test-results/
+
+*.md
+docs/
+
+.DS_Store
+Thumbs.db
+
+*.tmp
+temp/
+.tmp/
+
+# Large asset directories (but keep scripts for build)
+public/images/

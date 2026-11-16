@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BookOpenCheck, Save, Send } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { request, sitePath, vehicleLearningEntrySchema, vehicleLearningListSchema } from '../api';
-import sourceText from '../../../../docs/sources/ev-afro-service-centre-transcription.md?raw';
+import sourceText from '../assets/ev-afro-service-centre-transcription.md?raw';
 import { useStaff } from '../workspace';
 import { VehicleLearningActivity } from '../vehicle-learning-activity';
 import { VehicleLearningLibrary } from '../vehicle-learning-library';

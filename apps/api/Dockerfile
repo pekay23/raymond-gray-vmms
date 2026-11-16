@@ -3,7 +3,6 @@
 # Base image pinned to Node 22 LTS
 FROM node:22-alpine AS base
 WORKDIR /app
-ENV NODE_ENV=production
 
 # ---- Dependencies ----
 FROM base AS deps
@@ -12,6 +11,7 @@ RUN npm ci --omit=dev
 
 # ---- Build ----
 FROM base AS build
+ENV NODE_ENV=development
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
@@ -19,6 +19,7 @@ RUN npm run build
 
 # ---- Runtime ----
 FROM base AS runtime
+ENV NODE_ENV=production
 # Add dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init wget
 # Create non-root user

@@ -2,6 +2,7 @@
 # Multi-stage build: build -> runtime with nginx
 FROM node:22-alpine AS build
 WORKDIR /app
+ENV NODE_ENV=development
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .

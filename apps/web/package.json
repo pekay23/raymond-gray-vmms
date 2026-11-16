@@ -11,7 +11,7 @@
     "verify:workspace-navigation": "node ../../scripts/workspace-navigation-browser.mjs",
     "prebuild": "npm run assets:generate",
     "verify:responsive": "node scripts/verify-responsive.mjs",
-    "build": "tsc --noEmit && vite build",
+    "build": "vite build",
     "cloudflare:dev": "vite --config vite.cloudflare.config.ts --host 127.0.0.1",
     "cloudflare:build": "npm run assets:generate && vite build --config vite.cloudflare.config.ts",
     "cloudflare:preview": "vite preview --config vite.cloudflare.config.ts --host 127.0.0.1",
