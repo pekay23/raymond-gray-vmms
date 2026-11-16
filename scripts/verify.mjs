@@ -35,6 +35,7 @@ const commands = [
   ['historical-import-template-tests', ['run', 'historical:templates:test']],
   ['historical-import-staging-tests', ['run', 'historical:stage:test']],
   ['evidence-backup-package-tests', ['run', 'evidence:backup:test']],
+  ['generate-web-assets', ['run', 'assets:generate', '--workspace', '@vmms/web']],
   ['typecheck', ['run', 'typecheck']],
   ['build', ['run', 'build']],
   ['cloudflare-real-api-proxy', ['run', 'verify:cloudflare-real-api-proxy']],
