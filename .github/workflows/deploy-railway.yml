@@ -51,7 +51,7 @@ jobs:
           TRUSTED_PROXY_CIDRS: ${{ secrets.TRUSTED_PROXY_CIDRS }}
           WEB_ORIGIN: ${{ secrets.WEB_ORIGIN }}
         run: |
-          cat <<'EOF' | railway variables set --service vmms-api --json
+          cat <<'EOF' | railway variables set --service @vmms/api --json
           {
             "DATABASE_URL": "$DATABASE_URL",
             "MIGRATION_DATABASE_URL": "$MIGRATION_DATABASE_URL",
@@ -79,5 +79,5 @@ jobs:
           EOF
 
       - name: Deploy API service
-        run: railway up --service vmms-api --detach
+        run: railway up --service @vmms/api --detach
         working-directory: apps/api
