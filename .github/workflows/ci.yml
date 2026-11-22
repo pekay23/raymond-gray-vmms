@@ -9,10 +9,10 @@ on:
 
 permissions:
   contents: read
+  deployments: write
 
 env:
   NODE_VERSION: '24'
-  # Dummy values for tests that require DATABASE_URL
   DATABASE_URL: "postgresql://test:test@localhost:5432/test"
   MIGRATION_DATABASE_URL: "postgresql://test:test@localhost:5432/test"
   SESSION_SECRET: "test-secret-for-ci-only"
@@ -36,68 +36,80 @@ jobs:
     name: TypeCheck
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate web assets
-        run: npm run assets:generate --workspace @vmms/web
-
-      - name: Run typecheck
-        run: npm run typecheck
+      - run: npm ci
+      - run: npm run assets:generate --workspace @vmms/web
+      - run: npm run typecheck
 
   test:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+      - run: npm ci
+      - run: npm run assets:generate --workspace @vmms/web
+      - run: npm run test --workspace @vmms/web
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate web assets
-        run: npm run assets:generate --workspace @vmms/web
-
-      - name: Run web tests
-        run: npm run test --workspace @vmms/web
+  verify:
+    name: PostgreSQL Verification
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: vmms
+          POSTGRES_USER: vmms_owner
+          POSTGRES_PASSWORD: vmms_local_development_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vmms_owner -d vmms"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      MIGRATION_DATABASE_URL: postgres://vmms_owner:vmms_local_development_only@127.0.0.1:5432/vmms
+      DATABASE_URL: postgres://vmms_runtime:vmms_runtime_local_development_only@127.0.0.1:5432/vmms
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Create runtime role
+        run: |
+          psql "postgres://vmms_owner:vmms_local_development_only@127.0.0.1:5432/vmms" -c "
+            CREATE ROLE vmms_runtime WITH LOGIN PASSWORD 'vmms_runtime_local_development_only';
+            GRANT USAGE ON SCHEMA public TO vmms_runtime;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO vmms_runtime;
+          "
+      - run: npm ci
+      - run: npm run verify
 
   build-web:
     name: Build Web
     runs-on: ubuntu-latest
-    needs: [typecheck, test]
+    needs: [typecheck, test, verify]
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build web application
-        run: npm run build --workspace @vmms/web
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+      - run: npm ci
+      - run: npm run build --workspace @vmms/web
+      - uses: actions/upload-artifact@v4
         with:
           name: web-dist
           path: apps/web/dist
@@ -106,26 +118,35 @@ jobs:
   build-api:
     name: Build API
     runs-on: ubuntu-latest
-    needs: [typecheck, test]
+    needs: [typecheck, test, verify]
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build API
-        run: npm run build --workspace @vmms/api
-
-      - name: Upload API build artifacts
-        uses: actions/upload-artifact@v4
+      - run: npm ci
+      - run: npm run build --workspace @vmms/api
+      - uses: actions/upload-artifact@v4
         with:
           name: api-dist
           path: apps/api/dist
           retention-days: 1
+
+  deploy-vercel:
+    name: Deploy to Vercel
+    runs-on: ubuntu-latest
+    needs: [build-web, build-api]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install -g vercel@latest
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: apps/web
+      - name: Build
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: apps/web
+      - name: Deploy
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: apps/web
