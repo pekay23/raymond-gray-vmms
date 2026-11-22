@@ -9,10 +9,12 @@ export type SensitiveReadAction =
   | 'party-lookup-read-prepared'
   | 'workforce-organogram-read-prepared'
   | 'workforce-overview-read-prepared'
+  | 'workforce-site-activity-read-prepared'
   | 'staff-messages-read-prepared'
   | 'staff-account-requests-read-prepared'
   | 'service-request-read-prepared'
   | 'vehicle-sales-history-read-prepared'
+  | 'vehicle-service-history-read-prepared'
   | 'work-order-task-activity-read-prepared'
   | 'work-order-task-work-entries-read-prepared'
   | 'work-order-task-work-evidence-options-read-prepared'
@@ -23,8 +25,15 @@ export type SensitiveReadAction =
   | 'vehicle-learning-library-read-prepared'
   | 'finance-configuration-draft-read-prepared'
   | 'work-order-checklists-read-prepared'
+  | 'my-task-checklist-items-read'
   | 'work-order-checklist-outcomes-read-prepared'
-  | 'work-order-task-labor-read-prepared';
+  | 'work-order-checklist-report-read-prepared'
+  | 'work-order-scope-proposals-read-prepared'
+  | 'work-order-scope-payer-responses-read-prepared'
+  | 'work-order-task-labor-read-prepared'
+  | 'work-order-task-review-queue-read-prepared'
+  | 'work-order-diagnostic-review-queue-read-prepared'
+  | 'work-order-checklist-review-queue-read-prepared';
 
 /** Hold current membership through the read and its committed audit event. */
 export async function requireActiveReadMembership(client: PoolClient, scope: Scope): Promise<boolean> {

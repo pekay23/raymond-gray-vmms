@@ -65,7 +65,7 @@ Keep original entries, approvals, assignments, sign-offs, invoice revisions, pay
 
 ## 8. Escalation and stop-work
 
-Anyone may stop their assigned activity and escalate an immediate hazard, unexpected condition, mismatch, suspected damage, wrong procedure, inadequate equipment, unclear instruction or work beyond competence. Follow the current approved emergency-response SOP. This draft contains no emergency isolation or rescue sequence. Preserve the vehicle and evidence, notify the Supervisor and responsible lead, record the event, and do not resume until the designated authority documents clearance.
+Anyone may stop their assigned activity and report an immediate hazard, unexpected condition, mismatch, suspected damage, wrong procedure, inadequate equipment, unclear instruction or work beyond competence. Follow the stop-work and escalation rules in the [interim workshop operating policy](../interim-workshop-operating-policy.md) and the site's current emergency plan. Use the exact vehicle emergency guide when one applies. This draft contains no isolation or rescue steps. Do not improvise them. Preserve the vehicle and evidence where safe, keep people away from the hazard where safe, notify the Supervisor and responsible lead, record the event, and wait for an authorized person to document clearance before work resumes.
 
 ## 9. Approval record required
 

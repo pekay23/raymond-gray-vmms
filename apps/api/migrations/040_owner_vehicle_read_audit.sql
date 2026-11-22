@@ -141,7 +141,10 @@ BEGIN
 END
 $$;
 REVOKE ALL ON FUNCTION public.current_vehicle_owner_vehicles(text,uuid) FROM PUBLIC;
+-- Managed PostgreSQL roles are not superusers; membership is required for ALTER OWNER.
+GRANT vmms_owner_read_audit_function_owner TO CURRENT_USER;
 GRANT CREATE ON SCHEMA public TO vmms_owner_read_audit_function_owner;
+GRANT EXECUTE ON FUNCTION public.current_vehicle_owner_vehicles(text,uuid) TO vmms_runtime;
 ALTER FUNCTION public.current_vehicle_owner_vehicles(text,uuid) OWNER TO vmms_owner_read_audit_function_owner;
 REVOKE CREATE ON SCHEMA public FROM vmms_owner_read_audit_function_owner;
-GRANT EXECUTE ON FUNCTION public.current_vehicle_owner_vehicles(text,uuid) TO vmms_runtime;
+REVOKE vmms_owner_read_audit_function_owner FROM CURRENT_USER;

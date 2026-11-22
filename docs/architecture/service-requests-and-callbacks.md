@@ -1,10 +1,12 @@
 # Service requests and callbacks
 
-Status: active implementation contract for `USER-038`. Read with [service journey](service-journey.md), [customer and repeat visits](customer-and-repeat-visits.md), and [aggregate command contract](aggregate-command-contract.md).
+Status: active implementation contract for `USER-038`. Typed inspection requests, protected customer entry and Service Advisor conversion are refined in [service request intake and inspection types](service-request-types-and-inspections.md). Read with [service journey](service-journey.md), [customer and repeat visits](customer-and-repeat-visits.md), and [aggregate command contract](aggregate-command-contract.md).
 
 ## Purpose and boundaries
 
 A service request records a concern and follow-up before or after the vehicle arrives. It is not a work order, acceptance of custody, diagnosis, permission to repair, or a safety or payment approval. Sales staff, an advisor, or another authorized staff member may record a request on behalf of a caller. The server checks site membership and the configured permission for every read and write; a role name alone does not confer a technical grant. Owner access and outbound notifications are separate capabilities.
+
+Service requests also carry a requested service type: repair/maintenance, routine maintenance, PSAI, or Service Centre PDI. Customer or third-party entry is request-only and does not create a work order or reveal a vehicle/customer match. The Service Advisor confirms the reported facts and converts an accepted request to one typed work order. The external Service Centre PDI is separate from later Sales delivery-preparation PDI. PDI requests are fee-bearing; exact rates and billing authority remain unconfigured, so the billable quote and commercial handover stay blocked until approved.
 
 ## Request-to-arrival handoff
 

@@ -8,6 +8,12 @@ Status: shared-identity baseline, with local VMMS integration evidence and a lim
 
 Provide one user-facing authentication service for Raymond Gray products at `auth.raymond-gray.org`, while preventing a shared login from becoming shared business authorization. The standalone project is `C:\Projects\raymond-gray-auth`; VMMS remains a separate relying party with its own API, PostgreSQL data, user access state, site membership, customer/vehicle grants and audit trail.
 
+## Realm and product access boundary
+
+The owner confirmed on 19 November 2026 that the identity service uses one central issuer and central account store, with explicit membership for every product realm. VMMS users can sign in to VMMS only when they have an active VMMS realm membership and the VMMS OIDC client is assigned to that realm. This membership gives no access to the Raymond Gray platform portal/services or any other product; each requires its own invitation or explicit realm membership. A shared Google email or central account never creates a product grant by itself.
+
+VMMS owns its own staff and customer records, sites, local role placements, and business permissions. Its role catalogue may include clients, sales, technicians/engineers, service advisors, Head of Aftersales, administrators and finance, as well as other roles defined by VMMS. This list is illustrative, not exhaustive. The central identity service assigns no VMMS role, site, technical qualification, safety sign-off, financial authority or governance grant. VMMS must resolve the authenticated `(issuer, subject)` to a local record and enforce its own policies.
+
 ## Chosen components
 
 | Concern | Baseline | Boundary |

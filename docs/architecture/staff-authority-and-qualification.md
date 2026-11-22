@@ -13,12 +13,12 @@ The master specification defines a competence grant as a person, privileges, sys
 - Empty scope arrays mean no approved scope. They are never a wildcard.
 - A class-sensitive assignment requires the qualification's `powertrain_classes` to include the work order's recorded class.
 - A qualification with any restriction is not eligible for the current assignment and supervisor-handoff actions. There is no restriction evaluator yet, so the system does not assume a restriction is irrelevant.
-- Model, system, and task-class scopes are stored as explicit future decision dimensions. No current execution/signoff action may treat them as evaluated until its owning command checks the specific values against an effective instruction and authority policy.
+- Routine-maintenance checklist outcome recording checks all dimensions: the immutable source item supplies system and task-class codes, the work order supplies the exact make/model/variant and powertrain class, and the acting staff member's latest accepted qualification must cover every value. Model scope is stored as the normalized `make::model::variant` key. This check permits only an attributed checklist observation; it does not authorize repair or G3/G4 sign-off.
 - Only `accepted` qualifications within their effective dates are considered. Pending, rejected, revoked, expired, inactive-person, and inactive-membership records never qualify.
 - For the same person, site, and qualification code, only the highest non-pending revision is considered. A later rejected, revoked, or expired revision cannot cause an older accepted revision to become active again; a pending reassessment leaves the prior accepted revision subject to its original validity dates.
 - Grants and qualifications are empty by default. Runtime staff cannot mint, update, or delete them; controlled provisioning is a separate governance task.
 
-The current EV/ICE/HYB team-lead and supervisor assignment operations check class scope and require an empty restrictions list. Hybrid routing remains a manually selected qualified lead per the owner's decision. These checks prove only the assignment qualification contract; they do not authorise repair, technician dispatch, G3 completion, inspection, G4 release, or vehicle departure.
+The current EV/ICE/HYB team-lead and supervisor assignment operations check class scope and require an empty restrictions list. Routine-maintenance checklist outcome recording additionally checks exact model, system and task-class scope and snapshots the accepted qualification. Hybrid routing remains a manually selected qualified lead per the owner's decision. These checks prove only assignment or checklist-recording eligibility; they do not authorise repair, technician dispatch, G3 completion, inspection, G4 release, or vehicle departure.
 
 ## Work needed before G3/G4
 

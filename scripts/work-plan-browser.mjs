@@ -32,11 +32,13 @@ const report = {
 const uuid = z.uuid();
 const reportEvidenceName = 'synthetic-work-entry-evidence.pdf';
 const reportEvidencePdf = Buffer.from('%PDF-1.4\nSynthetic service-report evidence\n%%EOF\n');
+const payerResponseEvidenceName = 'synthetic-written-payer-response.pdf';
+const payerResponseEvidencePdf = Buffer.from('%PDF-1.4\nSynthetic payer response to the exact proposed scope\n%%EOF\n');
 const taskEvidenceName = 'synthetic-task-upload-after-handoff.pdf';
 const taskEvidencePdf = Buffer.from('%PDF-1.4\nSynthetic task-scoped evidence\n%%EOF\n');
 const errors = [];
-let runtime, vite, browser, reviewer, lead, supervisor, technician, page, reportEvidencePage;
-let reportEvidenceId, taskEvidenceId;
+let runtime, vite, browser, reviewer, lead, supervisor, technician, advisor, page, reportEvidencePage;
+let reportEvidenceId, payerResponseEvidenceId, taskEvidenceId;
 let webOrigin = '';
 let phase = 'startup';
 let failed = false;
@@ -46,8 +48,28 @@ function check(name, facts = {}) {
   process.stdout.write(`VERIFIED: ${name}\n`);
 }
 
+async function followWorkflowStep(targetPage, targetId, label) {
+  const link = targetPage.getByRole('link', { name: `Go to the ${label} section`, exact: true });
+  const href = await link.getAttribute('href');
+  assert.equal(new URL(href, webOrigin).hash, `#${targetId}`, `${label} must link to its existing action section.`);
+  await link.click();
+  const visible = await targetPage.waitForFunction(id => {
+    const target = document.getElementById(id);
+    if (!target) return false;
+    const workspace = target.closest(".workspace-content");
+    const workspaceBounds = workspace?.getBoundingClientRect();
+    const headerBounds = workspace?.querySelector(":scope > header")?.getBoundingClientRect();
+    const top = Math.max(0, workspaceBounds?.top ?? 0, headerBounds?.bottom ?? 0) + 1;
+    const bottom = Math.min(window.innerHeight, workspaceBounds?.bottom ?? window.innerHeight) - 1;
+    const targetBounds = target.getBoundingClientRect();
+    return targetBounds.bottom > top && targetBounds.top < bottom && document.activeElement === target;
+  }, targetId);
+  assert(visible, `${label} action heading should be focused and visible in the workspace scroll area.`);
+  check('Current job step link focuses and scrolls to its matching action section', { targetId, label });
+}
+
 async function responseJson(response, status = 200) {
-  assert.equal(response.status(), status, `Unexpected HTTP ${response.status()} during ${phase}: ${await response.text()}`);
+  assert.equal(response.status(), status, `Unexpected HTTP ${response.status()} from ${response.url()} during ${phase}: ${await response.text()}`);
   return response.json();
 }
 
@@ -64,8 +86,11 @@ async function newContext(timezoneId) {
   return context;
 }
 
-async function assertAuthenticatedZoom(routeName, sourceContext, orderId, prepare) {
+async function assertAuthenticatedZoom(routeName, sourceContext, actor, orderId, prepare) {
   if (process.argv.includes('--labor-only')) return;
+  const sourceSession = await sourceContext.request.get(`${webOrigin}/api/v1/session`);
+  assert.equal(sourceSession.status(), 200, `${routeName}: source session check failed.`);
+  if ((await sourceSession.json()).authenticated !== true) await login(sourceContext, actor);
   for (const zoom of [2, 4]) {
     const profile = await mkdtemp(resolve(tmpdir(), 'vmms-work-plan-zoom-'));
     await mkdir(resolve(profile, 'Default'), { recursive: true });
@@ -96,7 +121,17 @@ async function assertAuthenticatedZoom(routeName, sourceContext, orderId, prepar
       assert.equal(JSON.parse(session).authenticated, true, `${routeName} ${zoom * 100}%: copied team-lead session is not authenticated.`);
       await zoomPage.goto(`${webOrigin}${orderPath(orderId)}`);
       await zoomPage.getByRole('main').waitFor();
-      await prepare(zoomPage);
+      try {
+        await prepare(zoomPage);
+      } catch (error) {
+        const state = await zoomPage.evaluate(() => ({
+          viewport: { width: innerWidth, height: innerHeight, devicePixelRatio },
+          bodyText: document.body.innerText.slice(0, 5000),
+          supervisorForm: document.querySelector('#handoff-supervisor')?.closest('form')?.innerText ?? null,
+          supervisorSelect: document.querySelector('#handoff-supervisor')?.outerHTML ?? null,
+        })).catch(() => null);
+        throw new Error(`${routeName} ${zoom * 100}% preparation failed; state=${JSON.stringify(state)}`, { cause: error });
+      }
       const layout = await zoomPage.evaluate(() => {
         const controls = [...document.querySelectorAll('a[href],button,input,select,textarea')]
           .filter(element => element.getClientRects().length > 0)
@@ -217,7 +252,7 @@ async function assertAuthenticatedZoom(routeName, sourceContext, orderId, prepar
       const signOut = zoomPage.getByRole('button', { name: 'Sign out', exact: true });
       assert(await signOut.isVisible(), `${routeName} ${zoom * 100}%: Sign out is hidden.`);
       await signOut.click({ trial: true });
-      await zoomPage.screenshot({ path: resolve(output, `${routeName}-zoom-${zoom * 100}.png`), fullPage: true });
+      await zoomPage.screenshot({ path: resolve(output, `${routeName}-zoom-${zoom * 100}.png`), fullPage: true, timeout: 45000, animations: 'disabled' });
       check(`${routeName} form and workspace navigation pass native ${zoom * 100}% zoom, name, clipping, target, focus and reachability checks`);
     } finally {
       await zoomContext?.close();
@@ -235,7 +270,7 @@ async function login(context, actor) {
     headers: { Origin: webOrigin, 'X-CSRFToken': decodeURIComponent(csrf.value) },
     data: { username: actor.username, password: actor.password },
   });
-  assert.equal(signIn.status(), 200, await signIn.text());
+  assert.equal(signIn.status(), 200, `Sign-in failed for ${actor.username} at ${signIn.url()}: ${await signIn.text()}`);
   assert.equal((await signIn.json()).authenticated, true);
 }
 
@@ -314,7 +349,8 @@ async function buildWorkOrder() {
   assert.equal(reportEvidenceUploaded.state, 'pending');
   assert.equal(await runtime.scanNext(), true, 'The report evidence scan did not run.');
   await reportEvidencePage.getByRole('button', { name: 'Refresh work order', exact: true }).click();
-  await reportEvidencePage.getByText('Security check passed', { exact: true }).waitFor();
+  await reportEvidencePage.getByRole('listitem').filter({ hasText: reportEvidenceName })
+    .getByText('Security check passed', { exact: true }).waitFor();
   const attachReportEvidence = reportEvidencePage.waitForResponse(response =>
     response.request().method() === 'POST'
       && new URL(response.url()).pathname === `/api/v1${orderPath(orderId)}/evidence`);
@@ -325,6 +361,29 @@ async function buildWorkOrder() {
   assert(linkedReportEvidence?.attachedAt);
   await reportEvidencePage.getByText('Evidence attached to the work order.', { exact: true }).waitFor();
   reportEvidenceId = reportEvidenceUploaded.evidenceId;
+  await reportEvidencePage.getByLabel('Choose a file', { exact: true }).setInputFiles({
+    name: payerResponseEvidenceName,
+    mimeType: 'application/pdf',
+    buffer: payerResponseEvidencePdf,
+  });
+  const payerEvidenceUpload = reportEvidencePage.waitForResponse(response =>
+    response.request().method() === 'PUT' && new URL(response.url()).pathname.endsWith('/content'));
+  await reportEvidencePage.getByRole('button', { name: 'Upload evidence', exact: true }).click();
+  const payerEvidenceUploaded = await responseJson(await payerEvidenceUpload, 202);
+  assert.equal(payerEvidenceUploaded.state, 'pending');
+  assert.equal(await runtime.scanNext(), true, 'The synthetic payer response evidence scan did not run.');
+  await reportEvidencePage.getByRole('button', { name: 'Refresh work order', exact: true }).click();
+  await reportEvidencePage.getByRole('listitem').filter({ hasText: payerResponseEvidenceName })
+    .getByText('Security check passed', { exact: true }).waitFor();
+  const attachPayerEvidence = reportEvidencePage.waitForResponse(response =>
+    response.request().method() === 'POST'
+      && new URL(response.url()).pathname === `/api/v1${orderPath(orderId)}/evidence`);
+  await reportEvidencePage.getByRole('button', { name: `Attach ${payerResponseEvidenceName} to work order`, exact: true }).click();
+  const attachedPayerEvidence = await responseJson(await attachPayerEvidence);
+  const linkedPayerEvidence = attachedPayerEvidence.evidence.find(item => item.evidenceId === payerEvidenceUploaded.evidenceId);
+  assert.equal(linkedPayerEvidence?.state, 'accepted');
+  assert(linkedPayerEvidence?.attachedAt);
+  payerResponseEvidenceId = payerEvidenceUploaded.evidenceId;
   current = await responseJson(await reviewer.request.get(`${webOrigin}/api/v1${orderPath(orderId)}`));
   check('Accepted synthetic evidence is attached before Operations review and team-lead assignment');
 
@@ -398,9 +457,14 @@ async function buildWorkOrder() {
   await page.getByLabel('Show jobs').selectOption('operations');
   await page.getByText(current.reference, { exact: true }).waitFor();
   await page.getByText(current.reference, { exact: true }).click();
-  await page.getByRole('heading', { name: 'Operations review', exact: true }).waitFor();
+  await page.getByRole('list', { name: 'Workshop job stages' })
+    .getByRole('heading', { name: 'Operations review', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Process gates', exact: true }).waitFor();
+  await page.getByText('Diagnostic consent allows diagnosis only. It does not authorize repair, replacement parts, or additional costs.', { exact: true }).waitFor();
+  check('The G2 gate distinguishes diagnostic consent from repair, parts and added-cost authorization.');
   await page.getByRole('region', { name: 'Current job step' }).getByText('Review the job before assigning a team lead.', { exact: true }).waitFor();
-  await assertAuthenticatedZoom('operations-review', reviewer, orderId, async zoomPage => {
+  await followWorkflowStep(page, 'operations-review-title', 'Operations review');
+  await assertAuthenticatedZoom('operations-review', reviewer, runtime.actors.creator, orderId, async zoomPage => {
     await zoomPage.locator('#operations-review-notes').waitFor();
     await zoomPage.getByRole('button', { name: 'Record Operations review', exact: true }).waitFor();
   });
@@ -417,12 +481,14 @@ async function buildWorkOrder() {
   await page.getByText('Operations review recorded.', { exact: true }).waitFor();
   await page.getByText('This review covers the current work-order version and is ready for team-lead assignment.', { exact: true }).waitFor();
   await page.getByRole('region', { name: 'Current job step' }).getByText('Assign a qualified team lead.', { exact: true }).waitFor();
+  await followWorkflowStep(page, 'operations-assignment-title', 'Team-lead assignment');
 
-  await assertAuthenticatedZoom('operations-assignment', reviewer, orderId, async zoomPage => {
+  await assertAuthenticatedZoom('operations-assignment', reviewer, runtime.actors.creator, orderId, async zoomPage => {
     await zoomPage.getByLabel('Team lead', { exact: true }).waitFor();
     await zoomPage.getByLabel('Assignment reason', { exact: true }).waitFor();
     await zoomPage.getByRole('button', { name: 'Assign team lead', exact: true }).waitFor();
   });
+  phase = 'operations-team-lead-assignment';
   const teamLeadSelect = page.getByLabel('Team lead', { exact: true });
   const teamLeadOptions = await teamLeadSelect.locator('option').allTextContents();
   assert(teamLeadOptions.every(label => !/[A-Z]+-(TEAM-LEAD|SUPERVISOR)/.test(label)),
@@ -430,10 +496,18 @@ async function buildWorkOrder() {
   check('Team-lead choices show staff names without internal qualification codes');
   await teamLeadSelect.selectOption(runtime.actors.teamLead.id);
   await page.getByLabel('Assignment reason', { exact: true }).fill('Synthetic qualified EV team-lead assignment recorded through the browser.');
+  const teamLeadAssignmentResponse = page.waitForResponse(response => response.request().method() === 'POST'
+    && new URL(response.url()).pathname === `/api/v1${orderPath(orderId)}/team-lead-assignment`);
   await page.getByRole('button', { name: 'Assign team lead', exact: true }).click();
+  const assignmentResponse = await teamLeadAssignmentResponse;
+  const assignmentBody = await assignmentResponse.text();
+  assert.equal(assignmentResponse.status(), 200, `Team-lead assignment failed: HTTP ${assignmentResponse.status()} ${assignmentBody}`);
+  const assignedOrder = await responseJson(await reviewer.request.get(`${webOrigin}/api/v1${orderPath(orderId)}`));
+  assert.equal(assignedOrder.workflowContext.responsibility.name, 'Synthetic browser-team-lead', 'Team-lead assignment must persist before continuing browser checks.');
   const concernTrigger = page.locator('#open-complaint-form');
   await concernTrigger.click();
   await page.getByRole('button', { name: 'Close form', exact: true }).click();
+  await page.waitForFunction(() => document.activeElement?.id === 'open-complaint-form');
   assert.equal(await page.evaluate(() => document.activeElement?.id), 'open-complaint-form',
     'Closing the concern form must return keyboard focus to its opening control.');
 
@@ -455,6 +529,7 @@ async function buildWorkOrder() {
   await page.unroute(complaintRoute);
   check('Server validation errors on work-order forms are linked to their matching control');
   await page.getByRole('button', { name: 'Close form', exact: true }).click();
+  await page.waitForFunction(() => document.activeElement?.id === 'open-complaint-form');
   assert.equal(await page.evaluate(() => document.activeElement?.id), 'open-complaint-form');
 
   const factsUrl = `${webOrigin}/api/v1/sites/${runtime.siteId}/work-orders/${orderId}/intake-facts`;
@@ -490,23 +565,23 @@ async function buildWorkOrder() {
   await page.locator('#work-order-evidence-file').setInputFiles([]);
   check('Evidence upload errors are announced and described by the file picker');
 
-  await assertAuthenticatedZoom('add-concern', reviewer, orderId, async zoomPage => {
+  await assertAuthenticatedZoom('add-concern', reviewer, runtime.actors.creator, orderId, async zoomPage => {
     await zoomPage.getByRole('button', { name: 'Add concern', exact: true }).click();
     await zoomPage.getByLabel("Customer's wording", { exact: true }).waitFor();
   });
-  await assertAuthenticatedZoom('plan-task', reviewer, orderId, async zoomPage => {
+  await assertAuthenticatedZoom('plan-task', reviewer, runtime.actors.creator, orderId, async zoomPage => {
     await zoomPage.getByRole('button', { name: 'Plan task', exact: true }).click();
     await zoomPage.getByLabel('Proposed task', { exact: true }).waitFor();
   });
-  await assertAuthenticatedZoom('report-hold', reviewer, orderId, async zoomPage => {
+  await assertAuthenticatedZoom('report-hold', reviewer, runtime.actors.creator, orderId, async zoomPage => {
     await zoomPage.getByRole('button', { name: 'Report hold', exact: true }).click();
     await zoomPage.getByLabel('What does this hold apply to?', { exact: true }).waitFor();
   });
-  await assertAuthenticatedZoom('intake-facts', reviewer, orderId, async zoomPage => {
+  await assertAuthenticatedZoom('intake-facts', reviewer, runtime.actors.creator, orderId, async zoomPage => {
     await zoomPage.getByRole('region', { name: 'Vehicle check-in notes' }).waitFor();
     await zoomPage.getByLabel('What are you recording?', { exact: true }).waitFor();
   });
-  await assertAuthenticatedZoom('work-order-evidence', reviewer, orderId, async zoomPage => {
+  await assertAuthenticatedZoom('work-order-evidence', reviewer, runtime.actors.creator, orderId, async zoomPage => {
     await zoomPage.getByRole('region', { name: 'Evidence' }).waitFor();
     await zoomPage.getByLabel('Choose a file', { exact: true }).waitFor();
   });
@@ -561,7 +636,7 @@ async function buildWorkOrder() {
     'A server validation error must be described by the matching VIN error text.');
   assert((await vinError.innerText()).length > 0, 'The associated field error must be visible.');
   check('Server validation errors appear beside the matching intake field with invalid state and a description association');
-  return { orderId, reportEvidenceId, taskIds: current.tasks.map(task => task.id), taskTitles: current.tasks.map(task => task.title) };
+  return { orderId, reportEvidenceId, payerResponseEvidenceId, taskIds: current.tasks.map(task => task.id), taskTitles: current.tasks.map(task => task.title) };
 }
 
 async function assertResponsive() {
@@ -580,6 +655,9 @@ async function assertResponsive() {
   ];
   for (const { width, height } of viewports) {
     await page.setViewportSize({ width, height });
+    await page.waitForFunction(() =>
+      document.documentElement.dataset.vmmsCompactViewport === (window.innerWidth <= 640 ? 'true' : 'false'));
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => resolve())));
     const geometry = await page.evaluate(() => {
       const panel = document.querySelector('#work-plan-title')?.closest('section');
       return {
@@ -633,6 +711,9 @@ async function assertQueueResponsive(target = page, expectedQueue = 'team-lead')
   ];
   for (const { width, height } of viewports) {
     await target.setViewportSize({ width, height });
+    await target.waitForFunction(() =>
+      document.documentElement.dataset.vmmsCompactViewport === (window.innerWidth <= 640 ? 'true' : 'false'));
+    await target.evaluate(() => new Promise(resolve => requestAnimationFrame(() => resolve())));
     const expectedTitle = expectedQueue === 'team-lead'
       ? 'Jobs assigned to me as team lead'
       : 'Jobs assigned to me';
@@ -675,6 +756,17 @@ async function assertQueueResponsive(target = page, expectedQueue = 'team-lead')
         mainExcerpt: document.querySelector('#workspace-main')?.innerText.slice(0, 240),
         viewportWidth: window.innerWidth,
         documentWidth: document.documentElement.scrollWidth,
+        overflowingElements: [...document.querySelectorAll('body *')]
+          .map(element => ({
+            tag: element.tagName.toLowerCase(),
+            id: element.id || null,
+            className: typeof element.className === 'string' ? element.className : null,
+            right: Math.round(element.getBoundingClientRect().right * 100) / 100,
+            width: Math.round(element.getBoundingClientRect().width * 100) / 100,
+          }))
+          .filter(element => element.right > window.innerWidth + 0.5)
+          .sort((left, right) => right.right - left.right)
+          .slice(0, 8),
         queueFilter: bounds(document.querySelector('#queue-filter')),
         search: bounds(document.querySelector('#queue-search')),
         controls,
@@ -689,6 +781,28 @@ async function assertQueueResponsive(target = page, expectedQueue = 'team-lead')
       assert(control.width > 0 && control.height > 0 && control.left >= -1 && control.right <= width + 1,
         `${width}px visible work queue control is clipped: ${control.name}`);
     }
+  }
+  await target.setViewportSize({ width: 1440, height: 1000 });
+}
+
+async function assertTaskReviewQueueResponsive(target) {
+  for (const width of [280, 320, 390, 540, 768, 1024, 1440]) {
+    await target.setViewportSize({ width, height: 900 });
+    await target.waitForFunction(() => document.documentElement.dataset.vmmsCompactViewport === (window.innerWidth <= 640 ? 'true' : 'false'));
+    const geometry = await target.locator('#today-task-review-queue').evaluate(heading => {
+      const panel = heading.closest('article');
+      const rect = panel?.getBoundingClientRect();
+      const controls = [...(panel?.querySelectorAll('a,button') ?? [])].filter(element => element.getClientRects().length > 0).map(element => {
+        const box = element.getBoundingClientRect();
+        return { left: box.left, right: box.right, width: box.width, height: box.height };
+      });
+      return { documentWidth: document.documentElement.scrollWidth, panel: rect ? { left: rect.left, right: rect.right } : null, controls };
+    });
+    assert.equal(geometry.documentWidth, width, `${width}px Today review queue overflowed.`);
+    assert(geometry.panel && geometry.panel.left >= -1 && geometry.panel.right <= width + 1,
+      `${width}px Today review queue is clipped.`);
+    assert(geometry.controls.length > 0 && geometry.controls.every(control => control.width > 0 && control.height > 0
+      && control.left >= -1 && control.right <= width + 1), `${width}px Today review queue controls are clipped or unavailable.`);
   }
   await target.setViewportSize({ width: 1440, height: 1000 });
 }
@@ -721,8 +835,10 @@ try {
   report.browser = `Chromium ${browser.version()}`;
   reviewer = await newContext();
   lead = await newContext();
+  advisor = await newContext();
   await login(reviewer, runtime.actors.creator);
   await login(lead, runtime.actors.teamLead);
+  await login(advisor, runtime.actors.advisor);
   const fixture = await buildWorkOrder();
 
   phase = 'assigned-lead';
@@ -773,6 +889,90 @@ try {
   await page.getByText(assignedOrder.reference, { exact: true }).waitFor();
   await assertQueueResponsive();
   await page.goto(`${webOrigin}${orderPath(fixture.orderId)}`);
+  await page.getByRole('heading', { name: 'Proposed work scope', exact: true }).waitFor();
+  await page.getByRole('note').getByText('A draft proposal is not customer consent or permission to begin work.', { exact: false }).waitFor();
+  await page.getByText('A current scope-proposal permission is required. Ask the authorized manager to review access.', { exact: true }).waitFor();
+  assert.equal(await page.getByRole('button', { name: 'Save draft proposal', exact: true }).count(), 0,
+    'The work-order page must not offer a proposal command without the current specific grant.');
+  check('Scope proposal UI explains the non-authorizing draft boundary and hides writes without a current grant');
+  await runtime.grantScopeCapabilityForTest(runtime.actors.teamLead.id, 'work-order.prepare-scope-proposal');
+  await runtime.grantScopeCapabilityForTest(runtime.actors.teamLead.id, 'work-order.record-payer-scope-response');
+  await runtime.grantScopeCapabilityForTest(runtime.actors.supervisor.id, 'work-order.task.review-response');
+  await page.reload();
+  await page.getByRole('radio', { name: 'Repair', exact: true }).check();
+  const taskGroup = page.getByRole('group', { name: 'Choose the planned tasks' });
+  await taskGroup.getByRole('checkbox').first().check();
+  await page.getByLabel('Estimated amount').fill('1250.00');
+  await page.getByLabel('Reason for this proposal').fill('Synthetic browser verification of the exact payer response workflow.');
+  const scopeProposalStartedAt = Date.now();
+  const scopeProposalResponse = page.waitForResponse(response => response.request().method() === 'POST'
+    && new URL(response.url()).pathname.endsWith('/scope-proposals'));
+  await page.getByRole('button', { name: 'Save draft proposal', exact: true }).click();
+  await responseJson(await scopeProposalResponse);
+  await page.getByRole('status').filter({ hasText: 'Draft scope proposal saved. No work has been approved.' })
+    .waitFor({ state: 'visible', timeout: 20000 });
+  check('Scope proposal command returns successfully and announces the draft save', {
+    responseMs: Date.now() - scopeProposalStartedAt,
+  });
+  const payerForm = page.getByRole('heading', { name: 'Record the payer’s response', exact: true }).locator('..').locator('..');
+  await payerForm.locator('select[name="responseMethod"]').selectOption('written');
+  await payerForm.getByLabel(payerResponseEvidenceName, { exact: true }).check();
+  await payerForm.getByLabel('I checked that the file records the payer’s response to this exact scope and stated estimate.', { exact: true }).check();
+  await payerForm.locator('select[name="decision"]').selectOption('approved');
+  await payerForm.locator('input[name="respondentName"]').fill('Synthetic Payer Contact');
+  await payerForm.locator('select[name="respondentRelationship"]').selectOption('payer');
+  await payerForm.locator('input[name="authorityBasis"]').fill('Matched the payer contact to the synthetic work-order record.');
+  await payerForm.locator('textarea[name="identityCheckSummary"]').fill('Confirmed the synthetic caller identity against the recorded contact.');
+  await payerForm.getByText(/Read back the exact listed tasks and GH₵1,250\.00 estimate/).waitFor();
+  await payerForm.getByText(/I read back the exact tasks and the GH₵1,250\.00 estimate/).waitFor();
+  await payerForm.locator('input[name="scopeReadBack"]').check();
+  await payerForm.locator('textarea[name="responseSummary"]').fill('Synthetic payer agreed to the listed tasks and GHS 1,250.00 estimate; technical checks remain outstanding.');
+  const responseRequest = page.waitForResponse(response => response.request().method() === 'POST'
+    && new URL(response.url()).pathname.endsWith('/payer-response'));
+  await payerForm.getByRole('button', { name: 'Save payer response', exact: true }).click();
+  const responseResult = await responseJson(await responseRequest);
+  assert.equal(responseResult.response.responseMethod, 'written');
+  assert.deepEqual(responseResult.response.evidenceIds, [fixture.payerResponseEvidenceId]);
+  assert.equal(responseResult.response.writtenEvidenceConfirmed, true);
+  assert.equal(responseResult.authorizationState, 'blocked');
+  assert.equal(responseResult.authorizationReason, 'technical-review-and-effective-policy-required');
+  check('Written payer response binds the accepted exact-job evidence and remains blocked from authorizing work');
+  await page.getByText('Payer response recorded. Technical and procedure checks still block work.', { exact: true }).waitFor();
+  await page.getByText('Proposed estimate: GH₵1,250.00', { exact: true }).waitFor();
+  await page.getByText('Payer agreed to this proposed scope', { exact: true }).waitFor();
+  await page.getByText('This records agreement to the listed work and estimate only. It does not authorize repair. Effective procedures, technical review, qualifications, and authority checks still block work.', { exact: true }).waitFor();
+  const proposalPage = await responseJson(await lead.request.get(`${webOrigin}/api/v1${orderPath(fixture.orderId)}/scope-proposals`));
+  assert.deepEqual(proposalPage.proposals[0].estimate, { minorUnits: '125000', currency: 'GHS' });
+  assert.equal(proposalPage.proposals[0].payerResponse.decision, 'approved');
+  assert.equal(proposalPage.proposals[0].payerResponse.respondentName, 'Synthetic Payer Contact');
+  assert.equal(proposalPage.proposals[0].canRespond, false);
+  const scopeAxe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  assert.deepEqual(scopeAxe.violations.map(({ id, impact }) => ({ id, impact })), [],
+    `Payer-response page has automated accessibility violations: ${JSON.stringify(scopeAxe.violations.map(({ id, impact, nodes }) => ({ id, impact, targets: nodes.map(({ target }) => target) })))}.`);
+  const scopeWidths = [];
+  for (const width of [280, 320, 390, 540, 768, 820, 1024, 1280, 1440]) {
+    await page.setViewportSize({ width, height: 850 });
+    const layout = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }));
+    assert(layout.content <= layout.viewport + 1, `Payer-response page overflows at ${width}px: ${JSON.stringify(layout)}`);
+    scopeWidths.push(width);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  check('Authorized Team Lead records a repair estimate and payer response through the real browser UI; amount and scope remain bound while work stays blocked', { scopeWidths });
+  const reassignmentPage = await reviewer.newPage();
+  await reassignmentPage.goto(`${webOrigin}${orderPath(fixture.orderId)}`);
+  await reassignmentPage.locator('#operations-review-notes').fill('Synthetic re-review after the recorded scope response.');
+  await reassignmentPage.getByRole('button', { name: 'Record updated review', exact: true }).click();
+  await reassignmentPage.getByText('Operations review recorded.', { exact: true }).waitFor();
+  await reassignmentPage.getByLabel('Team lead', { exact: true }).selectOption(runtime.actors.teamLead.id);
+  await reassignmentPage.getByLabel('Assignment reason', { exact: true }).fill('Synthetic qualified lead reconfirmed after the scope response changed the work-order version.');
+  await reassignmentPage.getByRole('button', { name: 'Assign team lead', exact: true }).click();
+  await reassignmentPage.getByText('Team lead assigned', { exact: true }).waitFor();
+  await reassignmentPage.close();
+  await page.reload();
+  await page.getByRole('region', { name: 'Current job step' }).getByText('Prepare the work plan.', { exact: true }).waitFor();
+  await followWorkflowStep(page, 'work-plan-title', 'Team lead work plan');
+  Object.assign(assignedOrder, await responseJson(await lead.request.get(`${webOrigin}/api/v1${orderPath(fixture.orderId)}`)));
+  check('A scope-response version change requires a fresh Operations review and lead assignment before planning resumes');
   await page.getByRole('link', { name: 'Print service report', exact: true }).click();
   await page.getByRole('heading', { level: 1, name: 'Workshop service report' }).waitFor();
   await page.getByText(assignedOrder.reference, { exact: true }).waitFor();
@@ -857,7 +1057,7 @@ try {
   assert.equal(await handoff.getByRole('button', { name: 'Assign supervisor', exact: true }).count(), 0,
     'Supervisor handoff must remain unavailable until the lead saves a current plan.');
   check('Supervisor assignment is gated until the current assigned lead saves a plan');
-  await assertAuthenticatedZoom('team-lead-work-plan', lead, fixture.orderId, async zoomPage => {
+  await assertAuthenticatedZoom('team-lead-work-plan', lead, runtime.actors.teamLead, fixture.orderId, async zoomPage => {
     await zoomPage.getByLabel('Reason for this plan').waitFor();
     await zoomPage.locator('section[aria-labelledby="work-plan-title"] form').waitFor();
   });
@@ -926,7 +1126,8 @@ try {
   assert.deepEqual(retryPayload, firstPayload, 'The retry must preserve the exact original command body.');
   await page.getByText('Latest draft', { exact: false }).waitFor();
   await plan.getByText('Inspect first, then prepare the vehicle for the next qualified technician.', { exact: true }).waitFor();
-  await assertAuthenticatedZoom('supervisor-handoff', lead, fixture.orderId, async zoomPage => {
+  phase = 'supervisor-handoff-responsive';
+  await assertAuthenticatedZoom('supervisor-handoff', lead, runtime.actors.teamLead, fixture.orderId, async zoomPage => {
     await zoomPage.getByLabel('Work plan and handover note').waitFor();
     await zoomPage.getByRole('button', { name: 'Assign supervisor', exact: true }).waitFor();
   });
@@ -936,6 +1137,9 @@ try {
   const saved = await responseJson(savedResponse);
   assert.equal(saved.workflowContext.stage, 'supervisor-handoff');
   assert.equal(saved.workflowContext.responsibility.name, 'Synthetic browser-team-lead');
+  assert.deepEqual(saved.closeoutPath.map(stage => stage.state), [
+    'complete', 'current', 'waiting', 'not-available', 'not-available', 'not-available', 'waiting',
+  ], 'A saved plan without a current supervisor handoff must not appear ready for technician work.');
   assert.equal(saved.workPlan.id, firstCommit.workPlan.id, 'Idempotent replay must return the original work-plan revision.');
   assert.equal(saved.workPlan.revisionNumber, 1, 'The lost-response retry must not append a second revision.');
   assert.equal(saved.version, firstCommit.version, 'An idempotent replay must not advance the work-order version twice.');
@@ -954,6 +1158,7 @@ try {
 
   await page.reload();
   await page.getByRole('region', { name: 'Current job step' }).getByText('Assign a qualified supervisor.', { exact: true }).waitFor();
+  await followWorkflowStep(page, 'supervisor-handoff-title', 'Supervisor handover');
   await plan.getByText('Latest draft', { exact: false }).waitFor();
   await plan.getByText('Inspect first, then prepare the vehicle for the next qualified technician.', { exact: true }).waitFor();
   const persistedTaskOrder = await plan.locator('ol > li').allTextContents();
@@ -972,6 +1177,9 @@ try {
   assert.equal(afterHandoff.supervisorHandoff.supervisorUserId, runtime.actors.supervisor.id);
   assert.equal(afterHandoff.supervisorHandoff.workPlanRevisionId, saved.workPlan.id);
   assert.equal(afterHandoff.supervisorHandoff.workPlanRevisionNumber, saved.workPlan.revisionNumber);
+  assert.deepEqual(afterHandoff.closeoutPath.map(stage => stage.state), [
+    'complete', 'complete', 'current', 'not-available', 'not-available', 'not-available', 'waiting',
+  ], 'Only the current plan-bound handoff may move the job path to assigned task work.');
   assert((await queueItems(lead, 'supervisor')).every(item => item.id !== fixture.orderId), 'Supervisor handoffs must be scoped to the assigned supervisor.');
   assert((await queueItems(reviewer, 'supervisor')).every(item => item.id !== fixture.orderId), 'Other staff must not see this handoff in their supervisor queue.');
   supervisor = await newContext();
@@ -984,13 +1192,55 @@ try {
   phase = 'supervisor-technician-allocation';
   await supervisorPage.goto(`${webOrigin}${orderPath(fixture.orderId)}`);
   await supervisorPage.getByRole('region', { name: 'Current job step' }).getByText('Assign tasks and record work progress.', { exact: true }).waitFor();
+  await followWorkflowStep(supervisorPage, 'task-allocations-title', 'Task assignment and progress');
+  await supervisorPage.getByRole('region', { name: 'Current job step' }).getByRole('note').getByText('This step cannot sign off technical completion or release the vehicle; those sign-off steps are not configured yet.', { exact: false }).waitFor();
+  const completionPreparation = supervisorPage.getByRole('region', { name: 'Supervisor completion preparation' });
+  await completionPreparation.getByText('Sign-off blocked', { exact: true }).waitFor();
+  await completionPreparation.getByText('No approved, effective instruction package is available for this vehicle and work scope.', { exact: true }).waitFor();
+  await completionPreparation.getByText('This view does not verify current task-execution grants or qualifications. Recorded task notes are not proof of authorized completion.', { exact: true }).waitFor();
+  await completionPreparation.getByText('Supervisor technical completion is not yet enabled. This readiness view does not sign off the work.', { exact: true }).waitFor();
+  const taskReviewLink = completionPreparation.getByRole('link', { name: /^Review task T\d+$/ }).first();
+  await taskReviewLink.waitFor();
+  const taskReviewUrl = new URL(await taskReviewLink.getAttribute('href'), webOrigin);
+  const taskReviewTargetId = taskReviewUrl.hash.slice(1);
+  const taskReviewTarget = supervisorPage.locator(`#${taskReviewTargetId}`);
+  await taskReviewTarget.waitFor();
+  await taskReviewLink.click();
+  await supervisorPage.waitForFunction(targetId => {
+    const target = document.getElementById(targetId);
+    const bounds = target?.getBoundingClientRect();
+    return location.hash === `#${targetId}` && document.activeElement === target
+      && Boolean(bounds && bounds.top >= 0 && bounds.top < innerHeight);
+  }, taskReviewTargetId);
+  check('Supervisor task blocker links focus and scroll to its exact assignment and progress record');
+  assert.equal(await completionPreparation.getByText('Checklist items', { exact: true }).count(), 0,
+    'Checklist definitions are work-order scoped and must not be counted as separate items for every task.');
+  assert.equal(await completionPreparation.getByRole('button').count(), 0,
+    'Readiness is informational and cannot be used as a sign-off command.');
+  check('Supervisor completion preparation reads current task records and keeps sign-off unavailable without effective policy');
+  const closeoutPath = supervisorPage.getByRole('region', { name: 'Job path' });
+  await closeoutPath.getByText('Assigned task work', { exact: true }).waitFor();
+  await closeoutPath.getByText('Plan and Supervisor handover', { exact: true }).waitFor();
+  await closeoutPath.getByText('Supervisor completion check', { exact: true }).waitFor();
+  await closeoutPath.getByText('Team Lead release to collection area', { exact: true }).waitFor();
+  await closeoutPath.getByText('Head of Service Centre inspection', { exact: true }).waitFor();
+  await closeoutPath.getByText('Service Advisor updates the client', { exact: true }).waitFor();
+  assert.equal(await closeoutPath.locator('li[data-state="not-available"] button').count(), 0,
+    'Unavailable sign-off stages must not expose a button.');
+  check('Work-order closeout path follows the current handoff and explains unavailable sign-offs without enabling actions');
+  check('Supervisor job step distinguishes progress from technical completion and release');
   const allocationPath = `${webOrigin}/api/v1/sites/${runtime.siteId}/work-orders/${fixture.orderId}/task-allocations`;
   const beforeAllocation = await responseJson(await supervisor.request.get(allocationPath));
   assert(beforeAllocation.tasks.length > 0, 'The handed-over plan must expose its planned tasks for allocation.');
   assert(beforeAllocation.assignees.some(person => person.staffUserId === runtime.actors.technician.id),
     'The active Technician reporting directly to this Supervisor must be selectable.');
+  const technicianWorkloadBefore = beforeAllocation.assignees.find(person => person.staffUserId === runtime.actors.technician.id)?.currentPlanTaskCount;
+  assert.equal(typeof technicianWorkloadBefore, 'number', 'The Supervisor view must include a scoped count of current handed-over task assignments.');
+  assert(await supervisorPage.getByRole('region', { name: 'Team workload' }).count() === 1,
+    'The Supervisor must see a plain-language workload summary before assigning tasks.');
   const allocatedTask = beforeAllocation.tasks[0];
-  await supervisorPage.getByLabel(`Assigned team member for ${allocatedTask.reference}`, { exact: true })
+  const allocationLabel = `Assigned team member for task 1: ${allocatedTask.reference} — ${allocatedTask.title}`;
+  await supervisorPage.getByLabel(allocationLabel, { exact: true })
     .selectOption(runtime.actors.technician.id);
   await supervisorPage.getByRole('button', { name: 'Save task assignments', exact: true }).click();
   await supervisorPage.getByText('Task assignments saved.', { exact: true }).waitFor();
@@ -998,9 +1248,17 @@ try {
   const committedAssignment = afterAllocation.tasks.find(task => task.taskId === allocatedTask.taskId);
   assert.equal(committedAssignment?.assigneeId, runtime.actors.technician.id,
     'The Supervisor UI assignment must be committed and returned by the real API.');
-  await supervisorPage.getByLabel(`Assigned team member for ${allocatedTask.reference}`, { exact: true }).waitFor();
-  assert.equal(await supervisorPage.getByLabel(`Assigned team member for ${allocatedTask.reference}`, { exact: true }).count(), 1,
-    'The current Supervisor must have an assignment control for each planned task.');
+  const technicianWorkloadAfter = afterAllocation.assignees.find(person => person.staffUserId === runtime.actors.technician.id)?.currentPlanTaskCount;
+  assert.equal(technicianWorkloadAfter, technicianWorkloadBefore + 1,
+    'Current plan workload must reflect the newly committed assignment.');
+   await supervisorPage.getByRole('region', { name: 'Team workload' }).getByText(`${technicianWorkloadAfter} ${technicianWorkloadAfter === 1 ? 'task' : 'tasks'} assigned`, { exact: true }).waitFor();
+  check('Supervisor workload summary updates from current site work-plan assignments without claiming availability');
+  await supervisorPage.getByLabel(allocationLabel, { exact: true }).waitFor();
+  for (const [index, task] of beforeAllocation.tasks.entries()) {
+    const taskLabel = `Assigned team member for task ${index + 1}: ${task.reference} — ${task.title}`;
+    assert.equal(await supervisorPage.getByLabel(taskLabel, { exact: true }).count(), 1,
+      `The current Supervisor must have one uniquely named assignment control for planned task ${index + 1}.`);
+  }
   technician = await newContext('America/Los_Angeles');
   await login(technician, runtime.actors.technician);
   const technicianQueue = await responseJson(await technician.request.get(
@@ -1021,9 +1279,9 @@ try {
     'The read-only Technician queue must not imply execution or sign-off controls.');
   check('Assigned Technician records a task progress update through the page and reads it back from the scoped API');
   const technicianTaskPanel = technicianPage.getByRole('region', { name: `Updates and work history for ${allocatedTask.reference}` });
-  check('Assigned Technician can start, recover and stop a server-timed task session without changing task state');
   const laborSessionPath = `/api/v1/sites/${runtime.siteId}/my-task-labor-session`;
   const laborStartActionPath = `/api/v1/sites/${runtime.siteId}/my-tasks/${fixture.orderId}/${allocatedTask.taskId}/labor/start`;
+  const laborStopActionPath = sessionId => `/api/v1/sites/${runtime.siteId}/my-task-labor-sessions/${sessionId}/stop`;
   const laborSessionBefore = await responseJson(await technician.request.get(`${webOrigin}${laborSessionPath}`));
   assert.equal(laborSessionBefore.session, null);
   const workOrderVersionBeforeLabor = await responseJson(await technician.request.get(`${webOrigin}/api/v1${orderPath(fixture.orderId)}`));
@@ -1041,21 +1299,40 @@ try {
   await technicianPage.reload();
   await technicianPage.getByRole('heading', { name: 'My assigned tasks', exact: true }).waitFor();
   await technicianPage.getByRole('button', { name: 'Stop time', exact: true }).waitFor();
+  await technicianPage.waitForFunction(() => [...document.querySelectorAll('button')]
+    .some(button => button.textContent?.trim() === 'Stop time' && !button.disabled));
   const recoveredLabor = await responseJson(await technician.request.get(`${webOrigin}${laborSessionPath}`));
   assert.equal(recoveredLabor.session.id, activeLabor.session.id, 'An active timer must survive page reload.');
   const stopTimeButton = technicianPage.getByRole('button', { name: 'Stop time', exact: true });
-  await stopTimeButton.focus();
-  await stopTimeButton.press('Enter');
-  await technicianPage.waitForFunction(async (path) => {
-    const response = await fetch(path, { credentials: 'same-origin', cache: 'no-store' });
-    if (!response.ok) return false;
-    const body = await response.json();
-    return body.session === null;
-  }, laborSessionPath);
+  const stopTraffic = [];
+  const recordStopTraffic = request => {
+    if (request.method() === 'POST') stopTraffic.push({ url: request.url(), method: request.method() });
+  };
+  technicianPage.on('request', recordStopTraffic);
+  const stopResponsePromise = technicianPage.waitForResponse(response => response.request().method() === 'POST'
+    && new URL(response.url()).pathname === laborStopActionPath(activeLabor.session.id));
+  await stopTimeButton.click();
+  const stopResponse = await stopResponsePromise.catch(async error => {
+    const button = await stopTimeButton.evaluate(element => ({
+      disabled: element.disabled,
+      text: element.textContent?.trim(),
+      focused: document.activeElement === element,
+    })).catch(() => null);
+    const pageText = await technicianPage.locator('main').innerText().catch(() => 'Main content unavailable.');
+    throw new Error(`${error.message}; stopTraffic=${JSON.stringify(stopTraffic)}; button=${JSON.stringify(button)}; main=${pageText.slice(0, 1200)}`, { cause: error });
+  });
+  technicianPage.off('request', recordStopTraffic);
+  const stoppedSession = await responseJson(stopResponse);
+  assert.equal(stoppedSession.stoppedAt == null, false, 'The stop command response must include its server-recorded stop time.');
   const stoppedLabor = await responseJson(await technician.request.get(`${webOrigin}${laborSessionPath}`));
   assert.equal(stoppedLabor.session, null);
   const versionAfterLabor = await responseJson(await technician.request.get(`${webOrigin}/api/v1${orderPath(fixture.orderId)}`));
   assert.equal(versionAfterLabor.version, workOrderVersionBeforeLabor.version, 'Stopping time must not complete or sign off the task.');
+  check('Assigned Technician can start, recover and stop a server-timed task session without changing task state', {
+    sessionId: activeLabor.session.id,
+    stoppedAt: stoppedSession.stoppedAt,
+    workOrderVersion: versionAfterLabor.version,
+  });
   await technicianPage.waitForFunction(() => Array.from(document.querySelectorAll('button'))
     .some(button => button.textContent?.trim() === 'Record time' && !button.disabled));
   const staleLaborMessage = 'This assignment changed. Refresh your task list before starting time.';
@@ -1075,16 +1352,51 @@ try {
   const laborLayouts = [];
   for (const width of [280, 320, 390, 768, 1024, 1440]) {
     await technicianPage.setViewportSize({ width, height: 900 });
+    await technicianPage.waitForFunction(() =>
+      document.documentElement.dataset.vmmsCompactViewport === (window.innerWidth <= 640 ? 'true' : 'false'));
+    await technicianPage.evaluate(() => new Promise(resolve => requestAnimationFrame(() => resolve())));
     const dimensions = await technicianPage.evaluate(() => ({
       width: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
       mainWidth: document.querySelector('main')?.scrollWidth ?? 0,
+      body: {
+        clientWidth: document.body.clientWidth,
+        scrollWidth: document.body.scrollWidth,
+        right: Math.round(document.body.getBoundingClientRect().right * 100) / 100,
+      },
+      shell: (() => {
+        const shell = document.getElementById('workspace-shell');
+        const rect = shell?.getBoundingClientRect();
+        return { clientWidth: shell?.clientWidth ?? 0, scrollWidth: shell?.scrollWidth ?? 0, right: rect ? Math.round(rect.right * 100) / 100 : null };
+      })(),
+      scrollableElements: [...document.querySelectorAll('body *')]
+        .filter(element => element.scrollWidth > element.clientWidth + 1)
+        .map(element => ({
+          tag: element.tagName.toLowerCase(),
+          id: element.id || null,
+          className: typeof element.className === 'string' ? element.className : null,
+          clientWidth: element.clientWidth,
+          scrollWidth: element.scrollWidth,
+          overflowX: getComputedStyle(element).overflowX,
+        }))
+        .slice(0, 12),
+      overflowingElements: [...document.querySelectorAll('body *')]
+        .map(element => ({
+          tag: element.tagName.toLowerCase(),
+          id: element.id || null,
+          className: typeof element.className === 'string' ? element.className : null,
+          right: Math.round(element.getBoundingClientRect().right * 100) / 100,
+          width: Math.round(element.getBoundingClientRect().width * 100) / 100,
+        }))
+        .filter(element => element.right > window.innerWidth + 0.5)
+        .sort((left, right) => right.right - left.right)
+        .slice(0, 8),
     }));
     assert(dimensions.scrollWidth <= dimensions.width,
       `Task time controls overflow at ${width}px: ${JSON.stringify(dimensions)}`);
     laborLayouts.push({ viewportWidth: width, ...dimensions });
   }
-  check('Task time controls start and stop by keyboard, announce stale errors, pass automated WCAG checks and fit phone, foldable, tablet and desktop widths');
+  check('Task time controls start with the keyboard and stop the session, announce stale errors, pass automated WCAG checks and fit phone, foldable, tablet and desktop widths');
   if (!process.argv.includes('--labor-only')) {
   await technicianTaskPanel.getByRole('button', { name: 'Update task', exact: true }).click();
   await technicianPage.getByLabel('Note', { exact: true }).fill('Synthetic verification: waiting for supervisor guidance.');
@@ -1096,6 +1408,43 @@ try {
   assert.equal(taskActivity.items.at(-1)?.entryType, 'progress');
   assert.equal(taskActivity.items.at(-1)?.progressState, 'working');
   assert.equal(taskActivity.items.at(-1)?.note, 'Synthetic verification: waiting for supervisor guidance.');
+   const progressUpdatePath = `/sites/${runtime.siteId}/my-tasks/${fixture.orderId}/${allocatedTask.taskId}/activity`;
+   const blockedProgress = await mutate(technician, progressUpdatePath, {
+     expectedWorkPlanRevisionId: queuedAssignment.workPlanRevisionId,
+     expectedAssignmentRevision: queuedAssignment.assignmentRevision,
+     entryType: 'progress', progressState: 'blocked', requestType: null,
+     note: 'Synthetic verification: blocked pending an approved source procedure.',
+   });
+   assert.equal(blockedProgress.status(), 200, await blockedProgress.text());
+   const blockedSummary = await responseJson(await supervisor.request.get(allocationPath));
+   const blockedTechnician = blockedSummary.assignees.find(person => person.staffUserId === runtime.actors.technician.id);
+   assert.equal(blockedTechnician?.lastReportedBlockedTaskCount, 1);
+   assert.equal(blockedTechnician?.lastReportedWaitingTaskCount, 0);
+   const waitingProgress = await mutate(technician, progressUpdatePath, {
+     expectedWorkPlanRevisionId: queuedAssignment.workPlanRevisionId,
+     expectedAssignmentRevision: queuedAssignment.assignmentRevision,
+     entryType: 'progress', progressState: 'waiting', requestType: null,
+     note: 'Synthetic verification: waiting for the supervisor response.',
+   });
+   assert.equal(waitingProgress.status(), 200, await waitingProgress.text());
+   const waitingSummary = await responseJson(await supervisor.request.get(allocationPath));
+   const waitingTechnician = waitingSummary.assignees.find(person => person.staffUserId === runtime.actors.technician.id);
+   assert.equal(waitingTechnician?.lastReportedBlockedTaskCount, 0);
+   assert.equal(waitingTechnician?.lastReportedWaitingTaskCount, 1,
+     'Only the latest progress state for the current assignment is included in the WIP summary.');
+   await supervisorPage.reload();
+   await supervisorPage.getByRole('region', { name: 'Team workload' }).getByText('Last reported: 0 blocked · 1 waiting', { exact: true }).waitFor();
+   check('Supervisor workload summary reflects only the latest blocked or waiting progress reported on each current assignment');
+  await technicianTaskPanel.getByLabel('Update type', { exact: true }).selectOption('request');
+  await technicianTaskPanel.getByLabel('What do you need?', { exact: true }).selectOption('supervisor-review');
+  await technicianTaskPanel.getByLabel('Describe your request', { exact: true }).fill('Synthetic verification: please review the recorded task work.');
+  await technicianTaskPanel.getByRole('button', { name: 'Save update', exact: true }).click();
+  await technicianPage.getByText('Task update saved.', { exact: true }).waitFor();
+  const requestedActivity = await responseJson(await technician.request.get(`${webOrigin}${activityPath}`));
+  const reviewRequest = requestedActivity.items.find(item => item.requestType === 'supervisor-review');
+  assert(reviewRequest);
+  assert.equal(reviewRequest.entryType, 'request');
+  assert.equal(reviewRequest.note, 'Synthetic verification: please review the recorded task work.');
   const versionBeforeTaskUpload = (await responseJson(await technician.request.get(`${webOrigin}/api/v1${orderPath(fixture.orderId)}`))).version;
   await technicianTaskPanel.getByRole('button', { name: 'Record work', exact: true }).click();
   const taskEvidenceIntentPath = `/sites/${runtime.siteId}/my-tasks/${fixture.orderId}/${allocatedTask.taskId}/evidence/intents`;
@@ -1159,7 +1508,7 @@ try {
     `/sites/${runtime.siteId}/my-tasks/${fixture.orderId}/${allocatedTask.taskId}/work-entries`, {
       expectedWorkPlanRevisionId: queuedAssignment.workPlanRevisionId,
       expectedAssignmentRevision: queuedAssignment.assignmentRevision,
-      kind: 'action', result: 'done', summary: 'Pending evidence must not attach',
+      kind: 'finding', result: 'observed', summary: 'Pending evidence must not attach',
       detail: 'Synthetic negative case before the scanner completes.', observedAt: null,
       evidenceIds: [taskEvidenceId], supersedesEntryId: null, correctionReason: null,
     });
@@ -1185,11 +1534,14 @@ try {
   assert.equal(readyTaskEvidence?.displayName, taskEvidenceName);
   assert.equal(readyTaskEvidence?.state, 'ready');
   await technicianTaskPanel.getByLabel(`Attach ${taskEvidenceName}`, { exact: true }).check();
-  await technicianTaskPanel.getByLabel('Record type', { exact: true }).selectOption('test');
-  assert.equal(await technicianTaskPanel.getByLabel('Result', { exact: true }).inputValue(), 'inconclusive',
-    'A new test must not default to a claim that the concern was reproduced.');
-  await technicianTaskPanel.getByLabel('Record type', { exact: true }).selectOption('action');
-  await technicianTaskPanel.getByLabel('Short summary', { exact: true }).fill('Synthetic verified-report work entry');
+  const workRecordType = technicianTaskPanel.getByLabel('Record type', { exact: true });
+  assert.equal(await workRecordType.locator('option[value="test"]').isDisabled(), true,
+    'A diagnostic test must stay unavailable without effective technical authority.');
+  assert.equal(await workRecordType.locator('option[value="action"]').isDisabled(), true,
+    'A repair action must stay unavailable without effective technical authority.');
+  await workRecordType.selectOption('finding');
+  assert.equal(await technicianTaskPanel.getByLabel('Result', { exact: true }).inputValue(), 'observed');
+  await technicianTaskPanel.getByLabel('Short summary', { exact: true }).fill('Synthetic reported finding for the service report');
   await technicianTaskPanel.getByLabel('What happened?', { exact: true }).fill('Synthetic detail for the populated service-report PDF check.');
   await technicianTaskPanel.getByLabel('When did it happen? Optional').fill('2026-12-01T14:00');
   await technicianTaskPanel.getByRole('button', { name: 'Save work entry', exact: true }).click();
@@ -1197,41 +1549,69 @@ try {
   const workEntriesPath = `/api/v1/sites/${runtime.siteId}/my-tasks/${fixture.orderId}/${allocatedTask.taskId}/work-entries?page=1&pageSize=25`;
   const workEntries = await responseJson(await technician.request.get(`${webOrigin}${workEntriesPath}`));
   assert.equal(workEntries.pagination.totalItems, 1);
-  assert.equal(workEntries.items[0].summary, 'Synthetic verified-report work entry');
+  assert.equal(workEntries.items[0].summary, 'Synthetic reported finding for the service report');
   assert.equal(workEntries.items[0].observedAt, '2026-12-01T14:00:00.000Z',
     'A 2 pm service-centre entry must not be shifted by the Technician browser timezone.');
   assert.deepEqual(workEntries.items[0].evidenceIds, [taskEvidenceId]);
   const originalWorkEntryId = workEntries.items[0].id;
   await technicianTaskPanel.getByRole('button', { name: 'Correct entry', exact: true }).click();
   await technicianTaskPanel.getByRole('heading', { name: 'Correcting a recorded entry', exact: true }).waitFor();
-  assert.equal(await technicianTaskPanel.getByLabel('Short summary', { exact: true }).inputValue(), 'Synthetic verified-report work entry');
+  assert.equal(await technicianTaskPanel.getByLabel('Short summary', { exact: true }).inputValue(), 'Synthetic reported finding for the service report');
   assert.equal(await technicianTaskPanel.getByLabel('What happened?', { exact: true }).inputValue(), 'Synthetic detail for the populated service-report PDF check.');
   assert.equal(await technicianTaskPanel.getByLabel('When did it happen? Optional').inputValue(), '2026-12-01T14:00',
     'Correction form must render the original instant in service-centre time.');
-  await technicianTaskPanel.getByLabel('Short summary', { exact: true }).fill('Synthetic corrected-report work entry');
+  await technicianTaskPanel.getByLabel('Short summary', { exact: true }).fill('Synthetic corrected finding for the service report');
   await technicianTaskPanel.getByLabel('What happened?', { exact: true }).fill('Corrected synthetic report detail after review.');
   await technicianTaskPanel.getByLabel('Why is a correction needed?', { exact: true }).fill('The original summary needed clarification.');
+  const correctionTraffic = [];
+  const recordCorrectionRequest = request => {
+    if (request.url().includes('/work-entries')) correctionTraffic.push({ event: 'request', method: request.method(), url: request.url() });
+  };
+  const recordCorrectionResponse = response => {
+    if (response.url().includes('/work-entries')) correctionTraffic.push({ event: 'response', status: response.status(), url: response.url() });
+  };
+  technicianPage.on('request', recordCorrectionRequest);
+  technicianPage.on('response', recordCorrectionResponse);
   const correctionResponsePromise = technicianPage.waitForResponse(response =>
-    response.request().method() === 'POST' && response.url().includes('/work-entries'));
+    response.request().method() === 'POST' && response.url().includes('/work-entries'), { timeout: 30_000 });
   await technicianTaskPanel.getByRole('button', { name: 'Save correction', exact: true }).click();
-  const correctionResponse = await correctionResponsePromise;
+  const correctionResponse = await correctionResponsePromise.catch(async error => {
+    const panelText = await technicianTaskPanel.innerText().catch(() => 'Task panel text unavailable.');
+    throw new Error(`${error.message}; correctionTraffic=${JSON.stringify(correctionTraffic)}; panel=${panelText.slice(0, 1800)}`, { cause: error });
+  });
+  technicianPage.off('request', recordCorrectionRequest);
+  technicianPage.off('response', recordCorrectionResponse);
   assert.equal(correctionResponse.status(), 200, await correctionResponse.text());
   await technicianTaskPanel.getByText('Correction saved. The earlier entry remains in history.', { exact: true }).waitFor();
   const correctedWorkEntries = await responseJson(await technician.request.get(`${webOrigin}${workEntriesPath}`));
   assert.equal(correctedWorkEntries.pagination.totalItems, 2);
-  assert(correctedWorkEntries.items.some(entry => entry.id === originalWorkEntryId && entry.summary === 'Synthetic verified-report work entry'),
+  assert(correctedWorkEntries.items.some(entry => entry.id === originalWorkEntryId && entry.summary === 'Synthetic reported finding for the service report'),
     'The original work entry must stay in the immutable history.');
   const correctionEntry = correctedWorkEntries.items.find(entry => entry.supersedesEntryId === originalWorkEntryId);
   assert(correctionEntry);
-  assert.equal(correctionEntry.summary, 'Synthetic corrected-report work entry');
+  assert.equal(correctionEntry.summary, 'Synthetic corrected finding for the service report');
   assert.equal(correctionEntry.correctionReason, 'The original summary needed clarification.');
   assert.deepEqual(correctionEntry.evidenceIds, [taskEvidenceId], 'The correction must preserve the selected task evidence.');
+  await technicianTaskPanel.getByRole('button', { name: 'Send work for review', exact: true }).click();
+  await technicianTaskPanel.getByLabel('Actions recorded', { exact: true }).fill('No diagnostic or repair action was authorized; an observation was recorded.');
+  await technicianTaskPanel.getByLabel('Checks and results', { exact: true }).fill('No test was run. The reported observation and its correction are documented.');
+  await technicianTaskPanel.getByLabel('Your reported outcome', { exact: true }).selectOption('reported-incomplete');
+  await technicianTaskPanel.getByLabel('Remaining work or concerns', { exact: true }).fill('Supervisor review and any procedure-required follow-up remain.');
+  await technicianTaskPanel.getByRole('button', { name: 'Send report for Supervisor review', exact: true }).click();
+  await technicianTaskPanel.getByText('Work report sent to the Supervisor for review. The task is not signed off.', { exact: true }).waitFor();
+  const declaredActivity = await responseJson(await technician.request.get(`${webOrigin}${activityPath}`));
+  const declaration = declaredActivity.items.find(item => item.completionDeclaration !== null);
+  assert(declaration);
+  assert.equal(declaration.completionDeclaration.outcome, 'reported-incomplete');
+  assert.deepEqual(declaration.declarationWorkEntryIds, [originalWorkEntryId, correctionEntry.id]);
+  await technicianTaskPanel.getByText('Bound to 2 work entries from this assignment. This report is not sign-off.', { exact: true }).waitFor();
+  check('Assigned Technician sends a structured, immutable work declaration linked to current task entries without signing off completion');
   for (let index = 1; index <= 99; index += 1) {
     const response = await mutate(technician, `/sites/${runtime.siteId}/my-tasks/${fixture.orderId}/${allocatedTask.taskId}/work-entries`, {
       expectedWorkPlanRevisionId: saved.workPlan.id,
       expectedAssignmentRevision: queuedAssignment.assignmentRevision,
-      kind: 'action', result: 'done',
-      summary: `Synthetic report page entry ${String(index).padStart(2, '0')}`,
+      kind: 'finding', result: 'observed',
+      summary: `Synthetic reported finding ${String(index).padStart(2, '0')}`,
       detail: 'Synthetic content used only by the disposable report pagination browser check.',
       observedAt: null, evidenceIds: [], supersedesEntryId: null, correctionReason: null,
     });
@@ -1242,11 +1622,132 @@ try {
   assert.equal(deniedActivity.status(), 403, 'A staff role without Technician, Engineer or Trainee access cannot read a task activity stream.');
   const supervisorActivityPath = `${webOrigin}/api/v1/sites/${runtime.siteId}/work-orders/${fixture.orderId}/task-activity?page=1&pageSize=25`;
   const supervisorActivity = await responseJson(await supervisor.request.get(supervisorActivityPath));
-  assert.equal(supervisorActivity.items.length, 1);
-  assert.equal(supervisorActivity.items[0].note, 'Synthetic verification: waiting for supervisor guidance.');
+  const supervisorReviewRequest = supervisorActivity.items.find(item => item.requestType === 'supervisor-review' && item.completionDeclaration === null);
+  assert(supervisorReviewRequest);
+  assert.equal(supervisorReviewRequest.entryType, 'request');
+  assert.equal(supervisorReviewRequest.note, 'Synthetic verification: please review the recorded task work.');
+  const supervisorDeclaration = supervisorActivity.items.find(item => item.completionDeclaration !== null);
+  assert(supervisorDeclaration);
+  assert.equal(supervisorDeclaration.completionDeclaration.actionsSummary, 'No diagnostic or repair action was authorized; an observation was recorded.');
+  assert.deepEqual(supervisorDeclaration.declarationWorkEntryIds, [originalWorkEntryId, correctionEntry.id]);
+  assert.equal(supervisorActivity.canRespond, true);
+  assert.equal(supervisorReviewRequest.hasSupervisorResponse, false);
+  const supervisorTodayQueue = await responseJson(await supervisor.request.get(
+    `${webOrigin}/api/v1/sites/${runtime.siteId}/task-review-requests?page=1&pageSize=5`,
+  ));
+  assert.equal(supervisorTodayQueue.pagination.totalItems, 2);
+  const pendingTodayRequest = supervisorTodayQueue.items.find(item => item.note === 'Synthetic verification: please review the recorded task work.');
+  assert(pendingTodayRequest);
+  const supervisorTodayPage = await supervisor.newPage();
+  await supervisorTodayPage.goto(`${webOrigin}/sites/${runtime.siteId}/today`);
+  await supervisorTodayPage.getByRole('heading', { name: 'Technician reviews to answer', exact: true }).waitFor();
+  try {
+    await supervisorTodayPage.getByText('Synthetic verification: please review the recorded task work.', { exact: true }).waitFor();
+  } catch (error) {
+    const state = await supervisorTodayPage.evaluate(() => ({ url: location.pathname, text: document.querySelector('#workspace-main')?.innerText.slice(0, 5000) }));
+    if (error instanceof Error) error.message += `\nSupervisor Today state: ${JSON.stringify(state)}`;
+    throw error;
+  }
+  await assertTaskReviewQueueResponsive(supervisorTodayPage);
+  const todayReviewLink = supervisorTodayPage.getByRole('link', {
+    name: `${pendingTodayRequest.bookingReference} · ${pendingTodayRequest.taskReference} · Open job`, exact: true,
+  }).first();
+  assert.equal(await todayReviewLink.getAttribute('href'), `/sites/${runtime.siteId}/work-orders/${fixture.orderId}`);
+  await todayReviewLink.click();
+  await supervisorTodayPage.getByRole('heading', { name: 'Task updates from the team', exact: true }).waitFor();
+  check('Supervisor Today inbox shows the current unanswered request and links to its work order');
   await supervisorPage.reload();
   await supervisorPage.getByRole('heading', { name: 'Task updates from the team', exact: true }).waitFor();
   await supervisorPage.getByText('Synthetic verification: waiting for supervisor guidance.', { exact: true }).waitFor();
+  const reviewReplyNote = 'Please add the measurement from the approved procedure and ask for another review.';
+  const supervisorActivityList = supervisorPage.getByRole('list', { name: 'Team task update history', exact: true });
+  const reviewRequestItem = supervisorActivityList.getByRole('listitem').filter({ hasText: supervisorReviewRequest.note });
+  const reviewReplyInput = reviewRequestItem.getByLabel('Reply to this review request', { exact: true });
+  assert.equal(await reviewReplyInput.count(), 1, `Review response control missing: ${JSON.stringify({ activityItem: supervisorReviewRequest, pageText: (await supervisorPage.locator('body').innerText()).slice(-5000), textareas: await supervisorPage.locator('textarea').evaluateAll(nodes => nodes.map(node => ({ id: node.id, label: node.labels?.[0]?.textContent, visible: node.getBoundingClientRect().width > 0 }))), activity: await supervisorPage.locator('body').evaluate(node => [...node.querySelectorAll('li')].map(item => item.innerText)) })}`);
+  await reviewReplyInput.fill(reviewReplyNote);
+  const reviewReplyResponse = supervisorPage.waitForResponse(response => response.request().method() === 'POST'
+    && new URL(response.url()).pathname.endsWith('/reply'));
+  await reviewRequestItem.getByRole('button', { name: 'Send response', exact: true }).click();
+  assert.equal((await reviewReplyResponse).status(), 200);
+  await supervisorPage.getByText('Response recorded. It does not sign off or complete work.', { exact: true }).waitFor();
+  await supervisorPage.getByText('Supervisor response', { exact: true }).waitFor();
+  const repliedActivity = await responseJson(await supervisor.request.get(supervisorActivityPath));
+  assert.equal(repliedActivity.items.find(item => item.id === supervisorReviewRequest.id)?.hasSupervisorResponse, true);
+  assert.equal(repliedActivity.items.find(item => item.entryType === 'review-response')?.note, reviewReplyNote);
+  check('Supervisor answers a current review request with an attributed response that remains separate from completion');
+  const declarationReplyNote = 'The work declaration is recorded. Keep technical completion pending until every required check is reviewed.';
+  const declarationRequestItem = supervisorActivityList.getByRole('listitem').filter({ hasText: supervisorDeclaration.note });
+  const declarationReplyInput = declarationRequestItem.getByLabel('Reply to this review request', { exact: true });
+  assert.equal(await declarationReplyInput.count(), 1, 'The structured work declaration must retain its own Supervisor review response.');
+  await declarationReplyInput.fill(declarationReplyNote);
+  const declarationReplyResponse = supervisorPage.waitForResponse(response => response.request().method() === 'POST'
+    && new URL(response.url()).pathname.endsWith('/reply'));
+  await declarationRequestItem.getByRole('button', { name: 'Send response', exact: true }).click();
+  assert.equal((await declarationReplyResponse).status(), 200);
+  const declarationRepliedActivity = await responseJson(await supervisor.request.get(supervisorActivityPath));
+  assert.equal(declarationRepliedActivity.items.find(item => item.id === supervisorDeclaration.id)?.hasSupervisorResponse, true);
+  assert.equal(declarationRepliedActivity.items.find(item => item.entryType === 'review-response')?.note, declarationReplyNote);
+  check('Supervisor reviews the structured work declaration separately while keeping task completion and vehicle release unsigned');
+  await supervisorTodayPage.goto(`${webOrigin}/sites/${runtime.siteId}/today`);
+  await supervisorTodayPage.getByText('No Technician review requests are waiting for a response.', { exact: true }).waitFor();
+  check('Answered requests leave the Supervisor Today inbox');
+  const mockQueuePath = `/api/v1/sites/${runtime.siteId}/task-review-requests`;
+  const mockedRequest = (index) => ({
+    activityId: randomUUID(), workOrderId: fixture.orderId, bookingReference: `EV-SR-${String(index).padStart(5, '0')}`,
+    vehicleLabel: 'Synthetic BYD Sealion', registration: null, taskId: allocatedTask.taskId,
+    taskReference: `T${String(index).padStart(2, '0')}`, taskTitle: `Synthetic review task ${index}`,
+    technicianName: 'Synthetic browser-technician', requesterName: 'Synthetic browser-technician',
+    note: `Synthetic paginated review request ${index}`, createdAt: new Date().toISOString(),
+  });
+  const paginatedReviewPage = await supervisor.newPage();
+  let releaseFirstReviewPage;
+  let firstReviewPageRequestStarted;
+  const firstReviewPageStarted = new Promise(resolve => { firstReviewPageRequestStarted = resolve; });
+  const firstReviewPageReleased = new Promise(resolve => { releaseFirstReviewPage = resolve; });
+  await paginatedReviewPage.route(url => url.pathname === mockQueuePath, async route => {
+    const requestedPage = Number(new URL(route.request().url()).searchParams.get('page') ?? '1');
+    const items = requestedPage === 1 ? [1, 2, 3, 4, 5].map(mockedRequest) : [mockedRequest(6)];
+    if (requestedPage === 1) {
+      firstReviewPageRequestStarted();
+      await firstReviewPageReleased;
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+      items, pagination: { page: requestedPage, pageSize: 5, totalItems: 6, totalPages: 2 },
+    }) });
+  });
+  await paginatedReviewPage.goto(`${webOrigin}/sites/${runtime.siteId}/today`, { waitUntil: 'domcontentloaded' });
+  await firstReviewPageStarted;
+  await paginatedReviewPage.getByText('Loading Technician review requests', { exact: false }).waitFor();
+  releaseFirstReviewPage();
+  await paginatedReviewPage.getByText('Synthetic paginated review request 1', { exact: true }).waitFor();
+  assert.equal(await paginatedReviewPage.getByText('Synthetic paginated review request 6', { exact: true }).count(), 0);
+  await paginatedReviewPage.getByRole('button', { name: 'Next', exact: true }).click();
+  await paginatedReviewPage.getByText('Page 2 of 2 · 6 waiting', { exact: true }).waitFor();
+  await paginatedReviewPage.getByText('Synthetic paginated review request 6', { exact: true }).waitFor();
+  assert.equal(await paginatedReviewPage.getByText('Synthetic paginated review request 1', { exact: true }).count(), 0);
+  await paginatedReviewPage.getByRole('button', { name: 'Previous', exact: true }).click();
+  await paginatedReviewPage.getByText('Page 1 of 2 · 6 waiting', { exact: true }).waitFor();
+  check('Today review inbox shows loading and paginates requests forward and back');
+  const failedReviewPage = await supervisor.newPage();
+  let failedQueueAttempts = 0;
+  await failedReviewPage.route(url => url.pathname === mockQueuePath, async route => {
+    failedQueueAttempts += 1;
+    if (failedQueueAttempts === 1) {
+      await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({
+        error: { code: 'SERVICE_UNAVAILABLE', message: 'Synthetic temporary outage.' },
+      }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+      items: [], pagination: { page: 1, pageSize: 5, totalItems: 0, totalPages: 0 },
+    }) });
+  });
+  await failedReviewPage.goto(`${webOrigin}/sites/${runtime.siteId}/today`);
+  await failedReviewPage.getByRole('button', { name: 'Try again', exact: true }).waitFor();
+  await failedReviewPage.getByRole('button', { name: 'Try again', exact: true }).click();
+  await failedReviewPage.getByText('No Technician review requests are waiting for a response.', { exact: true }).waitFor();
+  assert.equal(failedQueueAttempts, 2);
+  check('Today review inbox shows a recoverable failure and clears after retry');
   const teamLeadUpdatesPage = await lead.newPage();
   await teamLeadUpdatesPage.goto(`${webOrigin}${orderPath(fixture.orderId)}`);
   await teamLeadUpdatesPage.getByRole('heading', { name: 'Tasks in the current work plan', exact: true }).waitFor();
@@ -1277,13 +1778,13 @@ try {
     'Print must remain unavailable until all pages are validated.');
   releaseSecondReportPage();
   await populatedServiceReportPage.getByRole('heading', { level: 1, name: 'Workshop service report', exact: true }).waitFor();
-  await populatedServiceReportPage.getByText('Synthetic corrected-report work entry', { exact: true }).waitFor();
+  await populatedServiceReportPage.getByText('Synthetic corrected finding for the service report', { exact: true }).waitFor();
   await populatedServiceReportPage.getByText('Corrected synthetic report detail after review.', { exact: true }).waitFor();
-  await populatedServiceReportPage.getByText('Synthetic report page entry 99', { exact: true }).waitFor();
+  await populatedServiceReportPage.getByText('Synthetic reported finding 99', { exact: true }).waitFor();
   const reportData = await responseJson(await lead.request.get(
     `${webOrigin}/api/v1/sites/${runtime.siteId}/work-orders/${fixture.orderId}/service-report?page=1`,
   ));
-  const reportEntryWithEvidence = reportData.entries.find(entry => entry.summary === 'Synthetic verified-report work entry');
+  const reportEntryWithEvidence = reportData.entries.find(entry => entry.summary === 'Synthetic reported finding for the service report');
   assert.deepEqual(reportEntryWithEvidence?.evidence, [{
     evidenceId: taskEvidenceId,
     displayName: taskEvidenceName,
@@ -1292,6 +1793,9 @@ try {
   assert(!JSON.stringify(reportData).includes('objectKey'), 'Service report JSON must not expose storage keys.');
   for (const width of [320, 390, 768, 1440]) {
     await populatedServiceReportPage.setViewportSize({ width, height: 1000 });
+    await populatedServiceReportPage.waitForFunction(() =>
+      document.documentElement.dataset.vmmsCompactViewport === (window.innerWidth <= 640 ? 'true' : 'false'));
+    await populatedServiceReportPage.evaluate(() => new Promise(resolve => requestAnimationFrame(() => resolve())));
     const dimensions = await populatedServiceReportPage.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
@@ -1307,7 +1811,7 @@ try {
     const extracted = spawnSync('pdftotext', ['-layout', serviceReportPdf, '-'], { encoding: 'utf8', windowsHide: true });
     assert.equal(extracted.error, undefined, `Install Poppler's pdftotext to verify populated service-report text: ${extracted.error?.message ?? ''}`);
     assert.equal(extracted.status, 0, extracted.stderr);
-    for (const expected of ['Workshop service report', 'Synthetic verified-report work entry', 'Synthetic corrected-report work entry', reportEvidenceName, 'Synthetic report page entry 01', 'Synthetic report page entry 99', 'Corrected synthetic report detail after review.', 'The original summary needed clarification.', 'Recorded by Synthetic ' + runtime.actors.technician.username, 'Not a work authorization']) {
+    for (const expected of ['Workshop service report', 'Synthetic reported finding for the service report', 'Synthetic corrected finding for the service report', reportEvidenceName, 'Synthetic reported finding 01', 'Synthetic reported finding 99', 'Corrected synthetic report detail after review.', 'The original summary needed clarification.', 'Recorded by Synthetic ' + runtime.actors.technician.username, 'Not a work authorization']) {
       assert(extracted.stdout.includes(expected), `Populated service-report PDF is missing ${JSON.stringify(expected)}.`);
     }
     assert(!extracted.stdout.includes('Primary navigation'), 'Workspace navigation must not be included in the service-report PDF.');
@@ -1342,6 +1846,9 @@ try {
   const reportWidths = [];
   for (const width of [320, 390, 768, 1024, 1440]) {
     await teamLeadUpdatesPage.setViewportSize({ width, height: 900 });
+    await teamLeadUpdatesPage.waitForFunction(() =>
+      document.documentElement.dataset.vmmsCompactViewport === (window.innerWidth <= 640 ? 'true' : 'false'));
+    await teamLeadUpdatesPage.evaluate(() => new Promise(resolve => requestAnimationFrame(() => resolve())));
     const dimensions = await teamLeadUpdatesPage.evaluate(() => ({ width: document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth }));
     assert(dimensions.scrollWidth <= dimensions.width, `Progress report overflows at ${width}px: ${JSON.stringify(dimensions)}`);
     reportWidths.push({ viewportWidth: width, ...dimensions });
@@ -1420,10 +1927,24 @@ try {
   const assignedTaskLayouts = [];
   for (const width of [320, 390, 768, 1024, 1440]) {
     await technicianPage.setViewportSize({ width, height: 900 });
+    await technicianPage.waitForFunction(() =>
+      document.documentElement.dataset.vmmsCompactViewport === (window.innerWidth <= 640 ? 'true' : 'false'));
+    await technicianPage.evaluate(() => new Promise(resolve => requestAnimationFrame(() => resolve())));
     const dimensions = await technicianPage.evaluate(() => ({
       width: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
       contentWidth: document.querySelector('main')?.scrollWidth ?? 0,
+      overflowingElements: [...document.querySelectorAll('body *')]
+        .map(element => ({
+          tag: element.tagName.toLowerCase(),
+          id: element.id || null,
+          className: typeof element.className === 'string' ? element.className : null,
+          right: Math.round(element.getBoundingClientRect().right * 100) / 100,
+          width: Math.round(element.getBoundingClientRect().width * 100) / 100,
+        }))
+        .filter(element => element.right > window.innerWidth + 0.5)
+        .sort((left, right) => right.right - left.right)
+        .slice(0, 8),
     }));
     assert(dimensions.scrollWidth <= dimensions.width,
       `Assigned-task page overflows at ${width}px: ${JSON.stringify(dimensions)}`);
@@ -1478,6 +1999,103 @@ try {
   await peerPage.getByText('Task updates are available to the current Supervisor, assigned Team Lead and Head of Service Centre after the current work has been handed over.', { exact: true }).waitFor();
   check('An unassigned same-site Team Lead cannot open the task-progress report directly');
 
+  phase = 'linked-customer-update-history';
+  const serviceRequestResponse = await mutate(reviewer, `/sites/${runtime.siteId}/service-requests`, {
+    sourceChannel: 'phone',
+    concern: 'Synthetic callback request linked to the current job.',
+    reportedContactName: 'Synthetic Customer Contact',
+    reportedContactRelationship: 'client-contact',
+    reportedVehicle: 'Synthetic EV',
+    reportedClient: 'Synthetic Paying Client',
+  });
+  const serviceRequest = await responseJson(serviceRequestResponse);
+  const linkedRequest = await mutate(reviewer, `/sites/${runtime.siteId}/service-requests/${serviceRequest.id}/link-job`, {
+    expectedVersion: serviceRequest.version,
+    workOrderId: fixture.orderId,
+    reason: 'This call concerns the active workshop visit.',
+  });
+  assert.equal((await responseJson(linkedRequest)).version, serviceRequest.version + 1);
+  const customerContact = await mutate(reviewer, `/sites/${runtime.siteId}/service-requests/${serviceRequest.id}/contacts`, {
+    expectedVersion: serviceRequest.version + 1,
+    channel: 'Phone',
+    outcome: 'reached',
+    notes: 'Synthetic customer update recorded after review.',
+    nextAction: null,
+    callbackDueAt: null,
+  });
+  assert.equal((await responseJson(customerContact)).version, serviceRequest.version + 2);
+  const customerUpdatePage = await reviewer.newPage();
+  await customerUpdatePage.goto(`${webOrigin}${orderPath(fixture.orderId)}`);
+  await customerUpdatePage.getByRole('heading', { name: 'Related requests', exact: true }).waitFor();
+  await customerUpdatePage.getByRole('link', { name: 'Open request to record customer contact', exact: true }).waitFor();
+  await customerUpdatePage.getByRole('button', { name: 'View contact history', exact: true }).click();
+  await customerUpdatePage.getByText('Synthetic customer update recorded after review.', { exact: true }).waitFor();
+  await customerUpdatePage.getByText('Reached by Synthetic browser-creator', { exact: false }).waitFor();
+  check('Head sees recent attributed customer contact on the linked job and can open its canonical request to record the next update');
+
+  const advisorCustomerUpdatePage = await advisor.newPage();
+  await advisorCustomerUpdatePage.goto(`${webOrigin}${orderPath(fixture.orderId)}`);
+  await advisorCustomerUpdatePage.getByRole('heading', { name: 'Related requests', exact: true }).waitFor();
+  await advisorCustomerUpdatePage.getByRole('link', { name: 'Open request to record customer contact', exact: true }).waitFor();
+  await advisorCustomerUpdatePage.getByRole('button', { name: 'View contact history', exact: true }).click();
+  await advisorCustomerUpdatePage.getByText('Synthetic customer update recorded after review.', { exact: true }).waitFor();
+  check('Service Advisor sees the linked contact history and can continue on the canonical request');
+
+  const technicianCustomerUpdatePage = await technician.newPage();
+  let technicianContactHistoryRequests = 0;
+  technicianCustomerUpdatePage.on('request', request => {
+    if (new URL(request.url()).pathname.endsWith(`/service-requests/${serviceRequest.id}/contacts`)) technicianContactHistoryRequests += 1;
+  });
+  await technicianCustomerUpdatePage.goto(`${webOrigin}${orderPath(fixture.orderId)}`);
+  await technicianCustomerUpdatePage.getByRole('heading', { name: 'Related requests', exact: true }).waitFor();
+  assert.equal(await technicianCustomerUpdatePage.getByRole('button', { name: 'View contact history', exact: true }).count(), 0,
+    'Technicians must not receive a customer contact-history control.');
+  assert.equal(await technicianCustomerUpdatePage.getByText('Synthetic customer update recorded after review.', { exact: true }).count(), 0,
+    'Technicians must not see customer contact notes on the work order.');
+  assert.equal(technicianContactHistoryRequests, 0, 'Technician work-order view must not request customer contact history.');
+  check('Technician work-order view hides customer contact controls and does not request customer contact history');
+
+  phase = 'hold-resolution';
+  await runtime.grantWorkOrderHoldResolutionForTest(runtime.actors.teamLead.id);
+  const headHoldPage = await reviewer.newPage();
+  page = headHoldPage;
+  await headHoldPage.goto(`${webOrigin}${orderPath(fixture.orderId)}`);
+  await headHoldPage.getByRole('heading', { name: 'Holds', exact: true }).waitFor();
+  await headHoldPage.getByRole('button', { name: 'Report hold', exact: true }).click();
+  await headHoldPage.getByLabel('Reason', { exact: true }).fill('Synthetic browser test hold for the authorized resolution workflow.');
+  await headHoldPage.getByLabel('Observation or source reference', { exact: true }).fill('Synthetic browser fixture observation.');
+  await headHoldPage.getByRole('button', { name: 'Save hold', exact: true }).click();
+  await headHoldPage.getByText('Saved to this job\'s record.', { exact: true }).waitFor();
+  const heldOrder = await responseJson(await reviewer.request.get(`${webOrigin}/api/v1${orderPath(fixture.orderId)}`));
+  const openHold = heldOrder.holds.find(hold => !hold.resolution);
+  assert(openHold, 'The Head of Service Centre hold form must create an open hold.');
+  const gatesBeforeResolution = heldOrder.gates;
+
+  const leadHoldPage = await lead.newPage();
+  page = leadHoldPage;
+  await leadHoldPage.goto(`${webOrigin}${orderPath(fixture.orderId)}`);
+  await leadHoldPage.getByRole('heading', { name: 'Holds', exact: true }).waitFor();
+  await leadHoldPage.getByText('Synthetic browser test hold for the authorized resolution workflow.', { exact: true }).first().waitFor();
+  await leadHoldPage.getByLabel('What changed?', { exact: true }).fill('The synthetic observation was checked and the documented condition was cleared.');
+  await leadHoldPage.getByRole('region', { name: 'Holds', exact: true })
+    .getByRole('checkbox', { name: reportEvidenceName, exact: true }).check();
+  const resolutionResponse = leadHoldPage.waitForResponse(response =>
+    response.request().method() === 'POST'
+      && new URL(response.url()).pathname === `/api/v1${orderPath(fixture.orderId)}/holds/${openHold.id}/resolution`);
+  await leadHoldPage.getByRole('region', { name: 'Holds', exact: true })
+    .getByRole('button', { name: 'Resolve hold', exact: true }).click();
+  await responseJson(await resolutionResponse);
+  await leadHoldPage.getByText('Resolution recorded', { exact: true }).waitFor();
+  await leadHoldPage.getByText('The synthetic observation was checked and the documented condition was cleared.', { exact: true }).first().waitFor();
+  const resolvedOrder = await responseJson(await lead.request.get(`${webOrigin}/api/v1${orderPath(fixture.orderId)}`));
+  const resolvedHold = resolvedOrder.holds.find(hold => hold.id === openHold.id);
+  assert.equal(resolvedOrder.openHoldCount, 0);
+  assert.equal(resolvedHold?.resolution?.reason, 'The synthetic observation was checked and the documented condition was cleared.');
+  assert.deepEqual(resolvedHold?.resolution?.evidenceIds, [reportEvidenceId]);
+  assert.equal(resolvedHold?.resolution?.resolvedBy, `Synthetic ${runtime.actors.teamLead.username}`);
+  assert.deepEqual(resolvedOrder.gates, gatesBeforeResolution, 'Resolving an operational hold must not satisfy independent release gates.');
+  check('Assigned qualified Team Lead resolves an open hold in the browser with attached accepted evidence while independent release gates remain pending');
+
   await assertResponsive();
   await page.screenshot({ path: resolve(output, 'team-lead-work-plan-desktop.png'), fullPage: true });
   assert.deepEqual(errors, [], 'Unexpected browser errors or outbound requests.');
@@ -1489,13 +2107,23 @@ try {
   report.result = 'FAILED';
   const failure = { phase, kind: error instanceof Error ? error.name : 'unknown' };
   if (error instanceof Error) failure.message = error.message;
+  if (runtime?.databasePoolStats) failure.databasePool = runtime.databasePoolStats();
+  if (lead && webOrigin) {
+    try {
+      const sessionResponse = await lead.request.get(`${webOrigin}/api/v1/session`);
+      failure.sessionProbe = { status: sessionResponse.status(), body: await sessionResponse.text() };
+    } catch (probeError) {
+      failure.sessionProbe = { error: probeError instanceof Error ? probeError.message : 'unknown' };
+    }
+    if (page) failure.pageState = await page.evaluate(() => ({ url: location.href, text: document.body.innerText.slice(0, 1500) })).catch(() => null);
+  }
   errors.push(failure);
   process.stderr.write(`FAILED: ${phase} (${failure.kind})\n${failure.message ?? ''}\n`);
   if (page) await page.screenshot({ path: resolve(output, 'failure.png'), fullPage: true }).catch(() => {});
   if (technician) await technician.pages()[0]?.screenshot({ path: resolve(output, 'technician-failure.png'), fullPage: true }).catch(() => {});
 } finally {
   phase = 'teardown';
-  for (const [name, resource] of [['report-evidence-page', reportEvidencePage], ['reviewer-context', reviewer], ['lead-context', lead], ['supervisor-context', supervisor], ['technician-context', technician], ['browser', browser], ['vite', vite], ['isolated-runtime', runtime]]) {
+  for (const [name, resource] of [['report-evidence-page', reportEvidencePage], ['reviewer-context', reviewer], ['lead-context', lead], ['supervisor-context', supervisor], ['technician-context', technician], ['advisor-context', advisor], ['browser', browser], ['vite', vite], ['isolated-runtime', runtime]]) {
     if (!resource) continue;
     try { await resource.close(); }
     catch (error) {

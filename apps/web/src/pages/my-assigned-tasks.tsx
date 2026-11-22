@@ -8,8 +8,10 @@ import { useStaff } from "../workspace";
 import { Badge, Button, Empty, Failure, Loading, PageHeading, dateTime, useOnline } from "../ui";
 import { instantToSiteDateTimeInput, siteDateTimeInputToInstant } from "../formatting";
 import { TaskWorkEvidence } from "../task-work-evidence";
+import { TaskChecklistOutcomes } from "../task-checklist-outcomes";
 
 type AssignedTask = (typeof myAssignedTasksSchema)['_output']['items'][number];
+type TaskActivityItem = (typeof taskActivityHistorySchema)['_output']['items'][number];
 type WorkEntry = (typeof taskWorkEntryHistorySchema)['_output']['items'][number];
 type WorkEntryKind = "finding" | "test" | "action" | "follow-up";
 type WorkEntryResult = "observed" | "reproduced" | "not-reproduced" | "inconclusive" | "done" | "partial" | "pending" | "blocked";
@@ -21,26 +23,31 @@ const defaultWorkResult: Record<WorkEntryKind, WorkEntryResult> = {
   "follow-up": "pending",
 };
 
-const workResultOptions: Record<WorkEntryKind, { value: WorkEntryResult; label: string }[]> = {
+const workResultOptions: Record<WorkEntryKind, { value: WorkEntryResult; label: string; disabled?: boolean }[]> = {
   finding: [{ value: "observed", label: "Observed" }, { value: "inconclusive", label: "Inconclusive" }],
-  test: [{ value: "reproduced", label: "Concern reproduced" }, { value: "not-reproduced", label: "Concern not reproduced" }, { value: "inconclusive", label: "Inconclusive" }],
-  action: [{ value: "done", label: "Done" }, { value: "partial", label: "Partly done" }, { value: "blocked", label: "Blocked" }],
-  "follow-up": [{ value: "pending", label: "Still needed" }, { value: "done", label: "Done" }, { value: "blocked", label: "Blocked" }],
+  test: [{ value: "reproduced", label: "Concern reproduced", disabled: true }, { value: "not-reproduced", label: "Concern not reproduced", disabled: true }, { value: "inconclusive", label: "Inconclusive", disabled: true }],
+  action: [{ value: "done", label: "Done", disabled: true }, { value: "partial", label: "Partly done", disabled: true }, { value: "blocked", label: "Blocked", disabled: true }],
+  "follow-up": [{ value: "pending", label: "Still needed" }, { value: "done", label: "Done", disabled: true }, { value: "blocked", label: "Blocked" }],
 };
 
 function TaskActivity({ task, siteId, timeZone }: { task: AssignedTask; siteId: string; timeZone: string }) {
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"update" | "work">("update");
+  const [mode, setMode] = useState<"update" | "work" | "declaration">("update");
   const [workPage, setWorkPage] = useState(1);
   const [evidencePage, setEvidencePage] = useState(1);
   const [selectedEvidenceIds, setSelectedEvidenceIds] = useState<string[]>([]);
   const [selectedEvidenceNames, setSelectedEvidenceNames] = useState<Record<string, string>>({});
   const [entryType, setEntryType] = useState<"acknowledgement" | "progress" | "request" | "comment">("progress");
   const [progressState, setProgressState] = useState<"working" | "waiting" | "blocked">("working");
-  const [requestType, setRequestType] = useState<"help" | "parts" | "information" | "access" | "evidence">("help");
+  const [requestType, setRequestType] = useState<"help" | "parts" | "information" | "access" | "evidence" | "supervisor-review">("help");
   const [note, setNote] = useState("");
-  const [workKind, setWorkKind] = useState<WorkEntryKind>("action");
-  const [workResult, setWorkResult] = useState<WorkEntryResult>("done");
+  const [declarationActions, setDeclarationActions] = useState("");
+  const [declarationChecks, setDeclarationChecks] = useState("");
+  const [declarationOutcome, setDeclarationOutcome] = useState<"reported-complete" | "reported-incomplete" | "blocked">("reported-complete");
+  const [declarationRemaining, setDeclarationRemaining] = useState("");
+  const [activityRetryRequired, setActivityRetryRequired] = useState(false);
+  const [workKind, setWorkKind] = useState<WorkEntryKind>("finding");
+  const [workResult, setWorkResult] = useState<WorkEntryResult>("observed");
   const [workSummary, setWorkSummary] = useState("");
   const [workDetail, setWorkDetail] = useState("");
   const [observedAt, setObservedAt] = useState("");
@@ -83,10 +90,14 @@ function TaskActivity({ task, siteId, timeZone }: { task: AssignedTask; siteId: 
           body: {
             expectedWorkPlanRevisionId: task.workPlanRevisionId,
             expectedAssignmentRevision: task.assignmentRevision,
-            entryType,
-            progressState: entryType === "progress" ? progressState : null,
-            requestType: entryType === "request" ? requestType : null,
-            note: note.trim(),
+            entryType: mode === "declaration" ? "request" : entryType,
+            progressState: mode !== "declaration" && entryType === "progress" ? progressState : null,
+            requestType: mode === "declaration" ? "supervisor-review" : entryType === "request" ? requestType : null,
+            completionDeclaration: mode === "declaration" ? {
+              actionsSummary: declarationActions.trim(), checksSummary: declarationChecks.trim(),
+              outcome: declarationOutcome, remainingWork: declarationRemaining.trim(),
+            } : null,
+            note: mode === "declaration" ? "Worker report submitted for Supervisor review." : note.trim(),
           },
         };
       }
@@ -96,12 +107,20 @@ function TaskActivity({ task, siteId, timeZone }: { task: AssignedTask; siteId: 
     },
     onSuccess: async () => {
       attempt.current = null;
+      setActivityRetryRequired(false);
       setNote("");
-      setMessage("Task update saved.");
+      setDeclarationActions("");
+      setDeclarationChecks("");
+      setDeclarationOutcome("reported-complete");
+      setDeclarationRemaining("");
+      setMessage(mode === "declaration" ? "Work report sent to the Supervisor for review. The task is not signed off." : "Task update saved.");
       await queryClient.invalidateQueries({ queryKey: ["my-task-activity", siteId, task.workOrderId, task.taskId] });
     },
     onError: (error) => {
-      if (error instanceof ApiError && error.status < 500) attempt.current = null;
+      if (error instanceof ApiError && error.status < 500) {
+        attempt.current = null;
+        setActivityRetryRequired(false);
+      } else setActivityRetryRequired(true);
       setMessage(error instanceof Error ? error.message : "The task update could not be saved.");
     },
   });
@@ -186,6 +205,12 @@ function TaskActivity({ task, siteId, timeZone }: { task: AssignedTask; siteId: 
     save.mutate();
   }
 
+  function submitDeclaration(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage(null);
+    save.mutate();
+  }
+
   function beginCorrection(item: WorkEntry) {
     setCorrection(item);
     setCorrectionReason("");
@@ -234,15 +259,30 @@ function TaskActivity({ task, siteId, timeZone }: { task: AssignedTask; siteId: 
       {open && (
         <div className="mt-4">
           <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label={`Task record type for ${task.taskReference}`}>
-            <Button variant={mode === "update" ? "primary" : "secondary"} type="button" disabled={saveWorkEntry.isPending || workRetryRequired} aria-pressed={mode === "update"} onClick={() => { setMode("update"); setMessage(null); }}>Progress update</Button>
-            <Button variant={mode === "work" ? "primary" : "secondary"} type="button" disabled={saveWorkEntry.isPending || workRetryRequired} aria-pressed={mode === "work"} onClick={() => { setMode("work"); setWorkPage(1); setMessage(null); }}>Record work</Button>
+            <Button variant={mode === "update" ? "primary" : "secondary"} type="button" disabled={saveWorkEntry.isPending || workRetryRequired || save.isPending || activityRetryRequired} aria-pressed={mode === "update"} onClick={() => { setMode("update"); setMessage(null); }}>Progress update</Button>
+            <Button variant={mode === "work" ? "primary" : "secondary"} type="button" disabled={saveWorkEntry.isPending || workRetryRequired || save.isPending || activityRetryRequired} aria-pressed={mode === "work"} onClick={() => { setMode("work"); setWorkPage(1); setMessage(null); }}>Record work</Button>
+            <Button variant={mode === "declaration" ? "primary" : "secondary"} type="button" disabled={saveWorkEntry.isPending || workRetryRequired || save.isPending || activityRetryRequired} aria-pressed={mode === "declaration"} onClick={() => { setMode("declaration"); setMessage(null); }}>Send work for review</Button>
           </div>
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-          {mode === "update" ? <form className="grid min-w-0 gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4" onSubmit={submit}>
-            <p className="text-sm text-zinc-700">Use this for progress, requests for help or resources, and handover notes.</p>
+          {mode === "declaration" ? <form className="grid min-w-0 gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4" onSubmit={submitDeclaration}>
+            <div>
+              <h4 className="font-semibold text-zinc-950">Report this task ready for Supervisor review</h4>
+              <p className="mt-1 text-sm leading-6 text-zinc-700">Summarize the work you recorded, the checks and results, and anything still outstanding. VMMS links this report to your current assignment's work entries.</p>
+              <p className="mt-2 text-sm font-medium text-amber-950">This is your report only. It does not authorize work, approve technical completion, clear a hold or release the vehicle.</p>
+            </div>
+            <div><label htmlFor={`declaration-actions-${task.taskId}`}>Actions recorded</label><textarea id={`declaration-actions-${task.taskId}`} required maxLength={4000} rows={3} value={declarationActions} disabled={save.isPending || activityRetryRequired} onChange={event => setDeclarationActions(event.target.value)} /></div>
+            <div><label htmlFor={`declaration-checks-${task.taskId}`}>Checks and results</label><textarea id={`declaration-checks-${task.taskId}`} required maxLength={4000} rows={3} value={declarationChecks} disabled={save.isPending || activityRetryRequired} onChange={event => setDeclarationChecks(event.target.value)} /><p className="field-hint">State what was checked, the result, or why a check was not done.</p></div>
+            <div><label htmlFor={`declaration-outcome-${task.taskId}`}>Your reported outcome</label><select id={`declaration-outcome-${task.taskId}`} value={declarationOutcome} disabled={save.isPending || activityRetryRequired} onChange={event => setDeclarationOutcome(event.target.value as typeof declarationOutcome)}><option value="reported-complete">I report the assigned work is complete</option><option value="reported-incomplete">I report some work remains</option><option value="blocked">I could not complete the assigned work</option></select></div>
+            <div><label htmlFor={`declaration-remaining-${task.taskId}`}>Remaining work or concerns</label><textarea id={`declaration-remaining-${task.taskId}`} required maxLength={2000} rows={2} value={declarationRemaining} disabled={save.isPending || activityRetryRequired} onChange={event => setDeclarationRemaining(event.target.value)} /><p className="field-hint">If nothing remains, say so. The Supervisor still checks the task and required evidence.</p></div>
+            {activityRetryRequired && <p className="rounded-md border border-amber-400 bg-white px-3 py-2 text-sm text-amber-950" role="status">The save result is uncertain. Your original report is locked. Retry it with the same command to avoid a duplicate.</p>}
+            {message && <p role="status" className="text-sm text-zinc-700">{message}</p>}
+            {save.isError && <p role="alert" className="text-sm text-red-800">Refresh your assignments if this task has changed. {message}</p>}
+            <Button type="submit" disabled={save.isPending || (!activityRetryRequired && (!declarationActions.trim() || !declarationChecks.trim() || !declarationRemaining.trim()))}>{save.isPending ? "Sending…" : activityRetryRequired ? "Retry saved report" : "Send report for Supervisor review"}</Button>
+          </form> : mode === "update" ? <form className="grid min-w-0 gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4" onSubmit={submit}>
+            <p className="text-sm text-zinc-700">Use this for progress, help, a Supervisor review request or handover notes.</p>
             <div>
               <label htmlFor={`task-entry-type-${task.taskId}`}>Update type</label>
-              <select id={`task-entry-type-${task.taskId}`} value={entryType} onChange={event => setEntryType(event.target.value as typeof entryType)}>
+              <select id={`task-entry-type-${task.taskId}`} value={entryType} disabled={save.isPending || activityRetryRequired} onChange={event => setEntryType(event.target.value as typeof entryType)}>
                 <option value="acknowledgement">Acknowledge assignment</option>
                 <option value="progress">Progress update</option>
                 <option value="request">Request help or resources</option>
@@ -252,7 +292,7 @@ function TaskActivity({ task, siteId, timeZone }: { task: AssignedTask; siteId: 
             {entryType === "progress" && (
               <div>
                 <label htmlFor={`task-progress-state-${task.taskId}`}>Progress status</label>
-                <select id={`task-progress-state-${task.taskId}`} value={progressState} onChange={event => setProgressState(event.target.value as typeof progressState)}>
+                <select id={`task-progress-state-${task.taskId}`} value={progressState} disabled={save.isPending || activityRetryRequired} onChange={event => setProgressState(event.target.value as typeof progressState)}>
                   <option value="working">Working</option><option value="waiting">Waiting</option><option value="blocked">Blocked</option>
                 </select>
               </div>
@@ -260,34 +300,36 @@ function TaskActivity({ task, siteId, timeZone }: { task: AssignedTask; siteId: 
             {entryType === "request" && (
               <div>
                 <label htmlFor={`task-request-type-${task.taskId}`}>What do you need?</label>
-                <select id={`task-request-type-${task.taskId}`} value={requestType} onChange={event => setRequestType(event.target.value as typeof requestType)}>
-                  <option value="help">Help</option><option value="parts">Parts</option><option value="information">Information</option><option value="access">Access</option><option value="evidence">Evidence</option>
+                <select id={`task-request-type-${task.taskId}`} value={requestType} disabled={save.isPending || activityRetryRequired} onChange={event => setRequestType(event.target.value as typeof requestType)}>
+                  <option value="help">Help</option><option value="parts">Parts</option><option value="information">Information</option><option value="access">Access</option><option value="evidence">Evidence</option><option value="supervisor-review">Ask Supervisor to review work</option>
                 </select>
+                {requestType === "supervisor-review" && <p className="mt-1 text-sm text-zinc-600">This sends a review request. It does not mark the task or job complete.</p>}
               </div>
             )}
             <div>
               <label htmlFor={`task-note-${task.taskId}`}>{entryType === "request" ? "Describe your request" : "Note"}</label>
-              <textarea id={`task-note-${task.taskId}`} required maxLength={1500} rows={3} value={note} onChange={event => setNote(event.target.value)} />
+              <textarea id={`task-note-${task.taskId}`} required maxLength={1500} rows={3} value={note} disabled={save.isPending || activityRetryRequired} onChange={event => setNote(event.target.value)} />
             </div>
+            {activityRetryRequired && <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950" role="status">The save result is uncertain. The original update is locked. Retry it with the same command to avoid a duplicate.</p>}
             {message && <p role="status" className="text-sm text-zinc-700">{message}</p>}
             {save.isError && <p role="alert" className="text-sm text-red-800">Refresh your assignments if this task has changed. {message}</p>}
-            <Button type="submit" disabled={save.isPending || !note.trim()}>{save.isPending ? "Saving…" : "Save update"}</Button>
+            <Button type="submit" disabled={save.isPending || (!activityRetryRequired && !note.trim())}>{save.isPending ? "Saving…" : activityRetryRequired ? "Retry saved update" : "Save update"}</Button>
           </form> : <form className="grid min-w-0 gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4" onSubmit={submitWorkEntry}>
             {correction && <div className="rounded-md border-l-4 border-amber-500 bg-amber-50 px-3 py-2" role="status">
               <h4 className="font-semibold text-amber-950">Correcting a recorded entry</h4>
               <p className="mt-1 text-sm leading-5 text-amber-950">The original entry will remain in the work history. This adds a new correction and does not approve or sign off the work.</p>
             </div>}
-            <p className="text-sm leading-6 text-zinc-700">Record what you observed, tested or did on this assigned task. VMMS checks your current task assignment, but it does not check whether you have the required authority for a specific action. This note records your statement; it does not authorize or sign off work.</p>
+            <p className="text-sm leading-6 text-zinc-700">Record observations and open follow-ups for this task. Tests, repair actions and marking a technical follow-up done stay unavailable until the job has an approved scope, effective vehicle instructions, a matching qualification and signed task authority.</p>
             <div>
               <label htmlFor={`work-kind-${task.taskId}`}>Record type</label>
               <select id={`work-kind-${task.taskId}`} value={workKind} disabled={saveWorkEntry.isPending || workRetryRequired} onChange={event => { const next = event.target.value as WorkEntryKind; setWorkKind(next); setWorkResult(defaultWorkResult[next]); }}>
-                <option value="finding">Finding</option><option value="test">Test</option><option value="action">Work done</option><option value="follow-up">Follow-up needed</option>
+                <option value="finding">Finding</option><option value="test" disabled>Test · authorization unavailable</option><option value="action" disabled>Work done · authorization unavailable</option><option value="follow-up">Follow-up</option>
               </select>
             </div>
             <div>
               <label htmlFor={`work-result-${task.taskId}`}>Result</label>
               <select id={`work-result-${task.taskId}`} value={workResult} disabled={saveWorkEntry.isPending || workRetryRequired} onChange={event => setWorkResult(event.target.value as WorkEntryResult)}>
-                {workResultOptions[workKind].map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                {workResultOptions[workKind].map(option => <option key={option.value} value={option.value} disabled={option.disabled}>{option.label}{option.disabled ? " · authorization unavailable" : ""}</option>)}
               </select>
             </div>
             <div>
@@ -361,16 +403,23 @@ function TaskActivity({ task, siteId, timeZone }: { task: AssignedTask; siteId: 
             </div>
           </form>}
           <div className="min-w-0">
-            <h4 className="font-semibold text-zinc-900">{mode === "update" ? "Update history" : "Work history"}</h4>
-            {mode === "update" ? activity.isPending ? <Loading label="Loading task updates" /> : activity.isError ? <Failure error={activity.error} retry={() => { void activity.refetch(); }} /> : activity.data.items.length === 0 ? (
+            <h4 className="font-semibold text-zinc-900">{mode === "work" ? "Work history" : "Update history"}</h4>
+            {mode !== "work" ? activity.isPending ? <Loading label="Loading task updates" /> : activity.isError ? <Failure error={activity.error} retry={() => { void activity.refetch(); }} /> : activity.data.items.length === 0 ? (
               <p className="mt-2 text-sm text-zinc-600">No updates have been added to this task.</p>
             ) : (
               <ol className="mt-2 space-y-3 border-l border-zinc-300 pl-4">
                 {activity.data.items.map(item => (
                   <li key={item.id} className="relative min-w-0">
                     <span className="absolute -left-[1.35rem] top-1 size-2 rounded-full bg-sky-700" aria-hidden="true" />
-                    <p className="font-medium text-zinc-900">{item.entryType === "acknowledgement" ? "Acknowledged" : item.entryType === "progress" ? `Progress · ${item.progressState}` : item.entryType === "request" ? `Request · ${item.requestType}` : "Comment"}</p>
+                    <p className="font-medium text-zinc-900">{taskActivityLabel(item)}</p>
                     <p className="mt-1 break-words text-sm text-zinc-700">{item.note}</p>
+                    {item.completionDeclaration && <div className="mt-2 space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-zinc-800">
+                      <p><strong>Actions:</strong> {item.completionDeclaration.actionsSummary}</p>
+                      <p><strong>Checks and results:</strong> {item.completionDeclaration.checksSummary}</p>
+                      <p><strong>Reported outcome:</strong> {declarationOutcomeLabel(item.completionDeclaration.outcome)}</p>
+                      <p><strong>Remaining work:</strong> {item.completionDeclaration.remainingWork}</p>
+                      <p className="text-xs text-amber-950">Bound to {item.declarationWorkEntryIds?.length ?? 0} work entries from this assignment. This report is not sign-off.</p>
+                    </div>}
                     <p className="mt-1 text-xs text-zinc-500">{item.actorName} · {dateTime(item.createdAt, timeZone)}</p>
                   </li>
                 ))}
@@ -402,6 +451,7 @@ function TaskActivity({ task, siteId, timeZone }: { task: AssignedTask; siteId: 
             </>}
           </div>
           </div>
+          <TaskChecklistOutcomes task={task} siteId={siteId} />
         </div>
       )}
     </section>
@@ -410,6 +460,18 @@ function TaskActivity({ task, siteId, timeZone }: { task: AssignedTask; siteId: 
 
 function workKindLabel(kind: WorkEntryKind) {
   return ({ finding: "Finding", test: "Test", action: "Work done", "follow-up": "Follow-up" })[kind];
+}
+
+function taskActivityLabel(item: TaskActivityItem) {
+  if (item.entryType === "acknowledgement") return "Acknowledged";
+  if (item.entryType === "progress") return `Progress · ${item.progressState ?? "not stated"}`;
+  if (item.entryType === "comment") return "Comment";
+  if (item.requestType === "supervisor-review") return item.completionDeclaration ? "Work report sent for Supervisor review" : "Supervisor review requested";
+  return `Request · ${item.requestType ?? "not stated"}`;
+}
+
+function declarationOutcomeLabel(outcome: "reported-complete" | "reported-incomplete" | "blocked") {
+  return ({ "reported-complete": "Worker reports complete", "reported-incomplete": "Worker reports work remains", blocked: "Worker reports blocked" })[outcome];
 }
 
 function workResultLabel(result: WorkEntryResult) {

@@ -3,7 +3,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { once } from "node:events";
 import { after, before, test } from "node:test";
 import apiProxyWorker from "./api-proxy.js";
-import worker from "./worker.js";
+import worker, { proxyApi } from "./worker.js";
 
 let apiOrigin = "";
 let server: ReturnType<typeof createServer>;
@@ -64,6 +64,7 @@ test("API requests use the fixed origin and preserve path, query, auth and body"
       origin: "https://vmms.example",
       "x-csrftoken": "signed-token",
       authorization: "Bearer synthetic-token",
+      "x-vercel-protection-bypass": "spoofed-client-value",
       connection: "x-internal-user",
       "x-internal-user": "spoofed",
       "x-forwarded-for": "203.0.113.99",
@@ -72,7 +73,11 @@ test("API requests use the fixed origin and preserve path, query, auth and body"
       "cf-connecting-ip": "203.0.113.99",
     },
     body: JSON.stringify({ action: "refresh" }),
-  }), { VMMS_API_ORIGIN: apiOrigin, ASSETS: { fetch: async () => new Response() } });
+  }), {
+    VMMS_API_ORIGIN: apiOrigin,
+    VMMS_API_PROTECTION_BYPASS: "server-only-preview-secret",
+    ASSETS: { fetch: async () => new Response() },
+  });
 
   assert.equal(response.status, 409);
   assert.equal(response.headers.get("cache-control"), "no-store");
@@ -85,12 +90,49 @@ test("API requests use the fixed origin and preserve path, query, auth and body"
   assert.equal(captured?.headers.origin, "https://vmms.example");
   assert.equal(captured?.headers["x-csrftoken"], "signed-token");
   assert.equal(captured?.headers.authorization, "Bearer synthetic-token");
+  assert.equal(captured?.headers["x-vercel-protection-bypass"], "server-only-preview-secret");
   assert.equal(captured?.headers["x-forwarded-for"], undefined);
   assert.equal(captured?.headers["x-real-ip"], undefined);
   assert.equal(captured?.headers.forwarded, undefined);
   assert.equal(captured?.headers["cf-connecting-ip"], undefined);
   assert.equal(captured?.headers["x-internal-user"], undefined);
   assert.deepEqual(JSON.parse(captured?.body ?? "{}"), { action: "refresh" });
+});
+
+test("client-supplied Vercel bypass values are never forwarded without a server secret", async () => {
+  lastRequest = undefined;
+  await worker.fetch(new Request("https://vmms.example/api/v1/session", {
+    headers: { "x-vercel-protection-bypass": "spoofed-client-value" },
+  }), { VMMS_API_ORIGIN: apiOrigin, ASSETS: { fetch: async () => new Response() } });
+
+  assert.equal(capturedRequest()?.headers["x-vercel-protection-bypass"], undefined);
+});
+
+test("production proxy only forwards to the canonical API origin and never sends a Preview bypass", async () => {
+  lastRequest = undefined;
+  const response = await worker.fetch(new Request("https://vmms.example/api/v1/session"), {
+    VMMS_API_ORIGIN: apiOrigin,
+    VMMS_API_PROTECTION_BYPASS: "preview-only-secret",
+    VMMS_DEPLOYMENT_STAGE: "production",
+    ASSETS: { fetch: async () => new Response() },
+  });
+  assert.equal(response.status, 503);
+  assert.equal(lastRequest, undefined);
+
+  const originalFetch = globalThis.fetch;
+  let forwardedBypass: string | null = null;
+  globalThis.fetch = async (input) => {
+    forwardedBypass = new Request(input).headers.get("x-vercel-protection-bypass");
+    return new Response("{}", { status: 200 });
+  };
+  try {
+    const canonicalResponse = await proxyApi(new Request("https://vmms.example/api/v1/session"),
+      "https://api.raymond-gray.org", "preview-only-secret", "production");
+    assert.equal(canonicalResponse.status, 200);
+    assert.equal(forwardedBypass, null);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("OIDC redirects and cookies return to the browser without following the provider redirect", async () => {

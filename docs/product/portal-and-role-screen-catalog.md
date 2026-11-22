@@ -9,7 +9,7 @@
 | Public sign-in | Staff and approved vehicle owners | Sign-in audience choice, secure shared sign-in handoff, invitation continuation, failed/not-approved states | Implemented. The workshop photo and full-size transparent logo are visible; the sign-in and workspace layouts adapt across phone, foldable, tablet, desktop and zoomed viewports. |
 | Staff workspace | All active work-role holders | Today, requests/callbacks, jobs, intake, assigned task work, vehicle history, team/role directory, overview, messages, controlled documents, vehicle learning, finance setup, purpose-built print reports | Partly implemented. Desktop navigation retracts to an icon rail; compact navigation opens as a menu. Screen visibility follows `workspaceCapabilities`; protected commands still require server checks. |
 | VMMS Operator | Designated account administrators | Staff account list and account requests; an account overview of pending invitations, active access and account changes; account audit log | Staff account screen is present. The account overview and audit-log viewer are requested and not yet implemented. Keep this portal separate from Head operations. |
-| Head of Service Centre | Operational head | Head overview, jobs and queues, work assignment and review, people and reporting lines, staff messages, site operational audit log, reports | Overview, workforce, messages and work-order screens are partly implemented. Audit-log viewer is requested and not yet implemented. |
+| Head of Service Centre | Operational head | Head overview, jobs and queues, work assignment and review, people and reporting lines, staff messages, site activity, reports | Initial read-only, site-scoped work-order activity view is implemented. Broader audit coverage and filters remain open. |
 | Vehicle-owner portal | Approved vehicle owners | Shared vehicle list, service history/reports made available to the owner, sign-out and access/help states | Implemented in part. Owners do not enter staff workspace, documents, learning, account administration or internal audit. |
 
 The central identity service at `auth.raymond-gray.org` owns authentication and enrollment. VMMS owns its business screens and local account/site/role records. Sign-in redirects to the shared identity service; it is not a second VMMS portal.
@@ -49,7 +49,7 @@ The owner explicitly requested audit screens for the VMMS Operator and Head of S
 | Screen | Reader | Scope | Design and safety rules |
 | --- | --- | --- | --- |
 | Account audit log | VMMS Operator | Account requests, invitation state, identity linking, staff membership and account access changes within the Operator's authorised organisation/site scope | Read-only, newest-first, filter by time, event, actor and person; show who/when/which target/result and a reason where captured. Do not show secrets, invitation tokens, passwords, full session tokens or unnecessary contact information. Audit access to this screen and exports. |
-| Service-centre activity log | Head of Service Centre | Operational events for the Head's active site, including work-order lifecycle, assignments, task progress, inspection/release decisions, customer contact evidence and finance events where authorized | Read-only, site scoped, filter by time, job, actor, event and outcome; show attributable event evidence and linked record. Mask sensitive customer/financial fields when not needed. Audit reads and exports. |
+| Service-centre activity | Head of Service Centre | Current build: events in the Head's active site's work-order aggregate ledger | Read-only, site scoped, newest first, keyset paginated. Shows event type, timestamp, actor, aggregate/version and work-order reference only. Excludes reason text, state snapshots and customer details. Each read is audited. Filters, broader event coverage, retention and export rules remain open. |
 
 Neither screen may update or delete audit events. The API must independently authorize every page, filter, record detail and export. Audit views must use stable pagination and preserve event ordering. Add the feature to the implementation tracker; it is not complete because audit events already exist or are written by other screens.
 
@@ -66,7 +66,7 @@ Neither screen may update or delete audit events. The API must independently aut
 
 - Continue route-level navigation and action-policy checks for every profile and combined-role fixture; current finance-route changes are client navigation evidence only.
 - Add a concise account overview for the Operator that summarizes account requests and access state without exposing workshop activity or bypassing site scoping.
-- Add the Operator overview, Operator account audit log and Head site activity log; define exact event coverage, field redaction, retention and export rules before production use.
+- Add the Operator overview and account audit log. Extend Head activity beyond current work-order aggregate events only after event coverage, field redaction, retention and export rules are agreed.
 - Add a dedicated Service Advisor history view that excludes unrelated sales-delivery claims.
 - Confirm all final job functions and reporting placements in the approved organogram and SOPs.
 - Complete responsive, keyboard, screen-reader, browser-zoom and staff acceptance checks for each role, including combined-role accounts.

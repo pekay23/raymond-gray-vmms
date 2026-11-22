@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
@@ -23,10 +23,14 @@ import { ApiError, detailSchema, diagnosticObservationSchema, eligibleSupervisor
 import type { DiagnosticObservation, WorkOrder } from "../api";
 import { BackToQueue, useStaff } from "../workspace";
 import { WorkOrderEvidence } from "../work-order-evidence";
+import { WorkOrderScopeProposals } from "../work-order-scope-proposals";
 import { IntakeFacts } from "../intake-facts";
 import { TaskAllocations } from "../task-allocations";
 import { SourceReportCapture } from "../source-report-capture";
 import { WorkOrderChecklists } from "../work-order-checklists";
+import { WorkOrderCloseoutPath } from "../work-order-closeout-path";
+import { WorkOrderCompletionReadiness } from "../work-order-completion-readiness";
+import { workOrderWorkflowSectionTarget } from "../work-order-workflow-navigation";
 import {
   Badge,
   Button,
@@ -114,6 +118,18 @@ const workflowStageLabels: Record<WorkOrder["workflowContext"]["stage"], string>
   "supervisor-handoff": "Supervisor handover",
   "supervisor-task-work": "Task assignment and progress",
 };
+const serviceKindLabels: Record<WorkOrder["serviceKind"], string> = {
+  "repair-maintenance": "Repair or maintenance",
+  "routine-maintenance": "Routine maintenance",
+  psai: "Post-shipping acceptance inspection",
+  "service-centre-pdi": "Service Centre pre-delivery inspection",
+};
+const serviceSourceLabels: Record<WorkOrder["serviceSource"], string> = {
+  "showroom-stock": "Showroom stock",
+  "partner-garage": "Partner garage",
+  other: "Other source",
+  unknown: "Not known yet",
+};
 const workflowNextActionLabels: Record<WorkOrder["workflowContext"]["nextAction"], string> = {
   "review-job": "Review the job before assigning a team lead.",
   "assign-team-lead": "Assign a qualified team lead.",
@@ -177,8 +193,40 @@ function WorkOrderWorkflowContext({ context }: { context: WorkOrder["workflowCon
         {context.actionReadiness === "available" && (
           <p className="text-sm leading-6 text-zinc-600">This step is available to your account. The server checks permission again when you save.</p>
         )}
-        {context.actionReadiness === "check-action-section" && (
-          <p className="text-sm leading-6 text-zinc-600">Check the section for this step below for current access and any reason it is unavailable.</p>
+        <Link
+          className="inline-flex min-h-11 items-center rounded font-semibold text-blue-800 underline decoration-blue-300 underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+          to={`#${workOrderWorkflowSectionTarget(context.nextAction)}`}
+          onClick={(event) => {
+            event.preventDefault();
+            const targetId = workOrderWorkflowSectionTarget(context.nextAction);
+            const target = document.getElementById(targetId);
+            if (!target) return;
+            window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${targetId}`);
+            target.focus({ preventScroll: true });
+            const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+            const workspace = target.closest<HTMLElement>(".workspace-content");
+            if (workspace && getComputedStyle(workspace).overflowY !== "visible") {
+              const workspaceBounds = workspace.getBoundingClientRect();
+              const stickyHeader = workspace.querySelector<HTMLElement>(":scope > header");
+              const headerBottom = stickyHeader?.getBoundingClientRect().bottom ?? workspaceBounds.top;
+              const visibleTop = Math.max(workspaceBounds.top, headerBottom) + 12;
+              const visibleBottom = workspaceBounds.bottom - 12;
+              const targetBounds = target.getBoundingClientRect();
+              const topDelta = targetBounds.top - visibleTop;
+              const bottomDelta = targetBounds.bottom - visibleBottom;
+              const delta = topDelta < 0 ? topDelta : bottomDelta > 0 ? bottomDelta : 0;
+              if (delta !== 0) workspace.scrollBy({ top: delta, behavior });
+            } else {
+              target.scrollIntoView({ behavior, block: "start" });
+            }
+          }}
+        >
+          Go to the {workflowStageLabels[context.stage]} section
+        </Link>
+        {context.stage === "supervisor-task-work" && (
+          <p role="note" className="border-l-4 border-amber-500 bg-amber-50/60 px-3 py-2 text-sm leading-6 text-amber-950">
+            Record task progress, requests and evidence here. This step cannot sign off technical completion or release the vehicle; those sign-off steps are not configured yet.
+          </p>
         )}
       </div>
     </section>
@@ -186,12 +234,38 @@ function WorkOrderWorkflowContext({ context }: { context: WorkOrder["workflowCon
 }
 
 const relatedRequestsSchema=z.object({items:z.array(z.object({id:z.string().uuid(),concern:z.string(),sourceChannel:z.string(),createdAt:z.string()})),page:z.number(),totalPages:z.number()});
+const relatedRequestContactsSchema=z.object({items:z.array(z.object({id:z.string().uuid(),recordedAt:z.string(),recordedByName:z.string().nullable(),channel:z.string(),outcome:z.enum(['reached','no-answer','callback-requested','other']),notes:z.string(),isCorrected:z.boolean()})),page:z.number(),totalPages:z.number()});
+const contactOutcomeLabels={reached:'Reached', 'no-answer':'No answer', 'callback-requested':'Callback requested', other:'Other'} as const;
 function RelatedRequests({orderId}:{orderId:string}) {
   const {site}=useStaff(),[page,setPage]=useState(1);
   const related=useQuery({queryKey:['job-requests',site.id,orderId,page],queryFn:()=>request(`${orderPath(site.id,orderId)}/service-requests?page=${page}`,relatedRequestsSchema)});
+  const canViewCustomerUpdates=site.roleCodes.some(role=>role==='head-service-centre'||role==='service-advisor');
   return <section className="panel mb-4 p-5" aria-labelledby="related-requests-title"><h2 id="related-requests-title" className="section-title">Related requests</h2>
-    {related.isPending?<Loading label="Loading related requests"/>:related.isError?<Failure error={related.error} retry={()=>void related.refetch()}/>:related.data.items.length===0?<p className="mt-3 text-sm text-zinc-600">No related requests are available to you.</p>:<><ul className="mt-3 divide-y divide-zinc-200">{related.data.items.map(item=><li className="py-3" key={item.id}><Link className="font-semibold text-blue-700 underline" to={`/sites/${site.id}/requests?request=${item.id}`}>View request</Link><p className="break-words">{item.concern}</p><p className="text-sm text-zinc-600">{item.sourceChannel} · {dateTime(item.createdAt,site.timeZone)}</p></li>)}</ul><div className="flex items-center gap-3"><Button variant="secondary" disabled={page<=1} onClick={()=>setPage(page-1)}>Previous</Button><span>Page {page} of {Math.max(1,related.data.totalPages)}</span><Button variant="secondary" disabled={page>=related.data.totalPages} onClick={()=>setPage(page+1)}>Next</Button></div></>}
+    {related.isPending?<Loading label="Loading related requests"/>:related.isError?<Failure error={related.error} retry={()=>void related.refetch()}/>:related.data.items.length===0?<p className="mt-3 text-sm text-zinc-600">No related requests are available to you.</p>:<><ul className="mt-3 divide-y divide-zinc-200">{related.data.items.map(item=><RelatedRequestItem key={item.id} item={item} siteId={site.id} timeZone={site.timeZone} canViewCustomerUpdates={canViewCustomerUpdates}/>)}</ul><div className="flex items-center gap-3"><Button variant="secondary" disabled={page<=1} onClick={()=>setPage(page-1)}>Previous</Button><span>Page {page} of {Math.max(1,related.data.totalPages)}</span><Button variant="secondary" disabled={page>=related.data.totalPages} onClick={()=>setPage(page+1)}>Next</Button></div></>}
   </section>;
+}
+
+function RelatedRequestItem({item,siteId,timeZone,canViewCustomerUpdates}:{item:z.infer<typeof relatedRequestsSchema>['items'][number];siteId:string;timeZone:string;canViewCustomerUpdates:boolean}) {
+  const [showHistory,setShowHistory]=useState(false);
+  const contacts=useQuery({queryKey:['request-contacts',siteId,item.id,1],queryFn:()=>request(`/sites/${siteId}/service-requests/${item.id}/contacts?page=1&pageSize=3`,relatedRequestContactsSchema),enabled:showHistory&&canViewCustomerUpdates});
+  return <li className="py-3">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <Link className="font-semibold text-blue-700 underline" to={`/sites/${siteId}/requests?request=${item.id}`}>{canViewCustomerUpdates?'Open request to record customer contact':'View request'}</Link>
+      {canViewCustomerUpdates&&<Button type="button" variant="secondary" aria-expanded={showHistory} onClick={()=>setShowHistory(value=>!value)}>{showHistory?'Hide contact history':'View contact history'}</Button>}
+    </div>
+    <p className="mt-2 break-words">{item.concern}</p><p className="text-sm text-zinc-600">{item.sourceChannel} · {dateTime(item.createdAt,timeZone)}</p>
+    {showHistory&&<div className="mt-3 rounded-lg border-l-2 border-blue-700 bg-blue-50/60 p-3" aria-label="Customer contact history">
+      {contacts.isPending?<Loading label="Loading contact history"/>:contacts.isError?<Failure error={contacts.error} retry={()=>void contacts.refetch()}/>:contacts.data.items.length===0?<p className="text-sm text-zinc-700">No customer contact has been recorded yet.</p>:<>
+        <h3 className="text-sm font-semibold text-zinc-900">Recent customer contact</h3>
+        <ol className="mt-2 space-y-3">{contacts.data.items.map(entry=><li key={entry.id} className="border-t border-blue-100 pt-2 text-sm">
+          <p className="font-medium text-zinc-900">{contactOutcomeLabels[entry.outcome]} by {entry.recordedByName??'staff member'} · {dateTime(entry.recordedAt,timeZone)} · {entry.channel}</p>
+          <p className="mt-1 whitespace-pre-wrap break-words text-zinc-700">{entry.notes}</p>
+          {entry.isCorrected&&<p className="mt-1 text-xs font-medium text-amber-800">This entry has a correction in the request history.</p>}
+        </li>)}</ol>
+        {contacts.data.totalPages>1&&<p className="mt-2 text-xs text-zinc-600">Showing the latest 3 entries. Open the request to view the full history.</p>}
+      </>}
+    </div>}
+  </li>;
 }
 
 type CommandAttempt = {
@@ -202,7 +276,7 @@ type CommandAttempt = {
 
 function useOrderCommand(
   order: WorkOrder,
-  command: "complaints" | "tasks" | "holds" | "diagnostic-findings",
+  command: string,
   onSaved: () => void,
 ) {
   const { site } = useStaff();
@@ -244,7 +318,7 @@ function useOrderCommand(
 }
 
 function Order({ order, refresh }: { order: WorkOrder; refresh: () => void }) {
-  const { site } = useStaff();
+  const { session, site } = useStaff();
   const online = useOnline();
   const [panel, setPanel] = useState<"complaint" | "task" | "hold" | "diagnostic" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -287,8 +361,10 @@ function Order({ order, refresh }: { order: WorkOrder; refresh: () => void }) {
           </div>
         }
       >
-        {order.vehicleLabel} <span className="mx-1 text-zinc-300">/</span>{" "}
+        <span>{serviceKindLabels[order.serviceKind]}</span><span className="mx-2 text-zinc-300">·</span>{order.vehicleLabel} <span className="mx-1 text-zinc-300">/</span>{" "}
         {order.registration || "Registration not recorded"}
+        {order.serviceKind === "service-centre-pdi" && <span className="ml-2 text-sm font-normal text-zinc-600">· Reported source: {serviceSourceLabels[order.serviceSource]}</span>}
+        {order.serviceKind === "psai" && order.shippingReference && <span className="ml-2 text-sm font-normal text-zinc-600">· Shipment ref: {order.shippingReference}</span>}
       </PageHeading>
       {notice && (
         <p
@@ -299,7 +375,19 @@ function Order({ order, refresh }: { order: WorkOrder; refresh: () => void }) {
         </p>
       )}
       <WorkOrderWorkflowContext context={order.workflowContext} />
-      <WorkOrderChecklists order={order} siteId={site.id} />
+      <WorkOrderCloseoutPath stages={order.closeoutPath} />
+      <WorkOrderCompletionReadiness
+        readiness={order.completionReadiness}
+        siteId={site.id}
+        workOrderId={order.id}
+        canOpenTaskAssignments={Boolean(order.completionReadiness.currentSupervisorHandoff && (
+          site.roleCodes.includes("head-service-centre")
+          || order.teamLeadAssignment?.leadUserId === session.user.id
+          || order.supervisorHandoff?.supervisorUserId === session.user.id
+        ))}
+      />
+      <WorkOrderChecklists order={order} siteId={site.id} canWrite={site.canWrite} />
+      <WorkOrderScopeProposals order={order} refresh={refresh} />
       <SourceReportCapture order={order} refresh={refresh} />
       <OperationsReview order={order} refresh={refresh} />
       <OperationsAssignment order={order} refresh={refresh} />
@@ -616,9 +704,9 @@ function Order({ order, refresh }: { order: WorkOrder; refresh: () => void }) {
                   aria-hidden="true"
                 />
                 <h2 id="holds-title" className="section-title">
-                  Open holds
+                  Holds
                 </h2>
-                <Badge>{order.holds.length}</Badge>
+                <Badge>{order.openHoldCount} open</Badge>
               </div>
               {site.canWrite && (
                 <Button
@@ -645,11 +733,10 @@ function Order({ order, refresh }: { order: WorkOrder; refresh: () => void }) {
                   <li key={hold.id} className="px-5 py-5 sm:px-6">
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                       <Badge
-                        tone={hold.severity === "stop" ? "danger" : "warning"}
+                        tone={hold.resolution ? "green" : hold.severity === "stop" ? "danger" : "warning"}
                       >
-                        <AlertTriangle className="size-3" aria-hidden="true" />
-                        {hold.severity === "stop" ? "Stop" : "Warning"} ·{" "}
-                        {hold.category}
+                        {!hold.resolution && <AlertTriangle className="size-3" aria-hidden="true" />}
+                        {hold.resolution ? "Resolved" : `${hold.severity === "stop" ? "Stop" : "Warning"} · ${hold.category}`}
                       </Badge>
                       <span className="text-xs text-zinc-500">
                         {hold.taskId === null
@@ -667,6 +754,17 @@ function Order({ order, refresh }: { order: WorkOrder; refresh: () => void }) {
                     <p className="mt-3 text-xs text-zinc-500">
                       Owner: {hold.openedBy} · {dateTime(hold.openedAt, site.timeZone)}
                     </p>
+                    {hold.resolution ? (
+                      <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-4">
+                        <p className="text-sm font-medium text-emerald-950">Resolution recorded</p>
+                        <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-emerald-900">{hold.resolution.reason}</p>
+                        <p className="mt-2 text-xs text-emerald-800">{hold.resolution.resolvedBy} · {dateTime(hold.resolution.resolvedAt, site.timeZone)} · {hold.resolution.evidenceIds.length} evidence item(s)</p>
+                      </div>
+                    ) : order.canResolveHolds ? (
+                      <HoldResolutionForm order={order} holdId={hold.id} onSaved={refresh} />
+                    ) : (
+                      <p className="mt-3 text-xs leading-5 text-zinc-500">Resolution requires the currently assigned, qualified Team Lead and a separate active hold-resolution grant.</p>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -768,6 +866,11 @@ function Order({ order, refresh }: { order: WorkOrder; refresh: () => void }) {
                       </li>
                     ))}
                   </ul>
+                  {gate.code === "G2" && (
+                    <p className="mt-3 text-xs leading-5 text-zinc-600">
+                      Diagnostic consent allows diagnosis only. It does not authorize repair, replacement parts, or additional costs.
+                    </p>
+                  )}
                 </li>
               ))}
             </ol>
@@ -792,6 +895,33 @@ function Order({ order, refresh }: { order: WorkOrder; refresh: () => void }) {
   );
 }
 
+function HoldResolutionForm({order,holdId,onSaved}:{order:WorkOrder;holdId:string;onSaved:()=>void}) {
+  const [reason,setReason]=useState("");
+  const [evidenceIds,setEvidenceIds]=useState<string[]>([]);
+  const online=useOnline();
+  const mutation=useOrderCommand(order,`holds/${holdId}/resolution`,onSaved);
+  const evidence=order.evidence.filter(item=>item.state==="accepted"&&item.attachedAt);
+  function submit(event:FormEvent<HTMLFormElement>){
+    event.preventDefault();
+    mutation.mutate({resolution:reason.trim(),evidenceIds});
+  }
+  return <form className="mt-4 space-y-3 rounded-md border border-zinc-200 bg-zinc-50 p-4" onSubmit={submit}>
+    <h3 className="text-sm font-semibold text-zinc-900">Record how the hold was cleared</h3>
+    <div>
+      <label htmlFor={`hold-resolution-${holdId}`}>What changed?</label>
+      <textarea id={`hold-resolution-${holdId}`} value={reason} onChange={event=>setReason(event.target.value)} required maxLength={4000} disabled={mutation.isPending} />
+      <p className="field-hint">Describe the observed correction or clearance. Do not use this to sign off inspection or release.</p>
+    </div>
+    {!online&&<p className="text-sm text-amber-900">Reconnect before resolving this hold. Your resolution has not been saved.</p>}
+    {evidence.length===0 ? <p className="text-sm text-amber-900">Attach and scan accepted evidence to this work order before resolving the hold.</p> : <fieldset className="space-y-2">
+      <legend className="text-sm font-medium text-zinc-800">Accepted evidence for this resolution</legend>
+      {evidence.map(item=><label key={item.evidenceId} className="flex items-start gap-2 text-sm font-normal"><input type="checkbox" checked={evidenceIds.includes(item.evidenceId)} onChange={event=>setEvidenceIds(current=>event.target.checked?[...current,item.evidenceId]:current.filter(id=>id!==item.evidenceId))} disabled={mutation.isPending}/><span>{item.displayName}</span></label>)}
+    </fieldset>}
+    <FormError error={mutation.error}/>
+    <Button type="submit" disabled={!online||mutation.isPending||evidenceIds.length===0}>{mutation.isPending?"Saving…":"Resolve hold"}</Button>
+  </form>;
+}
+
 function OperationsReview({order,refresh}:{order:WorkOrder;refresh:()=>void}) {
   const {site}=useStaff();
   const client=useQueryClient();
@@ -812,7 +942,7 @@ function OperationsReview({order,refresh}:{order:WorkOrder;refresh:()=>void}) {
   const review=order.operationsReview;
   const reviewNeedsRefresh=Boolean(review&&!review.isCurrent);
   return <section className="panel mb-4 border-l-4 border-l-sky-600" aria-labelledby="operations-review-title">
-    <div className="panel-heading"><h2 id="operations-review-title" className="section-title">Operations review</h2><Badge>{review?.isCurrent?"Current review":review?"Review needs refresh":"Awaiting review"}</Badge></div>
+    <div className="panel-heading"><h2 id="operations-review-title" tabIndex={-1} className="section-title scroll-mt-24">Operations review</h2><Badge>{review?.isCurrent?"Current review":review?"Review needs refresh":"Awaiting review"}</Badge></div>
     <div className="space-y-4 p-5 sm:p-6">
       <p className="text-sm leading-6 text-zinc-600">Review the new job before assigning a qualified team lead. This review only covers team-lead routing. It does not confirm vehicle handover, approve diagnosis or repairs, or sign off technical completion.</p>
       {review&&<dl className="grid gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4 sm:grid-cols-2"><div><dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Reviewed by</dt><dd className="mt-1 text-sm font-medium">{review.reviewedByName}</dd></div><div><dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Review date and time</dt><dd className="mt-1 text-sm">{dateTime(review.reviewedAt, site.timeZone)}</dd></div><div><dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Job version reviewed</dt><dd className="mt-1 text-sm">{review.reviewedWorkOrderVersion}</dd></div>{review.notes&&<div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Review notes</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6">{review.notes}</dd></div>}</dl>}
@@ -849,16 +979,28 @@ function OperationsAssignment({order,refresh}:{order:WorkOrder;refresh:()=>void}
   });
   function submit(event:FormEvent<HTMLFormElement>){event.preventDefault();mutation.mutate({leadUserId,reason:reason.trim()});}
   const currentReview=order.operationsReview?.isCurrent===true;
-  const canOfferAssignment=Boolean(currentReview&&eligible.data?.canAssign&&eligible.data.blockReason===null&&!order.teamLeadAssignment);
+  const assignment=order.teamLeadAssignment;
+  const currentAssignment=Boolean(assignment&&order.operationsReview
+    &&assignment.operationsReviewId===order.operationsReview.id
+    &&order.version===order.operationsReview.reviewedWorkOrderVersion+1);
+  const canOfferAssignment=Boolean(currentReview&&eligible.data?.canAssign&&eligible.data.blockReason===null&&!currentAssignment);
   return <section className="panel mb-6 border-l-4 border-l-emerald-700" aria-labelledby="operations-assignment-title">
-    <div className="panel-heading"><h2 id="operations-assignment-title" className="section-title">Team-lead assignment</h2><Badge>{order.teamLeadAssignment?"Team lead assigned":"Awaiting assignment"}</Badge></div>
+    <div className="panel-heading"><h2 id="operations-assignment-title" tabIndex={-1} className="section-title scroll-mt-24">Team-lead assignment</h2><Badge>{currentAssignment?"Team lead assigned":assignment?"Review needed":"Awaiting assignment"}</Badge></div>
     <div className="space-y-5 p-5 sm:p-6">
-      {order.teamLeadAssignment?<dl className="grid gap-4 sm:grid-cols-2"><div><dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Assigned team lead</dt><dd className="mt-1 font-medium">{order.teamLeadAssignment.leadName}</dd></div><div><dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Vehicle type</dt><dd className="mt-1">{order.teamLeadAssignment.powertrainClass}{order.teamLeadAssignment.powertrainClass==="HYB"?" · Operations selected a qualified hybrid lead":""}</dd></div><div><dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Assigned by</dt><dd className="mt-1 text-sm">{order.teamLeadAssignment.assignedByName} · {dateTime(order.teamLeadAssignment.assignedAt, site.timeZone)}</dd></div><div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Assignment reason</dt><dd className="mt-1 text-sm leading-6">{order.teamLeadAssignment.reason}</dd></div></dl>:<p className="text-sm leading-6 text-zinc-600">Assign a currently qualified team lead after Operations has reviewed the latest version of this job. Assignment does not approve repairs or sign off technical completion.</p>}
+      {assignment?<>
+        <dl className="grid gap-4 sm:grid-cols-2">
+          <div><dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Assigned team lead</dt><dd className="mt-1 font-medium">{assignment.leadName}</dd></div>
+          <div><dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Vehicle type</dt><dd className="mt-1">{assignment.powertrainClass}{assignment.powertrainClass==="HYB"?" · Operations selected a qualified hybrid lead":""}</dd></div>
+          <div><dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Assigned by</dt><dd className="mt-1 text-sm">{assignment.assignedByName} · {dateTime(assignment.assignedAt, site.timeZone)}</dd></div>
+          <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Assignment reason</dt><dd className="mt-1 text-sm leading-6">{assignment.reason}</dd></div>
+        </dl>
+        {!currentAssignment&&<p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-950">This assignment is for an earlier job version. Operations must review the latest version before assigning a team lead again.</p>}
+      </>:<p className="text-sm leading-6 text-zinc-600">Assign a currently qualified team lead after Operations has reviewed the latest version of this job. Assignment does not approve repairs or sign off technical completion.</p>}
       {!online?<p className="border-t border-zinc-100 pt-4 text-sm text-amber-800">Reconnect to check assignment permission and team-lead qualifications.</p>:eligible.isPending?<Loading label="Checking assignment permission and team-lead qualifications"/>:eligible.isError?<Failure error={eligible.error} retry={()=>void eligible.refetch()}/>:eligible.data?.blockReason==="authority-required"?<p className="border-t border-zinc-100 pt-4 text-sm text-zinc-600">You need current Operations permission to assign a team lead.</p>:eligible.data?.blockReason==="operations-review-required"?<p className="border-t border-zinc-100 pt-4 text-sm text-amber-800">Review the latest version of this job before assigning a team lead.</p>:eligible.data?.blockReason==="no-qualified-leads"?<p className="border-t border-zinc-100 pt-4 text-sm text-amber-800">No team lead currently meets the qualifications for this vehicle type. Assignment stays blocked until one does.</p>:canOfferAssignment?<form className="grid gap-4 border-t border-zinc-100 pt-5 sm:grid-cols-2" onSubmit={submit}>
         <div><label htmlFor="assignment-lead" className="space-y-1 text-sm font-medium">Team lead</label><select id="assignment-lead" className="block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5" required value={leadUserId} onChange={event=>setLeadUserId(event.target.value)} disabled={mutation.isPending} {...fieldErrorProps(mutation.error,"leadUserId","assignment-lead")}><option value="">Choose a team lead</option>{eligible.data?.teamLeads.map(person=><option key={person.id} value={person.id}>{person.name}</option>)}</select><FieldErrorMessage error={mutation.error} path="leadUserId" id="assignment-lead" /></div>
         <div className="sm:col-span-2"><label htmlFor="assignment-reason" className="space-y-1 text-sm font-medium">Assignment reason</label><textarea id="assignment-reason" className="block min-h-24 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 font-normal" required minLength={1} maxLength={1000} value={reason} onChange={event=>setReason(event.target.value)} disabled={mutation.isPending} placeholder="Record the team-lead routing decision." {...fieldErrorProps(mutation.error,"reason","assignment-reason")} /><FieldErrorMessage error={mutation.error} path="reason" id="assignment-reason" /></div>
         <div className="sm:col-span-2"><FormError error={mutation.error}/><p id="assignment-action-help" className="mb-2 text-sm text-zinc-600">{!online?"Reconnect to assign a team lead.":!leadUserId?"Choose a qualified team lead to continue.":!reason.trim()?"Enter an assignment reason to continue.":mutation.isPending?"Assignment is being saved.":"The assignment is ready to save."}</p><Button type="submit" aria-describedby="assignment-action-help" disabled={!online||mutation.isPending||!leadUserId||!reason.trim()}>{mutation.isPending?"Saving assignment…":"Assign team lead"}</Button></div>
-      </form>:order.teamLeadAssignment?<p className="border-t border-zinc-100 pt-4 text-sm text-zinc-600">A team lead is assigned. A replacement assignment needs a fresh Operations review and a new qualified-lead decision.</p>:<p className="border-t border-zinc-100 pt-4 text-sm text-zinc-600">Record and confirm the Operations review above before making an assignment.</p>}
+      </form>:currentAssignment?<p className="border-t border-zinc-100 pt-4 text-sm text-zinc-600">This team lead is assigned to the current job version. If the job changes, Operations must review the new version before assigning a replacement.</p>:assignment?<p className="border-t border-zinc-100 pt-4 text-sm text-zinc-600">Review the latest job version before assigning a team lead again.</p>:<p className="border-t border-zinc-100 pt-4 text-sm text-zinc-600">Record and confirm the Operations review above before making an assignment.</p>}
     </div>
   </section>;
 }
@@ -892,7 +1034,7 @@ function TeamLeadWorkPlan({order,refresh}:{order:WorkOrder;refresh:()=>void}) {
     "planned-tasks-required":"Add at least one proposed task before preparing the work plan.",
   };
   return <section className="panel mb-6 border-l-4 border-l-sky-600" aria-labelledby="work-plan-title">
-    <div className="panel-heading"><h2 id="work-plan-title" className="section-title">Team lead's work plan</h2><Badge>{order.workPlan?`Version ${order.workPlan.revisionNumber}${order.workPlan.isCurrent?" · current":" · needs refresh"}`:"Draft required"}</Badge></div>
+    <div className="panel-heading"><h2 id="work-plan-title" tabIndex={-1} className="section-title scroll-mt-24">Team lead's work plan</h2><Badge>{order.workPlan?`Version ${order.workPlan.revisionNumber}${order.workPlan.isCurrent?" · current":" · needs refresh"}`:"Draft required"}</Badge></div>
     <div className="space-y-5 p-5 sm:p-6">
       <p className="text-sm leading-6 text-zinc-600">Arrange the proposed tasks in the order they should be done, and explain why. This draft does not give permission to start work or approve extra or changed repairs.</p>
       {order.workPlan&&<div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4"><p className="text-sm font-semibold">Latest draft · {dateTime(order.workPlan.plannedAt, site.timeZone)} · {order.workPlan.plannedBy}</p><p className="mt-1 text-sm text-zinc-600">{order.workPlan.rationale}</p><ol className="mt-3 list-decimal space-y-1 pl-5 text-sm">{order.workPlan.tasks.map(task=><li key={task.taskId}><span className="font-medium">{task.reference}</span> · {task.title}</li>)}</ol></div>}
@@ -943,7 +1085,7 @@ function SupervisorHandoff({order,refresh}:{order:WorkOrder;refresh:()=>void}) {
   });
   function submit(event:FormEvent<HTMLFormElement>){event.preventDefault();if(order.workPlan?.isCurrent)mutation.mutate({supervisorUserId,workPlanRevisionId:order.workPlan.id,reason:reason.trim()});}
   return <section className="panel mb-6 border-l-4 border-l-amber-500" aria-labelledby="supervisor-handoff-title">
-    <div className="panel-heading"><h2 id="supervisor-handoff-title" className="section-title">Assign a supervisor</h2><Badge>{order.supervisorHandoff?(order.supervisorHandoff.isCurrent?"Supervisor assigned":"Handover needs updating"):"Awaiting team lead"}</Badge></div>
+    <div className="panel-heading"><h2 id="supervisor-handoff-title" tabIndex={-1} className="section-title scroll-mt-24">Assign a supervisor</h2><Badge>{order.supervisorHandoff?(order.supervisorHandoff.isCurrent?"Supervisor assigned":"Handover needs updating"):"Awaiting team lead"}</Badge></div>
     <div className="space-y-5 p-5 sm:p-6">
       {order.supervisorHandoff?<dl className="grid gap-4 sm:grid-cols-2"><div><dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Assigned supervisor</dt><dd className="mt-1 font-medium">{order.supervisorHandoff.supervisorName}</dd></div><div><dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Assigned by</dt><dd className="mt-1 text-sm">{order.supervisorHandoff.assignedByName} · {dateTime(order.supervisorHandoff.assignedAt, site.timeZone)}</dd></div><div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Handover note</dt><dd className="mt-1 text-sm leading-6">{order.supervisorHandoff.reason}</dd></div></dl>:<p className="text-sm leading-6 text-zinc-600">The assigned team lead records the handover after preparing the work plan. Assigning a supervisor does not sign off technical completion.</p>}
       {!order.teamLeadAssignment?<p className="text-sm text-amber-800">Assign a team lead before handing over this job.</p>:!order.workPlan?.isCurrent?<p className="border-t border-zinc-100 pt-4 text-sm text-amber-800">Prepare an up-to-date work-plan draft before assigning a supervisor. Any change to the plan or job requires a new handover.</p>:!online?<p className="border-t border-zinc-100 pt-4 text-sm text-amber-800">Reconnect to load qualified supervisors and record the handover.</p>:eligible.isPending?<Loading label="Loading qualified supervisors"/>:eligible.isError?<Failure error={eligible.error} retry={()=>void eligible.refetch()}/>:eligible.data&&!eligible.data.canHandoff?<p className="border-t border-zinc-100 pt-4 text-sm text-zinc-600">Only the assigned team lead with current permission can assign a supervisor.</p>:eligible.data?.supervisors.length?<form className="grid gap-4 border-t border-zinc-100 pt-5 sm:grid-cols-2" onSubmit={submit}>
@@ -1129,8 +1271,15 @@ function DiagnosticForm({ order, onSaved, onClose }: FormProps) {
   const [observations, setObservations] = useState<DiagnosticObservation[]>([]);
   const [observationStatus, setObservationStatus] = useState("");
   const [observationError, setObservationError] = useState<string | null>(null);
+  const observationFocusTarget = useRef<string | null>(null);
   const [evidenceIds, setEvidenceIds] = useState<string[]>([]);
   const mutation = useOrderCommand(order, "diagnostic-findings", onSaved);
+  useEffect(() => {
+    const targetId = observationFocusTarget.current;
+    if (!targetId) return;
+    observationFocusTarget.current = null;
+    document.getElementById(targetId)?.focus();
+  }, [observations]);
   const linkedTasks = order.tasks.filter((task) => task.complaintId === complaintId);
   const priorFindings = order.diagnosticFindings.filter(
     (finding) => finding.complaintId === complaintId && finding.taskId === (taskId || null),
@@ -1224,12 +1373,10 @@ function DiagnosticForm({ order, onSaved, onClose }: FormProps) {
 
   function removeObservation(index: number) {
     const removed = observations[index];
+    const nextIndex = index < observations.length - 1 ? index : index - 1;
+    observationFocusTarget.current = nextIndex >= 0 ? `remove-observation-${nextIndex}` : "add-observation";
     setObservations((current) => current.filter((_, currentIndex) => currentIndex !== index));
     setObservationStatus(`Removed ${removed?.kind.replaceAll("-", " ") ?? "diagnostic"} observation.`);
-    const nextIndex = index < observations.length - 1 ? index : index - 1;
-    window.requestAnimationFrame(() => {
-      (nextIndex >= 0 ? document.getElementById(`remove-observation-${nextIndex}`) : document.getElementById("add-observation"))?.focus();
-    });
   }
 
   const setField = (name: keyof typeof fields, value: string) =>

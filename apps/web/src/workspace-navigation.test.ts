@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Site } from "./api";
-import { workspaceCapabilities, workspaceHomePath } from "./workspace-navigation";
+import { todayWorkQueues, workspaceCapabilities, workspaceHomePath } from "./workspace-navigation";
 
 function site(roleCodes: string[], id = "10000000-0000-4000-8000-000000000001"): Site {
   return {
@@ -22,14 +22,15 @@ test("workshop roles receive operational destinations but Operator stays account
   assert.equal(capabilities.operatorOnly, false);
 });
 
-test("sales-only staff can record and review their own requests without seeing workshop jobs", () => {
+test("sales-only staff can record service requests while Sales pages remain outside the workshop pilot", () => {
   const capabilities = workspaceCapabilities(site(["sales-representative"]));
   assert.equal(capabilities.canOpenToday, true);
   assert.equal(capabilities.canOpenRequests, true);
   assert.equal(capabilities.canOpenVehicleHistory, true);
+  assert.equal(capabilities.canOpenSalesDeliveries, false);
   assert.equal(capabilities.canOpenWorkOrders, false);
   assert.equal(capabilities.canRegisterVisit, false);
-  assert.equal(workspaceHomePath(site(["sales-representative"])), "/sites/10000000-0000-4000-8000-000000000001/sales-deliveries");
+  assert.equal(workspaceHomePath(site(["sales-representative"])), "/sites/10000000-0000-4000-8000-000000000001/today");
 });
 
 test("Operator-only landing remains account administration", () => {
@@ -49,7 +50,17 @@ test("Technician landing exposes personal task queue and not vehicle or Head rep
   assert.equal(capabilities.canOpenWorkOrders, true);
   assert.equal(capabilities.canOpenMyTasks, true);
   assert.equal(capabilities.canOpenVehicleHistory, false);
+  assert.equal(capabilities.canOpenServiceHistory, true);
   assert.equal(capabilities.canOpenHeadOverview, false);
+});
+
+test("service history is available to workshop roles without granting it to sales-only staff or the Operator", () => {
+  for (const role of ["head-service-centre", "service-advisor", "ev-team-lead", "ice-team-lead", "supervisor", "technician-engineer-trainee"]) {
+    assert.equal(workspaceCapabilities(site([role])).canOpenServiceHistory, true, role);
+  }
+  for (const role of ["sales-representative", "pdi-observer", "vmms-operator", "finance-billing"]) {
+    assert.equal(workspaceCapabilities(site([role])).canOpenServiceHistory, false, role);
+  }
 });
 
 test("read-only workshop access cannot register a new visit", () => {
@@ -58,11 +69,11 @@ test("read-only workshop access cannot register a new visit", () => {
   assert.equal(workspaceCapabilities(readOnly).canRegisterVisit, false);
 });
 
-test("site landing is calculated from the selected site role set", () => {
+test("site landing is calculated from the selected site role set and stays in the workshop pilot", () => {
   const workshop = site(["service-advisor"], "10000000-0000-4000-8000-000000000003");
   const sales = site(["sales-representative"], "10000000-0000-4000-8000-000000000004");
   assert.equal(workspaceHomePath(workshop), "/sites/10000000-0000-4000-8000-000000000003/today");
-  assert.equal(workspaceHomePath(sales), "/sites/10000000-0000-4000-8000-000000000004/sales-deliveries");
+  assert.equal(workspaceHomePath(sales), "/sites/10000000-0000-4000-8000-000000000004/today");
 });
 
 test("vehicle learning is available to every after-sales role including Head, technician and trainee", () => {
@@ -73,10 +84,10 @@ test("vehicle learning is available to every after-sales role including Head, te
   assert.equal(workspaceCapabilities(site(["vmms-operator"])).canOpenVehicleLearning,false);
 });
 
-test("Finance setup is limited to the Finance/Billing role", () => {
+test("Finance setup stays outside the workshop pilot for every role", () => {
   assert.equal(workspaceCapabilities(site(["head-service-centre"])).canOpenFinanceSetup, false);
-  assert.equal(workspaceCapabilities(site(["finance-billing"])).canOpenFinanceSetup, true);
-  assert.equal(workspaceCapabilities(site(["head-service-centre", "finance-billing"])).canOpenFinanceSetup, true);
+  assert.equal(workspaceCapabilities(site(["finance-billing"])).canOpenFinanceSetup, false);
+  assert.equal(workspaceCapabilities(site(["head-service-centre", "finance-billing"])).canOpenFinanceSetup, false);
   assert.equal(workspaceCapabilities(site(["finance-billing"])).canOpenWorkOrders, false);
   assert.equal(workspaceCapabilities(site(["finance-billing"])).canOpenVehicleLearning, true);
   assert.equal(workspaceCapabilities(site(["service-advisor"])).canOpenFinanceSetup, false);
@@ -87,4 +98,21 @@ test("Finance setup is limited to the Finance/Billing role", () => {
   assert.equal(workspaceCapabilities(site(["sales-representative"])).canOpenFinanceSetup, false);
   assert.equal(workspaceCapabilities(site(["vmms-operator"])).canOpenFinanceSetup, false);
   assert.equal(workspaceCapabilities(site([])).canOpenFinanceSetup, false);
+});
+
+test("Today builds the right work previews for combined workshop roles", () => {
+  assert.deepEqual(todayWorkQueues(["head-service-centre", "ev-team-lead", "supervisor", "technician-engineer-trainee"]).map(({ key }) => key), [
+    "operations-review",
+    "lead-assignment",
+    "team-lead",
+    "supervisor",
+    "task-reviews",
+    "diagnostic-reviews",
+    "checklist-reviews",
+    "assigned-tasks",
+  ]);
+  assert.deepEqual(todayWorkQueues(["service-advisor"]).map(({ key }) => key), []);
+  assert.deepEqual(todayWorkQueues(["supervisor"]).map(({ key }) => key), ["supervisor", "task-reviews", "checklist-reviews"]);
+  assert.deepEqual(todayWorkQueues(["ev-team-lead"]).map(({ key }) => key), ["team-lead", "task-reviews", "diagnostic-reviews", "checklist-reviews"]);
+  assert.deepEqual(todayWorkQueues(["vmms-operator"]), []);
 });

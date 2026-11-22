@@ -15,6 +15,7 @@ import {
 import {
   ArrowLeft,
   ArrowRight,
+  Activity,
   BookOpen,
   CarFront,
   ClipboardCheck,
@@ -43,13 +44,16 @@ import { workspaceCapabilities, workspaceHomePath } from "./workspace-navigation
 
 const Reception = lazy(() => import("./pages/reception").then(({ Reception: page }) => ({ default: page })));
 const ServiceRequests = lazy(() => import("./pages/service-requests").then(({ ServiceRequests: page }) => ({ default: page })));
+const ServiceHistory = lazy(() => import("./pages/service-history").then(({ ServiceHistory: page }) => ({ default: page })));
 const Intake = lazy(() => import("./pages/intake").then(({ Intake: page }) => ({ default: page })));
 const MyAssignedTasks = lazy(() => import("./pages/my-assigned-tasks").then(({ MyAssignedTasks: page }) => ({ default: page })));
 const WorkOrderDetail = lazy(() => import("./pages/work-order").then(({ WorkOrderDetail: page }) => ({ default: page })));
 const PrintWorkOrder = lazy(() => import("./pages/print-work-order").then(({ PrintWorkOrder: page }) => ({ default: page })));
 const PrintTaskProgressReport = lazy(() => import("./pages/print-task-progress-report").then(({ PrintTaskProgressReport: page }) => ({ default: page })));
+const PrintMaintenanceChecklistReport = lazy(() => import("./pages/print-maintenance-checklist-report").then(({ PrintMaintenanceChecklistReport: page }) => ({ default: page })));
 const Workforce = lazy(() => import("./pages/workforce").then(({ Workforce: page }) => ({ default: page })));
 const HeadOverview = lazy(() => import("./pages/head-overview").then(({ HeadOverview: page }) => ({ default: page })));
+const HeadActivity = lazy(() => import("./pages/head-activity").then(({ HeadActivity: page }) => ({ default: page })));
 const PrintHeadOverview = lazy(() => import("./pages/print-head-overview").then(({ PrintHeadOverview: page }) => ({ default: page })));
 const Messages = lazy(() => import("./pages/messages").then(({ Messages: page }) => ({ default: page })));
 const StaffAccounts = lazy(() => import("./pages/staff-accounts").then(({ StaffAccounts: page }) => ({ default: page })));
@@ -263,9 +267,11 @@ function StaffWorkspace({ staff }: { staff: StaffSession }) {
         <Route index element={<WorkspaceHomeRedirect />} />
         <Route path="today" element={<WorkspaceAccess allow="canOpenToday"><Today /></WorkspaceAccess>} />
         <Route path="overview" element={<WorkspaceAccess allow="canOpenHeadOverview"><HeadOverview /></WorkspaceAccess>} />
+        <Route path="activity" element={<WorkspaceAccess allow="canOpenHeadOverview"><HeadActivity /></WorkspaceAccess>} />
         <Route path="overview/print" element={<WorkspaceAccess allow="canOpenHeadOverview"><PrintHeadOverview /></WorkspaceAccess>} />
         <Route path="work-orders" element={<WorkspaceAccess allow="canOpenWorkOrders"><Reception /></WorkspaceAccess>} />
         <Route path="requests" element={<WorkspaceAccess allow="canOpenRequests"><ServiceRequests /></WorkspaceAccess>} />
+        <Route path="service-history" element={<WorkspaceAccess allow="canOpenServiceHistory"><ServiceHistory /></WorkspaceAccess>} />
         <Route path="my-tasks" element={<WorkspaceAccess allow="canOpenMyTasks"><MyAssignedTasks /></WorkspaceAccess>} />
         <Route path="intake" element={<WorkspaceAccess allow="canRegisterVisit"><Intake /></WorkspaceAccess>} />
         <Route path="requests/:requestId/reception" element={<WorkspaceAccess allow="canRegisterVisit"><Intake /></WorkspaceAccess>} />
@@ -275,9 +281,10 @@ function StaffWorkspace({ staff }: { staff: StaffSession }) {
         <Route path="documents" element={<WorkspaceAccess allow="canOpenDocuments"><Documents /></WorkspaceAccess>} />
         <Route path="vehicle-learning" element={<WorkspaceAccess allow="canOpenVehicleLearning"><VehicleLearning /></WorkspaceAccess>} />
         <Route path="finance-setup" element={<WorkspaceAccess allow="canOpenFinanceSetup"><FinanceSetup /></WorkspaceAccess>} />
-        <Route path="sales-deliveries" element={<WorkspaceAccess allow="canOpenVehicleHistory"><SalesDeliveries /></WorkspaceAccess>} />
+        <Route path="sales-deliveries" element={<WorkspaceAccess allow="canOpenSalesDeliveries"><SalesDeliveries /></WorkspaceAccess>} />
         <Route path="work-orders/:orderId/print" element={<WorkspaceAccess allow="canOpenWorkOrders"><PrintWorkOrder /></WorkspaceAccess>} />
         <Route path="work-orders/:orderId/progress-report" element={<WorkspaceAccess allow="canOpenWorkOrders"><PrintTaskProgressReport /></WorkspaceAccess>} />
+        <Route path="work-orders/:orderId/checklists/:checklistId/report" element={<WorkspaceAccess allow="canOpenWorkOrders"><PrintMaintenanceChecklistReport /></WorkspaceAccess>} />
         <Route path="work-orders/:orderId" element={<WorkspaceAccess allow="canOpenWorkOrders"><WorkOrderDetail /></WorkspaceAccess>} />
       </Route>
       <Route
@@ -308,7 +315,7 @@ function workspacePageLabel(pathname: string, siteId: string): string {
   if (path === "requests" || path.startsWith("requests/")) return "Requests and callbacks";
   if (path === "work-orders") return "Work orders";
   if (path.startsWith("work-orders/")) return "Work order details";
-  if (path === "sales-deliveries") return "Vehicles and history";
+  if (path === "sales-deliveries") return "Sales and PDI history";
   if (path === "my-tasks") return "My assigned tasks";
   if (path === "overview" || path === "overview/print") return "Service-centre overview";
   if (path === "staff") return "People and roles";
@@ -688,7 +695,7 @@ function Workspace({ session }: { session: StaffSession }) {
   const documentsPath = `/sites/${site.id}/documents`;
   const documentsPage = location.pathname === documentsPath;
   const primaryPath = workspaceHomePath(site);
-  const moreOpen = moreExpanded || location.pathname.includes("/overview") || location.pathname.includes("/my-tasks") || documentsPage || location.pathname.includes("/staff") || location.pathname.includes("/messages") || location.pathname.includes("/finance-setup");
+  const moreOpen = moreExpanded || location.pathname.includes("/overview") || location.pathname.includes("/activity") || location.pathname.includes("/my-tasks") || documentsPage || location.pathname.includes("/staff") || location.pathname.includes("/messages") || location.pathname.includes("/finance-setup");
   if (accountOnly && location.pathname !== accountPath && location.pathname !== `${accountPath}/` && !documentsPage) {
     return <Navigate to={accountPath} replace />;
   }
@@ -745,16 +752,20 @@ function Workspace({ session }: { session: StaffSession }) {
             {capabilities.canOpenRequests && <NavLink aria-label="Requests and callbacks" title="Requests and callbacks" to={`/sites/${site.id}/requests`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}>
               <ClipboardList className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Requests and callbacks</span>
             </NavLink>}
+            {capabilities.canOpenServiceHistory && <NavLink aria-label="Service history" title="Service history" to={`/sites/${site.id}/service-history`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}>
+              <ClipboardList className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Service history</span>
+            </NavLink>}
             {capabilities.canOpenWorkOrders && <NavLink aria-label="Work orders" title="Work orders" to={`/sites/${site.id}/work-orders`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}>
               <ClipboardCheck className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Work orders</span>
             </NavLink>}
-            {capabilities.canOpenVehicleHistory && <NavLink aria-label="Vehicles and history" title="Vehicles and history" to={`/sites/${site.id}/sales-deliveries`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}>
-              <CarFront className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Vehicles and history</span>
+            {capabilities.canOpenSalesDeliveries && <NavLink aria-label="Sales and PDI history" title="Sales and PDI history" to={`/sites/${site.id}/sales-deliveries`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}>
+              <CarFront className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Sales and PDI history</span>
             </NavLink>}
             {(capabilities.canOpenHeadOverview || capabilities.canOpenMyTasks || capabilities.canOpenDocuments || capabilities.canManageTeam || capabilities.canSendStaffMessages || capabilities.canManageStaffAccounts || capabilities.canOpenVehicleLearning || capabilities.canOpenFinanceSetup) && <details open={moreOpen} onToggle={event => setMoreExpanded(event.currentTarget.open)} className="min-w-0 basis-full min-[900px]:basis-auto">
               <summary aria-label="More sections" title="More sections" className="nav-link min-h-11 cursor-pointer list-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white [&::-webkit-details-marker]:hidden"><BookOpen className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">More sections</span></summary>
               <div className="mt-2 flex min-w-0 flex-wrap gap-2 min-[900px]:flex-col">
                 {capabilities.canOpenHeadOverview && <NavLink aria-label="Service-centre overview" title="Service-centre overview" to={`/sites/${site.id}/overview`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><Gauge className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Service-centre overview</span></NavLink>}
+                {capabilities.canOpenHeadOverview && <NavLink aria-label="Site activity" title="Site activity" to={`/sites/${site.id}/activity`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><Activity className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Site activity</span></NavLink>}
                 {capabilities.canOpenMyTasks && <NavLink aria-label="My assigned tasks" title="My assigned tasks" to={`/sites/${site.id}/my-tasks`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><ClipboardCheck className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">My assigned tasks</span></NavLink>}
                 {capabilities.canOpenDocuments && <NavLink aria-label="Documents" title="Documents" to={documentsPath} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><BookOpen className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Documents</span></NavLink>}
                 {capabilities.canOpenVehicleLearning && <NavLink aria-label="Vehicle learning" title="Vehicle learning" to={`/sites/${site.id}/vehicle-learning`} className={({ isActive }) => cn("nav-link min-w-0 flex-1 basis-36 min-[900px]:flex-none", isActive && "nav-link-active")}><BookOpen className="size-4 shrink-0" aria-hidden="true" /><span className="workspace-nav-label">Vehicle learning</span></NavLink>}
@@ -845,7 +856,7 @@ function Workspace({ session }: { session: StaffSession }) {
               <Outlet key={site.id} />
             </Suspense>
           </main>
-          <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 px-5 py-5 text-xs text-zinc-500 sm:px-8">
+          <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 px-5 py-5 text-xs text-zinc-600 sm:px-8">
             <span>Raymond Gray VMMS</span>
             <span>Times shown in Africa/Accra · UTC+0</span>
           </footer>

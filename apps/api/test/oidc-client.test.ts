@@ -20,6 +20,10 @@ let jwksRequests = 0;
 const receivedTokenCodes: string[] = [];
 const challengesByCode = new Map<string, string>();
 const tokensByCode = new Map<string, string>();
+const oauthFormEncode = (value: string) => encodeURIComponent(value).replace(/(?:[-_.!~*'()]|%20)/g, (character) => {
+  if (character === '%20') return '+';
+  return `%${character.charCodeAt(0).toString(16).toUpperCase()}`;
+});
 
 function json(reply: ServerResponse, status: number, body: unknown) {
   reply.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
@@ -44,9 +48,14 @@ async function setToken(code: string, options: {
   audience?: string;
   nonce?: string;
   expiry?: number;
+  acr?: string;
+  amr?: string[];
+  strictMfa?: boolean;
+  provider?: OidcClient;
 } = {}) {
   const parameters = newAuthorizationParameters();
-  const authorizationUrl = await provider.createAuthorizationUrl(parameters);
+  const activeProvider = options.provider ?? (options.strictMfa ? new OidcClient({ ...testConfig, OIDC_REQUIRE_MFA_ASSURANCE: true }) : provider);
+  const authorizationUrl = await activeProvider.createAuthorizationUrl(parameters);
   const challenge = authorizationUrl.searchParams.get('code_challenge');
   assert.ok(challenge);
   assert.equal(authorizationUrl.searchParams.get('code_challenge_method'), 'S256');
@@ -55,6 +64,7 @@ async function setToken(code: string, options: {
   assert.equal(authorizationUrl.searchParams.get('state'), parameters.state);
   assert.equal(authorizationUrl.searchParams.get('nonce'), parameters.nonce);
   assert.ok(authorizationUrl.searchParams.get('scope')?.split(' ').includes('openid'));
+  if (options.strictMfa) assert.equal(authorizationUrl.searchParams.get('acr_values'), 'urn:raymond-gray:auth:mfa');
   challengesByCode.set(code, challenge);
   const issuedAt = Math.floor(Date.now() / 1000);
   tokensByCode.set(code, signedToken({
@@ -65,11 +75,13 @@ async function setToken(code: string, options: {
     iat: issuedAt,
     exp: options.expiry ?? issuedAt + 300,
     nonce: options.nonce ?? parameters.nonce,
+    ...(options.acr ? { acr: options.acr } : {}),
+    ...(options.amr ? { amr: options.amr } : {}),
   }));
   const callback = new URL(callbackUrl);
   callback.searchParams.set('code', code);
   callback.searchParams.set('state', parameters.state);
-  return { parameters, callback, issuedAt };
+  return { parameters, callback, issuedAt, activeProvider };
 }
 
 async function onRequest(request: IncomingMessage, reply: ServerResponse) {
@@ -96,6 +108,7 @@ async function onRequest(request: IncomingMessage, reply: ServerResponse) {
     return;
   }
   if (request.method === 'POST' && address === `${issuerPath}/token`) {
+    assert.equal(request.headers.authorization, `Basic ${Buffer.from(`${oauthFormEncode(clientId)}:${oauthFormEncode(clientSecret)}`).toString('base64')}`);
     if (tokenOutage) {
       json(reply, 503, { error: 'temporarily_unavailable' });
       return;
@@ -148,6 +161,7 @@ before(async () => {
     OIDC_ISSUER: issuer,
     OIDC_CLIENT_ID: clientId,
     OIDC_CLIENT_SECRET: clientSecret,
+    OIDC_REQUIRE_MFA_ASSURANCE: false,
     OIDC_CALLBACK_URL: callbackUrl,
     OIDC_LOGOUT_CALLBACK_URL: 'http://127.0.0.1:4100/api/v1/auth/oidc/logout/callback',
     TRUSTED_PROXY_CIDRS: [],
@@ -157,6 +171,29 @@ before(async () => {
     STAFF_MESSAGES_ENABLED: false,
   };
   provider = new OidcClient(testConfig);
+});
+
+test('configured MFA assurance is requested and verified from signed ID token claims', async () => {
+  const valid = await setToken('mfa-valid-code', { strictMfa: true, acr: 'urn:raymond-gray:auth:mfa', amr: ['pwd', 'mfa'] });
+  const accepted = await valid.activeProvider.exchangeAuthorizationCode({ ...valid.parameters, callbackUrl: valid.callback });
+  assert.equal(accepted.subject, 'synthetic-subject');
+
+  const missing = await setToken('mfa-missing-code', { strictMfa: true });
+  await assert.rejects(missing.activeProvider.exchangeAuthorizationCode({ ...missing.parameters, callbackUrl: missing.callback }), /multi-factor authentication/);
+
+  const wrongClass = await setToken('mfa-wrong-class-code', { strictMfa: true, acr: '0', amr: ['pwd'] });
+  await assert.rejects(wrongClass.activeProvider.exchangeAuthorizationCode({ ...wrongClass.parameters, callbackUrl: wrongClass.callback }), /multi-factor authentication/);
+});
+
+test('OIDC client keeps an injected fetch adapter for the full provider exchange', async () => {
+  let requests = 0;
+  const injected = new OidcClient(testConfig, async (input, init) => {
+    requests++;
+    return fetch(new URL(input), init as unknown as RequestInit);
+  });
+  const transaction = await setToken('custom-fetch-code', { provider: injected });
+  await injected.exchangeAuthorizationCode({ ...transaction.parameters, callbackUrl: transaction.callback });
+  assert(requests >= 3, 'The injected fetch adapter should cover discovery, token exchange and JWKS retrieval.');
 });
 
 after(async () => {

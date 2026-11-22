@@ -36,16 +36,19 @@ try {
   const overdueCallbackInput=siteDateTimeInput(new Date(Date.now()-15*60*1000),site.timeZone);
   const intake=await context.request.post(`${origin}/api/v1/sites/${runtime.siteId}/intake-drafts`,{headers:{Origin:origin,'X-CSRFToken':decodeURIComponent(sessionCsrf.value),'Idempotency-Key':randomUUID()},data:{client:{kind:'new',partyKind:'organisation',name:'Synthetic Client',phone:'',email:''},owner:{kind:'new',partyKind:'person',name:'Synthetic Owner',phone:'',email:''},visitContact:{kind:'new',name:'Synthetic Driver',phone:'+233200000000',email:''},vehicle:{kind:'new',vin:'WVWZZZ1JZXW778802',registration:'SYN-123',make:'Synthetic',model:'EV',variant:'',powertrain:'Battery'},odometerKm:100,socPercent:50,powertrainClass:'EV',warrantyStatus:'unknown',warrantyConfirmationNote:'',complaint:'Synthetic complaint'}});
   assert.equal(intake.status(),200,await intake.text());const job=await intake.json();
-  const page=await context.newPage();const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  const page=await context.newPage();const errors=[];const relatedResponses=[];page.on('pageerror',error=>errors.push(error.message));
+  page.on('response',response=>{if(response.url().includes('/service-requests'))relatedResponses.push({status:response.status(),url:new URL(response.url()).pathname});});
   let lost=false,command=null;
   await page.route(`**/api/v1/sites/${runtime.siteId}/service-requests`,async route=>{
-    if(route.request().method()==='POST'&&!lost){command=route.request().headers()['idempotency-key'];assert(command);const response=await route.fetch();assert.equal(response.status(),200);lost=true;return route.abort('failed');}
+    if(route.request().method()==='POST'&&!lost){command=route.request().headers()['idempotency-key'];assert(command);const response=await route.fetch();assert.equal(response.status(),200,await response.text());lost=true;return route.abort('failed');}
     if(route.request().method()==='POST')assert.equal(route.request().headers()['idempotency-key'],command);
     return route.continue();
   });
-  await page.goto(`${origin}/sites/${runtime.siteId}/requests`);
+  await page.goto(`${origin}/sites/${runtime.siteId}/requests`,{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'New request'}).click();
   await page.getByLabel('Keep this draft in this browser tab for up to eight hours').check();
+  await page.getByLabel('What does the vehicle need?').selectOption('service-centre-pdi');
+  await page.getByLabel('Reported vehicle source').selectOption('partner-garage');
   await page.getByLabel('What was reported?').fill('Synthetic real service request');
   await page.getByLabel('Who contacted us?').fill('Synthetic caller');
   await page.getByLabel('Contact phone number').fill('+233200000099');
@@ -60,12 +63,14 @@ try {
   await page.getByRole('button',{name:'Retry save'}).click();
   await page.getByRole('heading',{name:'Request details'}).waitFor();
   await page.getByRole('region',{name:'Request details'}).getByText('+233200000099',{exact:true}).waitFor();
+  await page.getByRole('region',{name:'Request details'}).getByText('Requested service: Service Centre pre-delivery inspection',{exact:true}).waitFor();
+  await page.getByRole('region',{name:'Request details'}).getByText('Partner garage',{exact:true}).waitFor();
   await page.getByRole('region',{name:'Request details'}).getByText('Driver',{exact:true}).waitFor();
   await page.getByRole('region',{name:'Request details'}).getByText('Next action: Call after the workshop assessment').waitFor();
   await page.getByRole('region',{name:'Request details'}).getByText(/Responsible: Synthetic/).waitFor();
   await page.unroute(`**/api/v1/sites/${runtime.siteId}/service-requests`);
   const queue=await context.request.get(`${origin}/api/v1/sites/${runtime.siteId}/service-requests`);assert.equal(queue.status(),200);
-  const data=await queue.json();assert.equal(data.totalCount,1);assert.equal(data.items[0].concern,'Synthetic real service request');assert.equal(data.items[0].reportedContactName,'Synthetic caller');assert.equal(data.items[0].reportedContactPhone,'+233200000099');assert.equal(data.items[0].reportedContactRelationship,'driver');assert.equal(data.items[0].nextAction,'Call after the workshop assessment');assert.ok(Date.parse(data.items[0].callbackDueAt)<Date.now(),'The fixture must be overdue in the API.');
+  const data=await queue.json();assert.equal(data.totalCount,1);assert.equal(data.items[0].requestKind,'service-centre-pdi');assert.equal(data.items[0].vehicleSource,'partner-garage');assert.equal(data.items[0].concern,'Synthetic real service request');assert.equal(data.items[0].reportedContactName,'Synthetic caller');assert.equal(data.items[0].reportedContactPhone,'+233200000099');assert.equal(data.items[0].reportedContactRelationship,'driver');assert.equal(data.items[0].nextAction,'Call after the workshop assessment');assert.ok(Date.parse(data.items[0].callbackDueAt)<Date.now(),'The fixture must be overdue in the API.');
   const todayPath=`${origin}/sites/${runtime.siteId}/today`;
   await page.goto(todayPath);
   const callbackPanel=page.getByRole('region',{name:'Callbacks due'});
@@ -152,10 +157,18 @@ try {
   const linkResponse=page.waitForResponse(response=>response.url().endsWith('/link-job')&&response.request().method()==='POST');
   await page.getByRole('button',{name:'Link job',exact:true}).click();
   const linkedResponse=await linkResponse;assert.equal(linkedResponse.status(),200,await linkedResponse.text());
+  const relatedResponse=await context.request.get(`${origin}/api/v1/sites/${runtime.siteId}/work-orders/${job.id}/service-requests`);
+  assert.equal(relatedResponse.status(),200,await relatedResponse.text());
+  const relatedData=await relatedResponse.json();
+  assert(relatedData.items.some(item=>item.id===data.items[0].id),'A linked request must appear in the same-site work-order request list.');
   await page.getByRole('link',{name:'Open linked job'}).waitFor();
   await page.getByRole('link',{name:'Open linked job'}).click();
   await page.getByRole('heading',{name:'Related requests'}).waitFor();
-  await page.getByRole('link',{name:'View request'}).click();
+  await page.getByText('Loading related requests…',{exact:true}).waitFor({state:'detached',timeout:15000});
+  const relatedRequestLink=page.getByRole('link',{name:/^(View request|Open request to record customer contact)$/});
+  if(await relatedRequestLink.count()!==1){console.error('Related request panel:',await page.locator('#related-requests-title').locator('..').innerText());console.error('Related request responses:',relatedResponses);}
+  assert.equal(await relatedRequestLink.count(),1,'The current work-order role must have an accessible link to its canonical request.');
+  await relatedRequestLink.click();
   await page.getByRole('heading',{name:'Request details'}).waitFor();
   await page.getByText('Synthetic call',{exact:true}).waitFor();
   await page.getByLabel('Show requests').selectOption('linked');

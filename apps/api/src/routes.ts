@@ -1,10 +1,11 @@
 import Fastify from 'fastify';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import cookie from '@fastify/cookie';
 import { z } from 'zod';
 import type { Config } from './config.js';
 import { type Database, makePool, uuid } from './db.js';
 import { ApiError } from './errors.js';
+import { requirePilotModule, type PilotModule } from './pilot-modules.js';
 import { authorisedScope, currentUser, issueCsrf, login, logout, requireCsrf, sessionView } from './identity.js';
 import { completeOidcLogin, oidcBindingCookieName, OidcLoginFailure, startOidcLogin, startOwnerOidcLogin } from './oidc-login.js';
 import { currentOwnerAccount, logoutOwner, ownerOidcStartSchema, ownerSessionView } from './owner-identity.js';
@@ -12,12 +13,12 @@ import { listCurrentOwnerVehicles } from './owner-data.js';
 import { addPdiObservation, addPdiObservationSchema, readVehicleSalesHistory, recordSalesDelivery, recordSalesDeliverySchema } from './sales-deliveries.js';
 import { createDeliveryPreparation, createDeliveryPreparationSchema, linkDeliveryPreparation, linkDeliveryPreparationSchema } from './delivery-preparations.js';
 import { OidcClient, type OidcProvider } from './oidc-client.js';
-import { complaintSchema, diagnosticFindingInputSchema, holdSchema, intakeFactCommandSchema, intakeSchema, leadAssignmentSchema, supervisorHandoffSchema, taskSchema, workPlanCommandSchema } from './schemas.js';
+import { complaintSchema, diagnosticFindingInputSchema, holdResolutionSchema, holdSchema, intakeFactCommandSchema, intakeSchema, leadAssignmentSchema, supervisorHandoffSchema, taskSchema, workPlanCommandSchema } from './schemas.js';
 import { approveOwnerSchema, expireOwnerSchema, revokeOwnerSchema, transferOwnerSchema, approveVehicleOwnerAccess, expireVehicleOwnerAccess, revokeVehicleOwnerAccess, transferVehicleOwnerAccess } from './owner-access.js';
 import { issueOwnerInvitation, issueOwnerInvitationSchema, revokeOwnerInvitation, revokeOwnerInvitationSchema } from './owner-invitations.js';
 import { recordOperationsReview } from './workshop.js';
 import { operationsReviewCommandSchema } from './schemas.js';
-import { addComplaint, addTask, assignTeamLead, createIntake, createWorkPlanRevision, findClientsAtSite, findPartiesAtSite, findVehicleAtSite, handoffToSupervisor, listEligibleSupervisors, listEligibleTeamLeads, listWorkOrders, openHold } from './workshop.js';
+import { addComplaint, addTask, assignTeamLead, createIntake, createWorkPlanRevision, findClientsAtSite, findPartiesAtSite, findVehicleAtSite, handoffToSupervisor, listEligibleSupervisors, listEligibleTeamLeads, listWorkOrders, openHold, resolveHold } from './workshop.js';
 import { beginEvidenceDownload, createEvidenceIntent, createEvidenceIntentSchema, createEvidenceServices, readEvidence, readEvidenceIntent, uploadEvidence, type EvidenceServices } from './evidence.js';
 import { attachWorkOrderEvidence, attachWorkOrderEvidenceSchema, createWorkOrderEvidenceIntent, workOrderEvidenceIntentInputSchema } from './work-order-evidence.js';
 import { recordDiagnosticFinding } from './diagnostics.js';
@@ -29,14 +30,21 @@ import { verifyBackchannelLogout, type VerifiedLogout } from './oidc-logout.js';
 import { completeRpLogout, rpLogoutCookieName, startRpLogout } from './oidc-rp-logout.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { readWorkOrderDetail } from './work-order-reads.js';
+import { readVehicleServiceHistory } from './service-history.js';
+import { requireWorkOrderReadAccess } from './work-order-access.js';
 import { readWorkOrderChecklists } from './work-order-checklists.js';
-import { assignExistingRole, endRolePlacement, readHeadOverview, readSiteOrganogram } from './workforce.js';
+import { prepareWorkOrderChecklistDraft } from './work-order-checklist-preparation.js';
+import { createWorkOrderScopeProposal, readWorkOrderScopeProposals, scopeProposalInputSchema } from './work-order-scope-proposals.js';
+import { payerScopeResponseInputSchema, recordPayerScopeResponse } from './work-order-scope-responses.js';
+import { assignExistingRole, endRolePlacement, readHeadOverview, readHeadSiteActivity, readSiteOrganogram } from './workforce.js';
 import { listStaffAccountProvisioningRequests, requestStaffAccountProvisioning, staffAccountProvisioningRequestInputSchema } from './staff-account-admin.js';
 import { listStaffMessages, markStaffMessageRead, sendStaffMessage } from './staff-messages.js';
 import { listControlledDocuments, prepareControlledDocumentDownload } from './controlled-documents.js';
 import { assignWorkPlanTasks, readTaskAllocations, taskAllocationCommandSchema } from './work-order-task-allocations.js';
 import { readMyAssignedTasks } from './my-assigned-tasks.js';
-import { readMyTaskActivity, readSupervisorTaskActivity, recordMyTaskActivity, taskActivityInputSchema } from './work-order-task-activity.js';
+import { readMyTaskActivity, readSupervisorTaskActivity, recordMyTaskActivity, respondToSupervisorTaskReviewRequest, supervisorTaskReviewResponseInputSchema, taskActivityInputSchema } from './work-order-task-activity.js';
+import { readWorkOrderTaskReviewQueue } from './work-order-task-review-queue.js';
+import { readWorkOrderDiagnosticReviewQueue } from './work-order-diagnostic-review-queue.js';
 import { readMyTaskWorkEntries, readMyTaskWorkEvidenceOptions, recordMyTaskWorkEntry, taskWorkEntryInputSchema } from './work-order-task-work-entries.js';
 import { createMyTaskEvidenceIntent, taskEvidenceIntentInputSchema } from './work-order-task-evidence.js';
 import { readWorkOrderServiceReport } from './work-order-service-report.js';
@@ -44,7 +52,9 @@ import { readWorkOrderSourceReports, recordWorkOrderSourceReport, sourceReportIn
 import { assignRequestSchema, assignServiceRequest, claimRequestSchema, claimServiceRequest, closeRequestSchema, closeServiceRequest, contactAttemptSchema, correctContactSchema, correctServiceRequestContact, createServiceRequest, linkRequestSchema, linkServiceRequestToWorkOrder, listRequestAssignees, listServiceRequests, listWorkOrderRequests, readServiceRequest, readServiceRequestContacts, readServiceRequestStatusHistory, recordServiceRequestContact, reopenRequestSchema, reopenServiceRequest, serviceRequestInputSchema, unlinkRequestSchema, unlinkServiceRequest } from './service-requests.js';
 import { listFinanceConfigurationDrafts, saveFinanceConfigurationDraft } from './finance-configuration.js';
 import { readMyActiveTaskLaborSession, startMyTaskLaborSession, stopMyTaskLaborSession } from './work-order-task-labor.js';
-import { checklistOutcomeInputSchema, readMyTaskChecklistOutcomeHistory, recordMyTaskChecklistOutcome } from './work-order-checklist-outcomes.js';
+import { checklistOutcomeInputSchema, readMyTaskChecklistItems, readMyTaskChecklistOutcomeHistory, recordMyTaskChecklistOutcome } from './work-order-checklist-outcomes.js';
+import { readWorkOrderChecklistReport } from './work-order-checklist-report.js';
+import { checklistItemReviewInputSchema, readChecklistReviewQueue, reviewChecklistOutcome } from './work-order-checklist-reviews.js';
 
 async function clearBrowserSessions(pool: Database, request: FastifyRequest, reply: FastifyReply, config: Config) {
   const staffCookie=request.cookies.vmms_session;
@@ -68,14 +78,22 @@ async function clearBrowserSessions(pool: Database, request: FastifyRequest, rep
   issueCsrf(reply,config);
 }
 
-export async function createApp(config:Config,pool:Database=makePool(config.DATABASE_URL),providedOidcProvider?:OidcProvider,providedEvidenceServices?:EvidenceServices,providedLogoutVerifier?:(token:string,config:Config)=>Promise<VerifiedLogout>,testCredentialPool?:Database) {
+export function fastifyServerOptions(config:Config) {
+  return {bodyLimit:65536,requestTimeout:15000,trustProxy:process.env.VERCEL==='1'?true:config.TRUSTED_PROXY_CIDRS.length?config.TRUSTED_PROXY_CIDRS:false,requestIdHeader:false as const,genReqId:()=>randomUUID(),logger:config.NODE_ENV==='test'?false:{redact:['req.headers.cookie','req.headers.authorization','res.headers.set-cookie','password'],serializers:{req:(request:FastifyRequest)=>({method:request.method,route:request.routeOptions.url??'unmatched'})}}};
+}
+
+function keepDeferredModuleClosed(config: Config, module: PilotModule) {
+  requirePilotModule(module, config.NODE_ENV);
+}
+
+export async function createApp(config:Config,pool:Database=makePool(config.DATABASE_URL),providedOidcProvider?:OidcProvider,providedEvidenceServices?:EvidenceServices,providedLogoutVerifier?:(token:string,config:Config)=>Promise<VerifiedLogout>,testCredentialPool?:Database,providedFastify?:FastifyInstance) {
   const role=await pool.query('SELECT rolname,rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user');
   const runtime=z.object({rolname:z.string(),rolsuper:z.boolean(),rolbypassrls:z.boolean()}).parse(role.rows[0]);
   const owns=await pool.query("SELECT count(*)::int AS count FROM pg_tables WHERE schemaname='public' AND tableowner=current_user");
   if (runtime.rolsuper||runtime.rolbypassrls||z.object({count:z.number()}).parse(owns.rows[0]).count>0) {
     throw new Error('The API must connect using a non-owner role without superuser or BYPASSRLS privileges.');
   }
-  const app=Fastify({bodyLimit:65536,requestTimeout:15000,trustProxy:config.TRUSTED_PROXY_CIDRS.length?config.TRUSTED_PROXY_CIDRS:false,requestIdHeader:false,genReqId:()=>randomUUID(),logger:config.NODE_ENV==='test'?false:{redact:['req.headers.cookie','req.headers.authorization','res.headers.set-cookie','password'],serializers:{req:request=>({method:request.method,route:request.routeOptions.url??'unmatched'})}}});
+  const app=providedFastify??Fastify(fastifyServerOptions(config));
   app.addContentTypeParser('application/octet-stream',(_request,payload,done)=>done(null,payload));
   app.addContentTypeParser('application/x-www-form-urlencoded',{parseAs:'string'},(_request,body,done)=>{
     const form=new URLSearchParams(typeof body==='string'?body:body.toString());
@@ -119,6 +137,9 @@ export async function createApp(config:Config,pool:Database=makePool(config.DATA
       : error instanceof Error
         ? {requestId:request.id,errorName:error.name,errorMessage:error.message,stack:error.stack}
         : {requestId:request.id,errorType:typeof error};
+    if (config.NODE_ENV === 'test' && process.env.VMMS_TEST_API_DIAGNOSTICS === '1') {
+      console.error('VMMS test request failed.', diagnostic);
+    }
     request.log.error(diagnostic,'Request failed.');
     return reply.code(500).send({error:{code:'INTERNAL',message:'The request could not be completed. Your saved records have not been partially changed.'}});
   });
@@ -305,13 +326,15 @@ export async function createApp(config:Config,pool:Database=makePool(config.DATA
   });
   app.get('/api/v1/sites/:siteId/work-orders',async(request)=>{
     const {siteId}=z.object({siteId:uuid}).parse(request.params);
+    const scope=await authorisedScope(pool,request,siteId);
+    await requireWorkOrderReadAccess(pool,scope);
     const {q,queue,page,pageSize}=z.object({
       q:z.string().trim().max(200).default(''),
       queue:z.enum(['all','operations','awaiting-operations','held','awaiting-lead','assigned','team-lead','supervisor']).default('all'),
       page:z.coerce.number().int().min(1).max(1_000_000).default(1),
       pageSize:z.coerce.number().int().min(1).max(100).default(25),
     }).parse(request.query);
-    return listWorkOrders(pool,await authorisedScope(pool,request,siteId),q,request.id,queue,page,pageSize);
+    return listWorkOrders(pool,scope,q,request.id,queue,page,pageSize);
   });
   app.get('/api/v1/sites/:siteId/my-tasks',async request=>{
     const {siteId}=z.object({siteId:uuid}).parse(request.params);
@@ -387,6 +410,11 @@ export async function createApp(config:Config,pool:Database=makePool(config.DATA
     reply.header('Cache-Control','no-store');
     return readMyTaskChecklistOutcomeHistory(pool,await authorisedScope(pool,request,siteId,false),workOrderId,taskId,checklistId,itemId,request.id,query.page,query.pageSize);
   });
+  app.get('/api/v1/sites/:siteId/my-tasks/:workOrderId/:taskId/checklists',async (request,reply)=>{
+    const {siteId,workOrderId,taskId}=z.object({siteId:uuid,workOrderId:uuid,taskId:uuid}).parse(request.params);
+    reply.header('Cache-Control','no-store');
+    return readMyTaskChecklistItems(pool,await authorisedScope(pool,request,siteId,false),workOrderId,taskId,request.id);
+  });
   app.post('/api/v1/sites/:siteId/my-tasks/:workOrderId/:taskId/checklists/:checklistId/items/:itemId/outcomes',async request=>{
     requireCsrf(request,config);
     const {siteId,workOrderId,taskId,checklistId,itemId}=z.object({siteId:uuid,workOrderId:uuid,taskId:uuid,checklistId:uuid,itemId:uuid}).parse(request.params);
@@ -394,13 +422,51 @@ export async function createApp(config:Config,pool:Database=makePool(config.DATA
   });
   app.get('/api/v1/sites/:siteId/work-orders/:id',async request=>{
     const {siteId,id}=z.object({siteId:uuid,id:uuid}).parse(request.params);
-    return readWorkOrderDetail(pool,await authorisedScope(pool,request,siteId),id,request.id);
+    const scope=await authorisedScope(pool,request,siteId);
+    await requireWorkOrderReadAccess(pool,scope);
+    return readWorkOrderDetail(pool,scope,id,request.id);
   });
   app.get('/api/v1/sites/:siteId/work-orders/:id/checklists',async(request,reply)=>{
     const {siteId,id}=z.object({siteId:uuid,id:uuid}).parse(request.params);
     const query=z.object({page:z.coerce.number().int().min(1).max(10_000).default(1),pageSize:z.coerce.number().int().min(1).max(100).default(25)}).strict().parse(request.query);
     reply.header('Cache-Control','no-store');
-    return readWorkOrderChecklists(pool,await authorisedScope(pool,request,siteId),id,request.id,query);
+    const scope=await authorisedScope(pool,request,siteId);
+    await requireWorkOrderReadAccess(pool,scope);
+    return readWorkOrderChecklists(pool,scope,id,request.id,query);
+  });
+  app.get('/api/v1/sites/:siteId/work-orders/:workOrderId/checklists/:checklistId/report',async(request,reply)=>{
+    const {siteId,workOrderId,checklistId}=z.object({siteId:uuid,workOrderId:uuid,checklistId:uuid}).parse(request.params);
+    const query=z.object({page:z.coerce.number().int().min(1).max(10_000).default(1),pageSize:z.coerce.number().int().min(1).max(100).default(50),expectedChecklistVersion:z.coerce.number().int().positive().optional()}).strict().parse(request.query);
+    reply.header('Cache-Control','no-store');
+    const scope=await authorisedScope(pool,request,siteId,false);
+    await requireWorkOrderReadAccess(pool,scope);
+    return readWorkOrderChecklistReport(pool,scope,workOrderId,checklistId,request.id,query);
+  });
+  app.post('/api/v1/sites/:siteId/work-orders/:id/checklists',async request=>{
+    requireCsrf(request,config);
+    const {siteId,id}=z.object({siteId:uuid,id:uuid}).parse(request.params);
+    const body=z.object({expectedWorkOrderVersion:z.number().int().positive(),templateRevisionId:uuid,scheduleBasis:z.enum(['customer-request','unknown'])}).strict().parse(request.body);
+    return prepareWorkOrderChecklistDraft(pool,await authorisedScope(pool,request,siteId,true),uuid.parse(request.headers['idempotency-key']),id,body);
+  });
+  app.get('/api/v1/sites/:siteId/work-orders/:id/scope-proposals',async(request,reply)=>{
+    const {siteId,id}=z.object({siteId:uuid,id:uuid}).parse(request.params);
+    reply.header('Cache-Control','no-store');
+    const scope=await authorisedScope(pool,request,siteId,false);
+    await requireWorkOrderReadAccess(pool,scope);
+    return readWorkOrderScopeProposals(pool,scope,id,request.id);
+  });
+  app.post('/api/v1/sites/:siteId/work-orders/:id/scope-proposals',async(request,reply)=>{
+    requireCsrf(request,config);
+    const {siteId,id}=z.object({siteId:uuid,id:uuid}).parse(request.params);
+    reply.header('Cache-Control','no-store');
+    return createWorkOrderScopeProposal(pool,await authorisedScope(pool,request,siteId,true),uuid.parse(request.headers['idempotency-key']),id,scopeProposalInputSchema.parse(request.body));
+  });
+  app.post('/api/v1/sites/:siteId/work-orders/:id/scope-proposals/:proposalId/payer-response',async request=>{
+    requireCsrf(request,config);
+    const {siteId,id,proposalId}=z.object({siteId:uuid,id:uuid,proposalId:uuid}).parse(request.params);
+    const body=payerScopeResponseInputSchema.parse(request.body);
+    if(body.scopeRevisionId!==proposalId) throw new ApiError(400,'SCOPE_PROPOSAL_MISMATCH','The response must match the proposal shown on this page.');
+    return recordPayerScopeResponse(pool,await authorisedScope(pool,request,siteId,true),uuid.parse(request.headers['idempotency-key']),id,body);
   });
   app.get('/api/v1/sites/:siteId/work-orders/:id/service-report',async request=>{
     const {siteId,id}=z.object({siteId:uuid,id:uuid}).parse(request.params);
@@ -412,11 +478,15 @@ export async function createApp(config:Config,pool:Database=makePool(config.DATA
       if(value.page===1&&(value.expectedVersion!==undefined||value.expectedTotal!==undefined)) context.addIssue({code:'custom',message:'Continuation values are only valid after page one.'});
       if(value.page>1&&(value.expectedVersion===undefined||value.expectedTotal===undefined)) context.addIssue({code:'custom',message:'Continuation pages require the first page version and entry count.'});
     }).parse(request.query);
-    return readWorkOrderServiceReport(pool,await authorisedScope(pool,request,siteId),id,request.id,query.page,query.expectedVersion,query.expectedTotal);
+    const scope=await authorisedScope(pool,request,siteId);
+    await requireWorkOrderReadAccess(pool,scope);
+    return readWorkOrderServiceReport(pool,scope,id,request.id,query.page,query.expectedVersion,query.expectedTotal);
   });
   app.get('/api/v1/sites/:siteId/work-orders/:id/source-reports',async request=>{
     const {siteId,id}=z.object({siteId:uuid,id:uuid}).parse(request.params);
-    return readWorkOrderSourceReports(pool,await authorisedScope(pool,request,siteId),id,request.id);
+    const scope=await authorisedScope(pool,request,siteId);
+    await requireWorkOrderReadAccess(pool,scope);
+    return readWorkOrderSourceReports(pool,scope,id,request.id);
   });
   app.post('/api/v1/sites/:siteId/work-orders/:id/source-reports',async request=>{
     requireCsrf(request,config);
@@ -434,25 +504,39 @@ export async function createApp(config:Config,pool:Database=makePool(config.DATA
     return findVehicleAtSite(pool,await authorisedScope(pool,request,siteId),vin,request.id);
   });
   app.get('/api/v1/sites/:siteId/vehicles/:vehicleId/sales-history',async request=>{
+    keepDeferredModuleClosed(config,'sales');
     const {siteId,vehicleId}=z.object({siteId:uuid,vehicleId:uuid}).parse(request.params);
     return readVehicleSalesHistory(pool,await authorisedScope(pool,request,siteId),vehicleId,request.id);
   });
+  app.get('/api/v1/sites/:siteId/service-history',async request=>{
+    const {siteId}=z.object({siteId:uuid}).parse(request.params);
+    const query=z.object({
+      vin:z.string().trim().toUpperCase().regex(/^[A-HJ-NPR-Z0-9]{17}$/),
+      page:z.coerce.number().int().min(1).max(10000).default(1),
+      pageSize:z.coerce.number().int().min(1).max(50).default(10),
+    }).strict().parse(request.query);
+    return readVehicleServiceHistory(pool,await authorisedScope(pool,request,siteId),query.vin,request.id,query.page,query.pageSize);
+  });
   app.post('/api/v1/sites/:siteId/sales-deliveries',async request=>{
+    keepDeferredModuleClosed(config,'sales');
     requireCsrf(request,config);
     const {siteId}=z.object({siteId:uuid}).parse(request.params);
     return recordSalesDelivery(pool,await authorisedScope(pool,request,siteId,true),uuid.parse(request.headers['idempotency-key']),recordSalesDeliverySchema.parse(request.body));
   });
   app.post('/api/v1/sites/:siteId/delivery-preparations',async request=>{
+    keepDeferredModuleClosed(config,'sales');
     requireCsrf(request,config);
     const {siteId}=z.object({siteId:uuid}).parse(request.params);
     return createDeliveryPreparation(pool,await authorisedScope(pool,request,siteId,true),uuid.parse(request.headers['idempotency-key']),createDeliveryPreparationSchema.parse(request.body));
   });
   app.post('/api/v1/sites/:siteId/delivery-preparations/:preparationId/link-delivery',async request=>{
+    keepDeferredModuleClosed(config,'sales');
     requireCsrf(request,config);
     const {siteId,preparationId}=z.object({siteId:uuid,preparationId:uuid}).parse(request.params);
     return linkDeliveryPreparation(pool,await authorisedScope(pool,request,siteId,true),uuid.parse(request.headers['idempotency-key']),preparationId,linkDeliveryPreparationSchema.parse(request.body));
   });
   app.post('/api/v1/sites/:siteId/sales-deliveries/:deliveryId/pdi-observations',async request=>{
+    keepDeferredModuleClosed(config,'sales');
     requireCsrf(request,config);
     const {siteId,deliveryId}=z.object({siteId:uuid,deliveryId:uuid}).parse(request.params);
     return addPdiObservation(pool,await authorisedScope(pool,request,siteId,true),uuid.parse(request.headers['idempotency-key']),deliveryId,addPdiObservationSchema.parse(request.body));
@@ -573,6 +657,11 @@ export async function createApp(config:Config,pool:Database=makePool(config.DATA
     const {siteId,id}=z.object({siteId:uuid,id:uuid}).parse(request.params);
     return openHold(pool,await authorisedScope(pool,request,siteId,true),uuid.parse(request.headers['idempotency-key']),id,holdSchema.parse(request.body));
   });
+  app.post('/api/v1/sites/:siteId/work-orders/:id/holds/:holdId/resolution',async request=>{
+    requireCsrf(request,config);
+    const {siteId,id,holdId}=z.object({siteId:uuid,id:uuid,holdId:uuid}).parse(request.params);
+    return resolveHold(pool,await authorisedScope(pool,request,siteId,true),uuid.parse(request.headers['idempotency-key']),id,holdId,holdResolutionSchema.parse(request.body));
+  });
   app.get('/api/v1/sites/:siteId/work-orders/:id/eligible-team-leads',async request=>{
     const {siteId,id}=z.object({siteId:uuid,id:uuid}).parse(request.params);
     return listEligibleTeamLeads(pool,await authorisedScope(pool,request,siteId),id);
@@ -614,6 +703,44 @@ export async function createApp(config:Config,pool:Database=makePool(config.DATA
     }).parse(request.query);
     return readSupervisorTaskActivity(pool,await authorisedScope(pool,request,siteId,false),id,request.id,page,pageSize);
   });
+  app.get('/api/v1/sites/:siteId/task-review-requests',async(request,reply)=>{
+    const {siteId}=z.object({siteId:uuid}).parse(request.params);
+    const {page,pageSize}=z.object({
+      page:z.coerce.number().int().min(1).max(10_000).default(1),
+      pageSize:z.coerce.number().int().min(1).max(50).default(25),
+    }).parse(request.query);
+    reply.header('Cache-Control','no-store');
+    return readWorkOrderTaskReviewQueue(pool,await authorisedScope(pool,request,siteId,false),request.id,page,pageSize);
+  });
+  app.get('/api/v1/sites/:siteId/diagnostic-review-findings',async(request,reply)=>{
+    const {siteId}=z.object({siteId:uuid}).parse(request.params);
+    const {page,pageSize}=z.object({
+      page:z.coerce.number().int().min(1).max(10_000).default(1),
+      pageSize:z.coerce.number().int().min(1).max(50).default(25),
+    }).parse(request.query);
+    reply.header('Cache-Control','no-store');
+    return readWorkOrderDiagnosticReviewQueue(pool,await authorisedScope(pool,request,siteId,false),request.id,page,pageSize);
+  });
+  app.get('/api/v1/sites/:siteId/checklist-review-queue',async(request,reply)=>{
+    const {siteId}=z.object({siteId:uuid}).parse(request.params);
+    const {page,pageSize}=z.object({page:z.coerce.number().int().min(1).max(10_000).default(1),pageSize:z.coerce.number().int().min(1).max(50).default(25)}).parse(request.query);
+    reply.header('Cache-Control','no-store');
+    return readChecklistReviewQueue(pool,await authorisedScope(pool,request,siteId,false),request.id,page,pageSize);
+  });
+  app.post('/api/v1/sites/:siteId/work-orders/:workOrderId/tasks/:taskId/checklists/:checklistId/items/:itemId/reviews',async request=>{
+    requireCsrf(request,config);
+    const {siteId,workOrderId,taskId,checklistId,itemId}=z.object({siteId:uuid,workOrderId:uuid,taskId:uuid,checklistId:uuid,itemId:uuid}).parse(request.params);
+    return reviewChecklistOutcome(pool,await authorisedScope(pool,request,siteId,true),uuid.parse(request.headers['idempotency-key']),workOrderId,taskId,checklistId,itemId,checklistItemReviewInputSchema.parse(request.body));
+  });
+  app.post('/api/v1/sites/:siteId/work-orders/:workOrderId/tasks/:taskId/task-activity/:activityId/reply',async request=>{
+    requireCsrf(request,config);
+    const {siteId,workOrderId,taskId,activityId}=z.object({
+      siteId:uuid,workOrderId:uuid,taskId:uuid,activityId:uuid,
+    }).parse(request.params);
+    return respondToSupervisorTaskReviewRequest(pool,await authorisedScope(pool,request,siteId,true),
+      uuid.parse(request.headers['idempotency-key']),workOrderId,taskId,activityId,
+      supervisorTaskReviewResponseInputSchema.parse(request.body));
+  });
   app.get('/api/v1/sites/:siteId/work-orders/:id/eligible-supervisors',async request=>{
     const {siteId,id}=z.object({siteId:uuid,id:uuid}).parse(request.params);
     return listEligibleSupervisors(pool,await authorisedScope(pool,request,siteId),id);
@@ -626,6 +753,11 @@ export async function createApp(config:Config,pool:Database=makePool(config.DATA
   app.get('/api/v1/sites/:siteId/workforce/overview',async request=>{
     const {siteId}=z.object({siteId:uuid}).parse(request.params);
     return readHeadOverview(pool,await authorisedScope(pool,request,siteId),request.id);
+  });
+  app.get('/api/v1/sites/:siteId/workforce/activity',async request=>{
+    const {siteId}=z.object({siteId:uuid}).parse(request.params);
+    const query=z.object({cursor:z.string().max(512).optional(),pageSize:z.coerce.number().int().min(1).max(50).default(25)}).strict().parse(request.query);
+    return readHeadSiteActivity(pool,await authorisedScope(pool,request,siteId),request.id,query.cursor,query.pageSize);
   });
   app.post('/api/v1/sites/:siteId/staff/role-placements',async request=>{
     requireCsrf(request,config);
@@ -747,6 +879,7 @@ export async function createApp(config:Config,pool:Database=makePool(config.DATA
     return revokeOwnerInvitation(pool,await authorisedScope(pool,request,siteId),uuid.parse(request.headers['idempotency-key']),invitationId,revokeOwnerInvitationSchema.parse(request.body));
   });
   app.get('/api/v1/sites/:siteId/finance/configuration-drafts',async(request,reply)=>{
+    keepDeferredModuleClosed(config,'finance-setup');
     const {siteId}=z.object({siteId:uuid}).parse(request.params);
     const query=z.object({page:z.coerce.number().int().min(1).max(100_000).default(1),pageSize:z.coerce.number().int().min(1).max(50).default(25)}).strict().parse(request.query);
     const result=await listFinanceConfigurationDrafts(pool,await authorisedScope(pool,request,siteId),request.id,query);
@@ -754,6 +887,7 @@ export async function createApp(config:Config,pool:Database=makePool(config.DATA
     return result;
   });
   app.post('/api/v1/sites/:siteId/finance/configuration-drafts',async request=>{
+    keepDeferredModuleClosed(config,'finance-setup');
     requireCsrf(request,config);
     const {siteId}=z.object({siteId:uuid}).parse(request.params);
     return saveFinanceConfigurationDraft(pool,await authorisedScope(pool,request,siteId,true),uuid.parse(request.headers['idempotency-key']),request.body);

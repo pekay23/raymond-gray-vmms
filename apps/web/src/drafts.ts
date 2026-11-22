@@ -130,7 +130,7 @@ export function savePendingContactCorrection(userId:string,siteId:string,request
 export function removePendingContactCorrection(userId:string,siteId:string,requestId:string){sessionStorage.removeItem(requestContactCorrectionKey(userId,siteId,requestId));}
 const requestKey = (userId:string,siteId:string) => `${requestPrefix}${userId}:${siteId}`;
 const requestDraftSchema=z.object({
-  fields:z.object({source:z.string().max(80),concern:z.string().max(4000),contact:z.string().max(500),contactPhone:z.string().max(80).default(''),contactRelationship:z.enum(['vehicle-owner','driver','client-contact','sales-contact','other','unknown']).default('unknown'),vehicle:z.string().max(500),client:z.string().max(500),followUp:z.boolean().default(false),nextAction:z.string().max(1000).default(''),callbackDueAt:z.string().max(40).default('')}).strict(),
+  fields:z.object({kind:z.enum(['repair-maintenance','routine-maintenance','psai','service-centre-pdi']).default('repair-maintenance'),vehicleSource:z.enum(['showroom-stock','partner-garage','other','unknown']).default('unknown'),shippingReference:z.string().max(160).default(''),source:z.string().max(80),concern:z.string().max(4000),contact:z.string().max(500),contactPhone:z.string().max(80).default(''),contactRelationship:z.enum(['vehicle-owner','driver','client-contact','sales-contact','other','unknown']).default('unknown'),vehicle:z.string().max(500),client:z.string().max(500),followUp:z.boolean().default(false),nextAction:z.string().max(1000).default(''),callbackDueAt:z.string().max(40).default('')}).strict(),
   commandId:z.string().uuid(),attempted:z.boolean(),savedAt:z.iso.datetime(),
 }).strict();
 export type RequestDraft=z.infer<typeof requestDraftSchema>;

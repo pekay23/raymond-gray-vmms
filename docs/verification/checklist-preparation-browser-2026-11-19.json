@@ -1,0 +1,54 @@
+{
+  "recordedAt": "2026-11-20T08:59:22.217Z",
+  "result": "PASS",
+  "browser": "Chromium 157.0.4341.60",
+  "checks": [
+    {
+      "name": "No horizontal overflow at 320px",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "No horizontal overflow at 360px",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "No horizontal overflow at 390px",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "No horizontal overflow at 430px",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "No horizontal overflow at 768px",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "No horizontal overflow at 1024px",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "No horizontal overflow at 1440px",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Checklist draft preparation uses a stable idempotency key after a lost response",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "A prepared checklist stays visibly draft-only and does not authorize work",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Automated WCAG 2.1 A/AA scan passes",
+      "result": "VERIFIED"
+    }
+  ],
+  "commandCount": 2,
+  "axeViolations": 0,
+  "pageErrors": [],
+  "limitations": [
+    "The browser uses synthetic API responses; server authorization, transaction, and audit behavior are covered separately by disposable-PostgreSQL tests.",
+    "This is not staff UAT or production verification."
+  ]
+}

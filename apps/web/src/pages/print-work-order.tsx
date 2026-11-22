@@ -6,6 +6,19 @@ import { request, serviceReportPageSchema, serviceReportPath, serviceReportSchem
 import { useStaff } from "../workspace";
 import { Button, Failure, Loading, dateTime } from "../ui";
 
+const serviceKindLabels: Record<WorkOrder["serviceKind"], string> = {
+  "repair-maintenance": "Repair or maintenance",
+  "routine-maintenance": "Routine maintenance",
+  psai: "Post-shipping acceptance inspection",
+  "service-centre-pdi": "Service Centre pre-delivery inspection",
+};
+const serviceSourceLabels: Record<WorkOrder["serviceSource"], string> = {
+  "showroom-stock": "Showroom stock",
+  "partner-garage": "Partner garage",
+  other: "Other source",
+  unknown: "Not known yet",
+};
+
 export function PrintWorkOrder() {
   const { site } = useStaff();
   const { orderId } = useParams();
@@ -105,9 +118,12 @@ function WorkOrderSummary({ report, siteName, siteId, timeZone }: { report: Serv
               <p className="mt-2 text-sm font-medium text-zinc-700">Record version {report.workOrderVersion}</p>
             </div>
           </div>
-          <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-zinc-200 pt-4 text-sm sm:grid-cols-4">
+          <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-zinc-200 pt-4 text-sm sm:grid-cols-5">
             <Meta label="Opened" value={dateTime(order.createdAt, timeZone)} />
             <Meta label="Report prepared" value={dateTime(report.generatedAt, timeZone)} />
+            <Meta label="Requested service" value={serviceKindLabels[order.serviceKind]} />
+            {order.serviceKind === "service-centre-pdi" && <Meta label="Reported vehicle source" value={serviceSourceLabels[order.serviceSource]} />}
+            {order.serviceKind === "psai" && <Meta label="Shipping reference" value={order.shippingReference || "Not recorded"} />}
             <Meta label="Powertrain" value={order.powertrainClass ?? "Not recorded"} />
             <Meta label="Warranty at booking" value={warrantyLabel(order.warrantyStatusAtBooking)} />
           </dl>

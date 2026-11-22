@@ -51,12 +51,13 @@ def write_fixture(root: Path, *, with_receipt: bool = False) -> Path:
     for name in lifecycle.ARTIFACTS:
         (folder / name).write_text("synthetic sentinel secret", encoding="utf-8")
     if with_receipt:
+        expected_actor_keys = lifecycle._expected_identity_actor_keys()
         receipt = {
             "schemaVersion": 1,
             "installationId": INSTALLATION_ID,
             "issuer": state["issuer"],
             "clientId": state["clientId"],
-            "actors": [{"key": f"p{index:02d}", "subject": f"00000000-0000-4000-8000-{index:012d}"} for index in range(1, 17)],
+            "actors": [{"key": key, "subject": f"00000000-0000-4000-8000-{index:012d}"} for index, key in enumerate(sorted(expected_actor_keys), start=1)],
         }
         (folder / "identity-receipt.json").write_text(json.dumps(receipt), encoding="utf-8")
     return folder
@@ -107,6 +108,15 @@ class LifecycleReadOnlyTests(unittest.TestCase):
         receipt["actors"][1]["subject"] = receipt["actors"][0]["subject"]
         receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
         with self.assertRaisesRegex(lifecycle.FixtureStateError, "duplicate"):
+            lifecycle.inspect_installation(INSTALLATION_ID, root=self.root, acl_check=self.acl_check)
+
+    def test_identity_receipt_rejects_stale_extra_actor_slot(self):
+        folder = write_fixture(self.root, with_receipt=True)
+        receipt_path = folder / "identity-receipt.json"
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        receipt["actors"].append({"key": "p16", "subject": "00000000-0000-4000-8000-000000000016"})
+        receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+        with self.assertRaisesRegex(lifecycle.FixtureStateError, "every current staff persona"):
             lifecycle.inspect_installation(INSTALLATION_ID, root=self.root, acl_check=self.acl_check)
 
     def test_never_reads_private_artifact_contents(self):

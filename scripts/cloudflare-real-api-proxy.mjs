@@ -107,6 +107,9 @@ async function seedDatabase() {
   await admin.query('INSERT INTO sites(id,organisation_id,code,name) VALUES($1,$2,$3,$4),($5,$2,$6,$7),($8,$9,$10,$11)', [siteId, organisationId, 'CPA', 'Synthetic Proxy Site A', secondSiteId, 'CPA2', 'Synthetic Proxy Site A2', otherSiteId, otherOrganisationId, 'CPB', 'Synthetic Proxy Site B']);
   await admin.query('INSERT INTO staff_users(id,username,display_name,password_hash) VALUES($1,$2,$3,$4)', [actorId, username, 'Synthetic Proxy Staff', passwordHash]);
   await admin.query('INSERT INTO memberships(user_id,site_id,can_write) VALUES($1,$2,true)', [actorId, siteId]);
+  await admin.query(`INSERT INTO staff_role_placements
+    (id,organisation_id,site_id,staff_user_id,role_code,created_by,updated_by)
+    VALUES($1,$2,$3,$4,'service-advisor',$4,$4)`, [randomUUID(), organisationId, siteId, actorId]);
 }
 
 function createTestEvidenceServices() {
@@ -175,7 +178,7 @@ function createSyntheticOidcProvider() {
 
 async function startApi(apiPort, webOrigin) {
   const [{ createApp }, { makePool }] = await Promise.all([
-    import('../apps/api/src/app.ts'),
+    import('../apps/api/src/routes.ts'),
     import('../apps/api/src/db.ts'),
   ]);
   const config = {

@@ -8,7 +8,7 @@ import { crc32 } from 'node:zlib';
 import pg from 'pg';
 import { z } from 'zod';
 import { Readable } from 'node:stream';
-import { createApp } from '../src/app.js';
+import { createApp } from '../src/routes.js';
 import { makePool } from '../src/db.js';
 import { hashPassword } from '../src/identity.js';
 import { createEvidenceServices, processNextEvidenceScanJob, type EvidenceServices, type MalwareScanner, type PrivateEvidenceStore } from '../src/evidence.js';
@@ -44,6 +44,7 @@ const config: Config = {
   WEB_ORIGIN: 'http://127.0.0.1:5173',
   OIDC_ISSUER: 'http://localhost:8080/realms/raymond-gray-dev',
   OIDC_CLIENT_ID: 'vmms-web-dev',
+  OIDC_REQUIRE_MFA_ASSURANCE: false,
   OIDC_CALLBACK_URL: 'http://127.0.0.1:4100/api/v1/auth/oidc/callback',
   OIDC_LOGOUT_CALLBACK_URL: 'http://127.0.0.1:4100/api/v1/auth/oidc/logout/callback',
   TRUSTED_PROXY_CIDRS: [],
@@ -530,10 +531,15 @@ test('unavailable and infected scan verdicts never allow evidence download', asy
     for (const mode of ['unavailable', 'infected'] as const) {
       scannerMode = mode;
       const { evidenceId } = await uploadPdf(headers, `${mode}.pdf`);
-      assert.equal(await processNextEvidenceScanJob(worker, services), true);
-      const status = await app.inject({ method: 'GET', url: `/api/v1/sites/${siteId}/evidence/${evidenceId}`, headers });
-      assert.equal(status.statusCode, 200, status.body);
-      assert.equal(status.json().state, mode === 'infected' ? 'rejected' : 'quarantined');
+      let state = 'pending';
+      for (let attempt = 0; attempt < 20 && state === 'pending'; attempt += 1) {
+        await processNextEvidenceScanJob(worker, services);
+        const status = await app.inject({ method: 'GET', url: `/api/v1/sites/${siteId}/evidence/${evidenceId}`, headers });
+        assert.equal(status.statusCode, 200, status.body);
+        state = status.json().state;
+        if (state === 'pending') await new Promise(resolve => setTimeout(resolve, 25));
+      }
+      assert.equal(state, mode === 'infected' ? 'rejected' : 'quarantined');
       const download = await app.inject({ method: 'GET', url: `/api/v1/sites/${siteId}/evidence/${evidenceId}/download`, headers });
       assert.equal(download.statusCode, 404);
     }

@@ -92,6 +92,12 @@ try {
       await page.goto(new URL(`/sites/${site.id}/sales-deliveries`, webOrigin).href);
       await page.getByRole('heading', { level: 1, name: 'Sales and deliveries' }).waitFor();
       checks.push({ role: persona.roleCode, result: 'signed in; sales and vehicle-history workspace opened' });
+    } else if (persona.roleCode === 'finance-billing' || persona.roleCode === 'compliance-records-hr') {
+      const denied = await context.request.get(new URL(`/api/v1/sites/${site.id}/work-orders`, webOrigin).href);
+      assert.equal(denied.status(), 403, `${persona.roleCode} must not receive workshop work-order access.`);
+      await page.goto(new URL(`/sites/${site.id}/today`, webOrigin).href);
+      await page.getByRole('heading', { level: 1, name: 'Today' }).waitFor();
+      checks.push({ role: persona.roleCode, result: 'signed in; site scope verified; work-order API denied' });
     } else {
       await page.goto(new URL(`/sites/${site.id}/work-orders`, webOrigin).href);
       await page.getByRole('heading', { level: 1, name: 'Work orders' }).waitFor();

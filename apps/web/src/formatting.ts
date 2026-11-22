@@ -79,3 +79,38 @@ export function formatCurrency(
     currency,
   }).format(amount);
 }
+
+export function currencyMinorUnitDigits(currency: string, locale = DEFAULT_FORMAT_LOCALE): number {
+  if (!/^[A-Z]{3}$/.test(currency) || currency === "XXX" || !supportedCurrencies.has(currency)) {
+    throw new RangeError("Currency must be a supported uppercase ISO 4217 code.");
+  }
+  const digits = new Intl.NumberFormat(locale, { style: "currency", currency }).resolvedOptions().maximumFractionDigits;
+  if (digits === undefined) throw new RangeError("The selected currency precision is unavailable.");
+  return digits;
+}
+
+export function parseCurrencyAmountToMinorUnits(amount: string, currency: string, locale = DEFAULT_FORMAT_LOCALE): string {
+  const digits = currencyMinorUnitDigits(currency, locale);
+  const match = /^(0|[1-9][0-9]*)(?:\.([0-9]+))?$/.exec(amount.trim());
+  if (!match || (match[2]?.length ?? 0) > digits) throw new RangeError("Enter a non-negative amount using the selected currency's decimal places.");
+  const scale = 10n ** BigInt(digits);
+  const whole = BigInt(match[1]!);
+  const fraction = BigInt((match[2] ?? "").padEnd(digits, "0") || "0");
+  const minorUnits = whole * scale + fraction;
+  if (minorUnits.toString().length > 38) throw new RangeError("The amount is too large to record.");
+  return minorUnits.toString();
+}
+
+export function formatCurrencyMinorUnits(minorUnits: string, currency: string, locale = DEFAULT_FORMAT_LOCALE): string {
+  const digits = currencyMinorUnitDigits(currency, locale);
+  if (!/^(0|[1-9][0-9]{0,37})$/.test(minorUnits)) throw new RangeError("Currency minor units must be a non-negative integer string.");
+  const scale = 10n ** BigInt(digits);
+  const value = BigInt(minorUnits);
+  const whole = value / scale;
+  const fraction = digits ? (value % scale).toString().padStart(digits, "0") : "";
+  const formatter = new Intl.NumberFormat(locale, { style: "currency", currency, minimumFractionDigits: digits, maximumFractionDigits: digits });
+  const localizedDigits = Array.from({ length: 10 }, (_, digit) => new Intl.NumberFormat(locale, { useGrouping: false }).format(digit));
+  return formatter.formatToParts(whole).map(part => part.type === "fraction"
+    ? [...fraction].map(digit => localizedDigits[Number(digit)]).join("")
+    : part.value).join("");
+}

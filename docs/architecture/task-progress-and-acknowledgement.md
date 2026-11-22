@@ -28,8 +28,21 @@ An update is not a completion claim or permission to begin work. There is no com
 | Request | A request for help, parts, information, access, or evidence. It is not an approval request. |
 | Comment | A note attached to the task. |
 
+## Worker report for Supervisor review
+
+An assigned Technician, Engineer or Trainee can send a structured report for Supervisor review after recording work on the current assignment. The report records the worker's summary of actions, checks and results, their reported outcome (`reported-complete`, `reported-incomplete`, or `blocked`), and remaining work or concerns. VMMS snapshots the exact current work-plan and assignment revisions and the task work-entry IDs included in the report. The report is immutable and appears in the existing current-plan Supervisor, assigned Team Lead and Head activity feeds; the Supervisor review inbox links to that work order.
+
+This is the worker's report, not a task state change or sign-off. `reported-complete` is not verified completion. It does not authorize work, satisfy a qualification or action grant, approve a procedure, clear a hold, complete G3, release G4, or permit customer contact or departure. The Supervisor may respond with an attributed coordination note, but that response is not a sign-off. G3 remains unavailable until its effective instructions, evidence rules, action grants and qualifications are configured and checked by the separate G3 command.
+
 The interface must say that updates do not complete the task or authorise work. If a safe operating instruction is not available, the user must contact the Supervisor and follow the effective procedure library.
 
 ## Verification
 
 Cover current assignee allowed, wrong actor/role/site denied, stale plan or assignment rejected, duplicate command replayed without duplicate history, different payload under same key rejected, activity append-only, and no work-order version/G3/G4 or grant change. Browser and keyboard checks must confirm the update form is understandable at phone and desktop sizes.
+# Cross-work-order requests for supervisor review
+
+Technicians can ask for guidance on an individual task. The request is an append-only activity and does not complete the task, authorize repair, clear a hold, or grant sign-off authority. Supervisors, the Team Lead currently assigned to the work order, and the Head of Service Centre can see unanswered requests on Today.
+
+The queue is limited to the current site, current work plan and handoff, current assignment revision, and the technician's active direct-report placement. Requests disappear when answered or when the underlying assignment/plan is no longer current. Reads are audited and responses are non-cacheable. A queue row links to the work order, where the reviewer can read context and reply using the existing review action.
+
+The queue is an operational inbox only. It is not a task completion, independent inspection, release, or approval workflow.

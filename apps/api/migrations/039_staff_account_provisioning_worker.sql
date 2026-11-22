@@ -204,10 +204,13 @@ $function$;
 
 REVOKE ALL ON FUNCTION public.claim_staff_account_provisioning_request(integer) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.complete_staff_account_provisioning_request(uuid,uuid,text,text,text,integer,integer) FROM PUBLIC;
+-- Managed PostgreSQL roles are not superusers; membership is required for ALTER OWNER.
+GRANT vmms_staff_account_function_owner TO CURRENT_USER;
 GRANT CREATE ON SCHEMA public TO vmms_staff_account_function_owner;
-ALTER FUNCTION public.claim_staff_account_provisioning_request(integer) OWNER TO vmms_staff_account_function_owner;
-ALTER FUNCTION public.complete_staff_account_provisioning_request(uuid,uuid,text,text,text,integer,integer) OWNER TO vmms_staff_account_function_owner;
-REVOKE CREATE ON SCHEMA public FROM vmms_staff_account_function_owner;
 GRANT USAGE ON SCHEMA public TO vmms_staff_account_worker;
 GRANT EXECUTE ON FUNCTION public.claim_staff_account_provisioning_request(integer) TO vmms_staff_account_worker;
 GRANT EXECUTE ON FUNCTION public.complete_staff_account_provisioning_request(uuid,uuid,text,text,text,integer,integer) TO vmms_staff_account_worker;
+ALTER FUNCTION public.claim_staff_account_provisioning_request(integer) OWNER TO vmms_staff_account_function_owner;
+ALTER FUNCTION public.complete_staff_account_provisioning_request(uuid,uuid,text,text,text,integer,integer) OWNER TO vmms_staff_account_function_owner;
+REVOKE CREATE ON SCHEMA public FROM vmms_staff_account_function_owner;
+REVOKE vmms_staff_account_function_owner FROM CURRENT_USER;

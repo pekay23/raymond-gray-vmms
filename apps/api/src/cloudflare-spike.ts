@@ -1,7 +1,7 @@
 import { httpServerHandler } from 'cloudflare:node';
 import type { FastifyInstance } from 'fastify';
 import { Readable } from 'node:stream';
-import { createApp } from './app.js';
+import { createApp } from './routes.js';
 import type { Config } from './config.js';
 import { makePool } from './db.js';
 import type { EvidenceServices, PrivateEvidenceStore } from './evidence.js';
@@ -30,6 +30,7 @@ function createSpikeConfig(connectionString: string): Config {
     WEB_ORIGIN: 'http://127.0.0.1:5173',
     OIDC_ISSUER: 'http://127.0.0.1:8080/realms/vmms-spike',
     OIDC_CLIENT_ID: 'vmms-worker-spike',
+    OIDC_REQUIRE_MFA_ASSURANCE: false,
     OIDC_CALLBACK_URL: 'http://127.0.0.1:8787/api/v1/auth/oidc/callback',
     OIDC_LOGOUT_CALLBACK_URL: 'http://127.0.0.1:8787/api/v1/auth/oidc/logout/callback',
     TRUSTED_PROXY_CIDRS: [],

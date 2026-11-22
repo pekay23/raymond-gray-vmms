@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-16",
+  "updatedAt": "2026-11-20",
   "goal": "Complete the authoritative VMMS requirements, historical import and agreed platform rollout with exercised product behaviour, security, recovery, staff acceptance and management operational approval.",
   "statusRule": "Verified requires reviewed acceptance evidence. Dependencies and completionGate requirements must be verified or explicitly owner-approved not applicable. Planned/deferred/configuration-required work never satisfies closure. Epic rollups require all applicable children; user-facing source scenarios require their own evidence.",
   "deliveryFocus": {
@@ -48,10 +48,14 @@
       "CHECK-USER-039",
       "BUILD-USER-039-WORK-HISTORY-001",
       "CHECK-USER-039-WORK-HISTORY-001",
+      "BUILD-USER-039-CLOSEOUT-PATH-001",
+      "CHECK-USER-039-CLOSEOUT-PATH-001",
       "BUILD-USER-040",
       "BUILD-USER-040-NAV-001",
       "BUILD-USER-040-CALLBACKS-TODAY-001",
       "BUILD-USER-043-INSTANCE-001",
+      "BUILD-R-M-0137-CHECKLIST-SCOPE-001",
+      "CHECK-R-M-0137-CHECKLIST-SCOPE-001",
       "BUILD-USER-043-OUTCOMES-001",
       "BUILD-USER-043-REVIEW-001",
       "BUILD-USER-043-REPORT-001",
@@ -75,14 +79,20 @@
       "O-017",
       "O-018",
       "O-019",
-      "O-020"
+      "O-020",
+      "BUILD-USER-047-REQUEST-ENTRY-001",
+      "CHECK-USER-047-REQUEST-ENTRY-001",
+      "BUILD-USER-047-INSPECTION-TYPES-001",
+      "CONFIG-USER-047-PDI-FEE-001",
+      "BUILD-PILOT-MODULE-GATES-001",
+      "CHECK-PILOT-MODULE-GATES-001"
     ],
     "deferredAreas": [
       "Sales recording, showroom imports, delivery preparation and sales-triggered PDI",
       "Historical maintenance backlog import until the owner completes source inventory and mapping review",
-      "Full finance, invoicing, receipts, payment/email adapters, commercial reports and nonessential stock workflows",
       "Smart POS features unrelated to day-to-day workshop maintenance",
-      "Customer portal expansion, native OS applications and full offline synchronization"
+      "Customer portal expansion, native OS applications and full offline synchronization",
+      "Sales recording, showroom imports, delivery preparation and sales-triggered PDI; Finance setup, accounting, rate-card administration, broad financial reporting and nonessential stock workflows. Keep the minimum invoice, payment/guarantee verification, receipt and vehicle-departure controls needed by the workshop journey in the pilot."
     ],
     "infrastructurePlan": "docs/delivery/managed-services-redesign-plan-2026-11-16.md"
   },
@@ -97,7 +107,7 @@
       "dependencies": [],
       "requirementIds": [],
       "sourceRefs": [],
-      "status": "planned",
+      "status": "in-progress",
       "acceptance": [
         "For discovery and architecture, every required child task has reviewed acceptance evidence or an explicit owner-approved applicability decision. Planned, deferred, blocked or configuration-required children prevent completion.",
         "Review the linked requirements independently; child implementation status cannot substitute for server/API/database/browser, operational or UAT evidence."
@@ -690,7 +700,8 @@
       "dependencies": [],
       "requirementIds": [],
       "sourceRefs": [],
-      "status": "planned",
+      "status": "deferred",
+      "statusNote": "Finance and management reporting will follow the single-site workshop operations pilot.",
       "acceptance": [
         "For finance and management reporting, every required child task has reviewed acceptance evidence or an explicit owner-approved applicability decision. Planned, deferred, blocked or configuration-required children prevent completion.",
         "Review the linked requirements independently; child implementation status cannot substitute for server/API/database/browser, operational or UAT evidence."
@@ -1520,7 +1531,7 @@
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Work-order and evidence attachment scope is proven across tenants/sites, including active-membership revocation. Export endpoints and their authorization tests are not implemented yet. Export domain, formats, fields/PII, grant issuers and approval workflow are pending owner review in REV-027; do not expose protected-data exports until that decision is made."
+      "statusNote": "Work-order and evidence attachment scope is proven across tenants/sites, including active-membership revocation. Keep this task in progress because acceptance also requires export isolation, and export endpoints/tests are not implemented. Export domain, formats, fields/PII, grant issuers and approval workflow remain pending owner review in REV-027; do not expose protected-data exports until that decision is made."
     },
     {
       "id": "F-006",
@@ -4608,17 +4619,36 @@
       "sourceRefs": [
         "master-0023"
       ],
-      "status": "planned",
+      "status": "in-progress",
       "acceptance": [
         "Satisfy the complete fields and behaviour in master-0023: Workshop Controller / Job Planner | Workload, task allocation, equipment and availability, WIP escalation | Cannot assign beyond staff authorisation",
-        "Exercise the permitted action and relevant incomplete or denied action. Verify canonical records and attributable evidence."
+        "Show each active direct report current assigned-task count from current handed-over plans at the selected site; counts follow only the latest assignment revision and are labelled as workload information, not availability, capacity or authority.",
+        "Show each direct report current assignments whose latest progress entry reports blocked or waiting, labelled as last reported and scoped to the latest assignment revision. A new/reassigned task without progress is not blocked or waiting.",
+        "Show site-wide current task reports with the latest blocked or waiting state on the Head overview, ordered with blocked reports first and linked to their work orders. Limit the list, follow the current assignment revision, and label reports as reported progress rather than completion or a live safety state.",
+        "Exercise assignment, blocked-to-waiting progress changes, reassignment reset and a relevant denied action. Verify canonical records and attributable evidence."
       ],
-      "evidence": [],
+      "evidence": [
+        "apps/api/src/work-order-task-allocations.ts",
+        "apps/api/test/foundation.test.ts",
+        "apps/web/src/api.ts",
+        "apps/web/src/task-allocations.tsx",
+        "scripts/work-plan-browser.mjs",
+        "docs/verification/browser-work-plan/results.json",
+        "docs/verification/supervisor-team-workload-summary-2026-11-19.md",
+        "apps/api/src/workforce.ts",
+        "apps/web/src/pages/head-overview.tsx",
+        "apps/web/src/pages/print-head-overview.tsx",
+        "scripts/head-overview-browser.mjs",
+        "docs/verification/head-overview-browser-results.json",
+        "docs/verification/head-overview-task-progress-2026-11-19.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
-      "blockedBy": []
+      "blockedBy": [],
+      "statusNote": "Current handed-over task counts per active direct report and a site-wide Head overview of latest blocked/waiting reports are implemented and locally API/PostgreSQL/browser verified. Equipment requirements, staff availability, configurable capacity limits, WIP escalation and staff UAT remain open; this task stays in progress.",
+      "notes": "Assignment workload and latest blocked/waiting progress visibility implemented for Supervisors and the Head overview. Keep equipment, measured availability, capacity rules, escalation thresholds, production grant configuration and staff UAT separate and unfinished."
     },
     {
       "id": "CHECK-R-M-0023",
@@ -5259,13 +5289,16 @@
       "phase": "2-core-workflow",
       "parentId": "E03",
       "dependencies": [
+        "BUILD-R-M-0036-PAYER-RESPONSE-001",
+        "BUILD-R-M-0036-ESTIMATE-001",
+        "BUILD-R-M-0036-SCOPE-PROPOSAL-001",
+        "BUILD-R-M-0130",
+        "BUILD-R-M-0137",
         "F-002",
-        "F-009",
         "F-003",
         "F-005",
         "F-006",
-        "BUILD-R-M-0130",
-        "BUILD-R-M-0137"
+        "F-009"
       ],
       "requirementIds": [
         "R-M-0036"
@@ -5274,17 +5307,29 @@
         "master-0036",
         "upgrade-0036"
       ],
-      "status": "planned",
+      "status": "in-progress",
       "acceptance": [
         "Satisfy the complete fields and behaviour in master-0036: G2 — Diagnose and authorise | Customer diagnostic consent; findings; task scope; quote; technical and commercial approvals | Locks unauthorised work; versioned estimates and approvals",
         "Exercise the permitted action and relevant incomplete or denied action. Verify canonical records and attributable evidence."
       ],
-      "evidence": [],
+      "evidence": [
+        "apps/api/src/work-order-scope-proposals.ts",
+        "apps/api/src/work-order-scope-responses.ts",
+        "apps/api/migrations/081_work_order_scope_proposals.sql",
+        "apps/api/migrations/083_work_order_scope_payer_responses.sql",
+        "apps/api/migrations/084_work_order_scope_response_evidence.sql",
+        "apps/api/migrations/095_work_order_scope_estimates.sql",
+        "apps/web/src/work-order-scope-proposals.tsx",
+        "scripts/work-plan-browser.mjs",
+        "docs/verification/browser-work-plan/results.json",
+        "docs/architecture/g2-scope-authorization.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
-      "blockedBy": []
+      "blockedBy": [],
+      "statusNote": "Draft scope and payer-response records are implemented. A repair estimate is included in the exact scope revision and payer read-back. The 19 November 20:03 UTC real API/browser workflow recheck passed all 80 synthetic PostgreSQL checks and confirmed payer response remains non-authorizing. Full G2 remains open for the effective technical policy resolver, qualified review, evidence, grants and dispatch command."
     },
     {
       "id": "CHECK-R-M-0036",
@@ -5294,7 +5339,10 @@
       "phase": "2-core-workflow",
       "parentId": "E03",
       "dependencies": [
-        "BUILD-R-M-0036"
+        "BUILD-R-M-0036",
+        "CHECK-R-M-0036-PAYER-RESPONSE-001",
+        "CHECK-R-M-0036-ESTIMATE-001",
+        "CHECK-R-M-0036-SCOPE-PROPOSAL-001"
       ],
       "requirementIds": [
         "R-M-0036"
@@ -5402,7 +5450,7 @@
         "upgrade-0048",
         "upgrade-0049"
       ],
-      "status": "planned",
+      "status": "in-progress",
       "acceptance": [
         "Satisfy the complete fields and behaviour in master-0037: G3 — Execute | Current technician privilege, task instructions, labour, parts, tests and technician declaration | Blocks task completion without required evidence; records deviations",
         "Exercise the permitted action and relevant incomplete or denied action. Verify canonical records and attributable evidence.",
@@ -5410,14 +5458,24 @@
         "Persist the effective task classification/policy revision and conditional applicable HSE control references, including approved model-specific instruction, permits, suitable instruments, stop-work/hazard/incident and quarantine/response records. Missing required or unresolved policy evidence fails closed; do not embed unapproved technical procedures or thresholds."
       ],
       "evidence": [
-        "docs/architecture/technical-completion-and-release.md"
+        "docs/architecture/technical-completion-and-release.md",
+        "docs/architecture/service-work-history-and-reports.md",
+        "apps/api/migrations/059_work_order_task_work_entries.sql",
+        "apps/api/migrations/099_task_completion_declarations.sql",
+        "apps/api/src/work-order-task-work-entries.ts",
+        "apps/api/src/work-order-task-activity.ts",
+        "apps/api/test/foundation.test.ts",
+        "scripts/work-plan-browser.mjs",
+        "docs/verification/technician-task-declaration-2026-11-19.md",
+        "docs/verification/browser-work-plan/results.json",
+        "docs/verification/task-execution-entry-gate-2026-11-20.md"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "The fail-closed G3/G4 architecture contract is recorded in docs/architecture/technical-completion-and-release.md. Execution evidence and release commands remain unimplemented until REV-006, REV-008, REV-009 and REV-035 policy inputs are approved."
+      "statusNote": "The 20 November authorization-entry gate now denies diagnostic tests, repair actions, and completed technical follow-ups until G2 scope, effective vehicle instructions, exact-scope qualification, and signed task authority can be checked. PostgreSQL assertions verify those denials create no work-entry rows; safe observations remain available. The complete Supervisor G3 command and signed grant/qualification decision snapshots remain unimplemented, and effective vehicle procedures and named authority are not configured. See docs/verification/task-execution-entry-gate-2026-11-20.md."
     },
     {
       "id": "CHECK-R-M-0037",
@@ -5503,7 +5561,7 @@
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "The fail-closed G3/G4 architecture contract is recorded in docs/architecture/technical-completion-and-release.md. Execution evidence and release commands remain unimplemented until REV-006, REV-008, REV-009 and REV-035 policy inputs are approved."
+      "statusNote": "The owner approved the generic G4 sequence and collection-zone transition in REV-035. Inspection records and the Team Lead release command remain unimplemented. The applicable approved inspection matrix, named release grant and qualification, independent-check scope, fault dispositions and required evidence still need configuration; missing or unresolved inputs must block release."
     },
     {
       "id": "CHECK-R-M-0038",
@@ -7101,17 +7159,29 @@
         "upgrade-0037",
         "upgrade-0061"
       ],
-      "status": "planned",
+      "status": "in-progress",
       "acceptance": [
         "Satisfy the complete fields and behaviour in master-0067: Technician declaration records exact actions, tests and outcome; task sign-off is attributable and cannot be overwritten.",
         "Exercise the permitted action and relevant incomplete or denied action. Verify canonical records and attributable evidence."
       ],
-      "evidence": [],
+      "evidence": [
+        "apps/api/migrations/099_task_completion_declarations.sql",
+        "apps/api/src/work-order-task-activity.ts",
+        "apps/api/test/foundation.test.ts",
+        "apps/web/src/pages/my-assigned-tasks.tsx",
+        "apps/web/src/task-allocations.tsx",
+        "scripts/work-plan-browser.mjs",
+        "docs/verification/browser-work-plan/results.json",
+        "docs/verification/technician-task-declaration-2026-11-19.md",
+        "apps/api/migrations/101_staff_qualification_candidate_lookup.sql",
+        "docs/verification/workshop-operations-journey-2026-11-20.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
-      "blockedBy": []
+      "blockedBy": [],
+      "statusNote": "A partial technician declaration is implemented as an immutable, attributable, task-bound record covering actions, checks/results, worker-reported outcome and remaining work. It does not mutate the work order or provide supervisor G3 sign-off, Team Lead G4 release or Head inspection. Those complete acceptance criteria remain open."
     },
     {
       "id": "CHECK-R-M-0067",
@@ -7131,18 +7201,24 @@
         "upgrade-0037",
         "upgrade-0061"
       ],
-      "status": "planned",
+      "status": "in-progress",
       "acceptance": [
         "Exercise acceptance against the real implementation or operational artifact.",
         "Check task evidence, active grants, inspector independence, open hold scope and release preconditions atomically. Lock signed evidence.",
         "Attach actual outcomes, record references and incomplete dependencies."
       ],
-      "evidence": [],
+      "evidence": [
+        "apps/api/test/foundation.test.ts",
+        "scripts/work-plan-browser.mjs",
+        "docs/verification/browser-work-plan/results.json",
+        "docs/verification/technician-task-declaration-2026-11-19.md"
+      ],
       "owner": {
         "role": "verification-agent",
         "person": null
       },
-      "blockedBy": []
+      "blockedBy": [],
+      "statusNote": "Local API and browser evidence covers declaration shape, task bindings, idempotency/conflict handling, Supervisor visibility and response, and unchanged work-order state. Active operational grants, effective technical procedures, independent inspection, holds and release preconditions are not enabled or established; G3/G4 acceptance remains incomplete."
     },
     {
       "id": "BUILD-R-M-0068",
@@ -11571,17 +11647,24 @@
         "master-0166",
         "upgrade-0072"
       ],
-      "status": "planned",
+      "status": "in-progress",
       "acceptance": [
         "Satisfy the complete fields and behaviour in master-0166: Technical lead console | Unresolved diagnostics, risky variations, review queues, qualified dispatch and root-cause investigations.",
         "Exercise the permitted action and relevant incomplete or denied action. Verify canonical records and attributable evidence."
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/architecture/diagnostic-review-queue.md",
+        "docs/verification/diagnostic-review-queue-2026-11-18.md",
+        "apps/api/src/work-order-diagnostic-review-queue.ts",
+        "apps/web/src/pages/today.tsx",
+        "apps/api/migrations/093_work_order_diagnostic_review_queue_audit.sql"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
-      "blockedBy": []
+      "blockedBy": [],
+      "statusNote": "A paginated, audited diagnostic findings queue for the Head and current Team Lead is implemented and verified in BUILD-R-M-0166-DIAGNOSTIC-QUEUE-001. Risky variations, root-cause investigation tooling and qualified dispatch remain open."
     },
     {
       "id": "CHECK-R-M-0166",
@@ -12824,7 +12907,7 @@
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Published a draft mapping framework and read-only audit of C:\\Projects\\after-sales. The current PDI form is a reference only; actual SOPs, approval evidence, and owner validation are still pending. No safety/technical procedure or authority was inferred."
+      "statusNote": "Published a draft mapping framework and read-only audit of C:\\Projects\\after-sales. Rechecked its uncommitted technician proposal/review workspace on 2026-11-18: the migration is unapplied, new paths have no tests identified, broad Admin/Staff review and direct assignment do not meet VMMS grants/audit/idempotency, and proposal approval is not the VMMS Supervisor/Team Lead/Head sequence. Direct UPDATE access under the staff FOR ALL policy can bypass the review RPC's stale-revision checks; the database assignment policy does not itself require an active Technician profile. The vehicle reference library also remains unverified. The current PDI form is reference only; actual SOPs, approval evidence and owner validation remain pending. No safety procedure or authority was inferred."
     },
     {
       "id": "CHECK-R-M-0186",
@@ -15225,7 +15308,8 @@
       "sourceRefs": [
         "user-request-2026-11-07"
       ],
-      "status": "planned",
+      "status": "deferred",
+      "statusNote": "Owner reprioritized nonessential Smart POS patterns on 19 November 2026 to after the single-site workshop operations pilot.",
       "acceptance": [
         "Record useful inventory, audit, device and sync patterns with source evidence. Adopt only concepts that satisfy VMMS business invariants."
       ],
@@ -15252,7 +15336,8 @@
       "sourceRefs": [
         "user-request-2026-11-07"
       ],
-      "status": "planned",
+      "status": "deferred",
+      "statusNote": "Verification is deferred with the Smart POS pattern review until after the single-site workshop operations pilot.",
       "acceptance": [
         "Exercise acceptance against the real implementation or operational artifact.",
         "Check required evidence and unresolved decisions at release. Reject unverified completion claims in delivery tooling.",
@@ -17121,7 +17206,8 @@
         "role": "operations",
         "person": null
       },
-      "blockedBy": []
+      "blockedBy": [],
+      "statusNote": "20 November local release checks passed: API 170 passed/0 failed with one optional S3/ClamAV test skipped; web 46 passed; both TypeScript checks, production build, CodeGraph sync, and docs traceability passed. Production remains unready: Vercel has one web project and the permitted standalone API project, but the web Production deployment is still the 15 November commit; the latest API Production deployment failed with a Root Directory/package mismatch, Production variables are absent, and api.raymond-gray.org has no Cloudflare DNS record. Deployment inventory also includes local env/provider-state files; affected Preview credentials require rotation and package sanitization. Do not promote this mixed, uncommitted worktree. See docs/verification/api-production-package-review-2026-11-20.md."
     },
     {
       "id": "O-021",
@@ -17815,6 +17901,7 @@
         "BUILD-R-M-0135",
         "BUILD-R-M-0136",
         "BUILD-R-M-0137",
+        "BUILD-R-M-0137-CHECKLIST-SCOPE-001",
         "BUILD-R-M-0138",
         "BUILD-R-M-0141",
         "BUILD-R-M-0142",
@@ -18290,6 +18377,7 @@
         "BUILD-HIST-10",
         "BUILD-HIST-11",
         "BUILD-MANAGED-API-001",
+        "BUILD-MANAGED-API-002",
         "BUILD-MANAGED-AUTH-001",
         "BUILD-MANAGED-EVIDENCE-001",
         "BUILD-MANAGED-IDP-001",
@@ -18325,6 +18413,9 @@
         "BUILD-R-M-0032",
         "BUILD-R-M-0035",
         "BUILD-R-M-0036",
+        "BUILD-R-M-0036-ESTIMATE-001",
+        "BUILD-R-M-0036-PAYER-RESPONSE-001",
+        "BUILD-R-M-0036-SCOPE-PROPOSAL-001",
         "BUILD-R-M-0037",
         "BUILD-R-M-0038",
         "BUILD-R-M-0039",
@@ -18395,6 +18486,8 @@
         "BUILD-R-M-0135",
         "BUILD-R-M-0136",
         "BUILD-R-M-0137",
+        "BUILD-R-M-0137-CHECKLIST-SCOPE-001",
+        "CHECK-R-M-0137-CHECKLIST-SCOPE-001",
         "BUILD-R-M-0138",
         "BUILD-R-M-0141",
         "BUILD-R-M-0142",
@@ -18481,6 +18574,8 @@
         "BUILD-USER-016",
         "BUILD-USER-026",
         "BUILD-USER-027",
+        "BUILD-USER-027-REVIEW-RESPONSE-001",
+        "BUILD-USER-027-TECHNICIAN-REVIEW-REQUEST-001",
         "BUILD-USER-028",
         "BUILD-USER-029",
         "BUILD-USER-030",
@@ -18500,14 +18595,18 @@
         "BUILD-USER-039-SUPERVISOR-FEED",
         "BUILD-USER-039-TASK-ACTIVITY",
         "BUILD-USER-039-TASK-EVIDENCE-001",
+        "BUILD-USER-039-TASK-REVIEW-QUEUE-001",
         "BUILD-USER-039-WORK-HISTORY-001",
+        "BUILD-USER-039-CLOSEOUT-PATH-001",
         "BUILD-USER-040",
         "BUILD-USER-040-CALLBACKS-TODAY-001",
         "BUILD-USER-040-CONTEXT-001",
         "BUILD-USER-040-NAV-001",
         "BUILD-USER-040-ROLE-AWARE-PLAN-PANEL",
+        "BUILD-USER-040-WORK-QUEUES-001",
         "BUILD-USER-041-VEHICLE-LEARNING-001",
         "BUILD-USER-042-SOP-DRAFTS-001",
+        "BUILD-USER-043-ACTIVATION-001",
         "BUILD-USER-043-CHECKLISTS-001",
         "BUILD-USER-043-DELIVERY-PDI-001",
         "BUILD-USER-043-INSTANCE-001",
@@ -18553,6 +18652,7 @@
         "CHECK-HIST-10",
         "CHECK-HIST-11",
         "CHECK-MANAGED-API-001",
+        "CHECK-MANAGED-API-002",
         "CHECK-MANAGED-AUTH-001",
         "CHECK-MANAGED-CUTOVER-001",
         "CHECK-MANAGED-EVIDENCE-001",
@@ -18590,6 +18690,9 @@
         "CHECK-R-M-0032",
         "CHECK-R-M-0035",
         "CHECK-R-M-0036",
+        "CHECK-R-M-0036-ESTIMATE-001",
+        "CHECK-R-M-0036-PAYER-RESPONSE-001",
+        "CHECK-R-M-0036-SCOPE-PROPOSAL-001",
         "CHECK-R-M-0037",
         "CHECK-R-M-0038",
         "CHECK-R-M-0039",
@@ -18752,6 +18855,8 @@
         "CHECK-USER-021",
         "CHECK-USER-026",
         "CHECK-USER-027",
+        "CHECK-USER-027-REVIEW-RESPONSE-001",
+        "CHECK-USER-027-TECHNICIAN-REVIEW-REQUEST-001",
         "CHECK-USER-028",
         "CHECK-USER-029",
         "CHECK-USER-030",
@@ -18771,14 +18876,18 @@
         "CHECK-USER-039-SUPERVISOR-FEED",
         "CHECK-USER-039-TASK-ACTIVITY",
         "CHECK-USER-039-TASK-EVIDENCE-001",
+        "CHECK-USER-039-TASK-REVIEW-QUEUE-001",
         "CHECK-USER-039-WORK-HISTORY-001",
+        "CHECK-USER-039-CLOSEOUT-PATH-001",
         "CHECK-USER-040",
         "CHECK-USER-040-CALLBACKS-TODAY-001",
         "CHECK-USER-040-CONTEXT-001",
         "CHECK-USER-040-NAV-001",
         "CHECK-USER-040-ROLE-AWARE-PLAN-PANEL",
+        "CHECK-USER-040-WORK-QUEUES-001",
         "CHECK-USER-041-VEHICLE-LEARNING-001",
         "CHECK-USER-042-SOP-DRAFTS-001",
+        "CHECK-USER-043-ACTIVATION-001",
         "CHECK-USER-043-CHECKLISTS-001",
         "CHECK-USER-044-FINANCE-DRAFT-REGISTRY-001",
         "CHECK-USER-044-FINANCE-DRAFT-UI-001",
@@ -18924,7 +19033,22 @@
         "VERIFY-AT-18",
         "VERIFY-AT-19",
         "VERIFY-AT-20",
-        "VISUAL-001"
+        "VISUAL-001",
+        "BUILD-USER-039-CUSTOMER-UPDATES-001",
+        "BUILD-R-M-0133-HOLD-RESOLUTION-001",
+        "CHECK-R-M-0133-HOLD-RESOLUTION-001",
+        "BUILD-R-M-0166-DIAGNOSTIC-QUEUE-001",
+        "CHECK-R-M-0166-DIAGNOSTIC-QUEUE-001",
+        "BUILD-USER-039-COMPLETION-READINESS-001",
+        "BUILD-USER-040-SERVICE-HISTORY-001",
+        "CHECK-USER-040-SERVICE-HISTORY-001",
+        "DESIGN-USER-047-INTAKE-001",
+        "BUILD-USER-047-REQUEST-ENTRY-001",
+        "BUILD-USER-047-INSPECTION-TYPES-001",
+        "CONFIG-USER-047-PDI-FEE-001",
+        "CHECK-USER-047-REQUEST-ENTRY-001",
+        "BUILD-PILOT-MODULE-GATES-001",
+        "CHECK-PILOT-MODULE-GATES-001"
       ],
       "requirementIds": [
         "USER-009"
@@ -19030,6 +19154,9 @@
           "BUILD-R-M-0032",
           "BUILD-R-M-0035",
           "BUILD-R-M-0036",
+          "BUILD-R-M-0036-ESTIMATE-001",
+          "BUILD-R-M-0036-PAYER-RESPONSE-001",
+          "BUILD-R-M-0036-SCOPE-PROPOSAL-001",
           "BUILD-R-M-0037",
           "BUILD-R-M-0038",
           "BUILD-R-M-0039",
@@ -19100,6 +19227,7 @@
           "BUILD-R-M-0135",
           "BUILD-R-M-0136",
           "BUILD-R-M-0137",
+          "BUILD-R-M-0137-CHECKLIST-SCOPE-001",
           "BUILD-R-M-0138",
           "BUILD-R-M-0141",
           "BUILD-R-M-0142",
@@ -19186,6 +19314,8 @@
           "BUILD-USER-016",
           "BUILD-USER-026",
           "BUILD-USER-027",
+          "BUILD-USER-027-REVIEW-RESPONSE-001",
+          "BUILD-USER-027-TECHNICIAN-REVIEW-REQUEST-001",
           "BUILD-USER-028",
           "BUILD-USER-029",
           "BUILD-USER-030",
@@ -19205,14 +19335,18 @@
           "BUILD-USER-039-SUPERVISOR-FEED",
           "BUILD-USER-039-TASK-ACTIVITY",
           "BUILD-USER-039-TASK-EVIDENCE-001",
+          "BUILD-USER-039-TASK-REVIEW-QUEUE-001",
           "BUILD-USER-039-WORK-HISTORY-001",
+          "BUILD-USER-039-CLOSEOUT-PATH-001",
           "BUILD-USER-040",
           "BUILD-USER-040-CALLBACKS-TODAY-001",
           "BUILD-USER-040-CONTEXT-001",
           "BUILD-USER-040-NAV-001",
           "BUILD-USER-040-ROLE-AWARE-PLAN-PANEL",
+          "BUILD-USER-040-WORK-QUEUES-001",
           "BUILD-USER-041-VEHICLE-LEARNING-001",
           "BUILD-USER-042-SOP-DRAFTS-001",
+          "BUILD-USER-043-ACTIVATION-001",
           "BUILD-USER-043-CHECKLISTS-001",
           "BUILD-USER-043-DELIVERY-PDI-001",
           "BUILD-USER-043-INSTANCE-001",
@@ -19295,6 +19429,9 @@
           "CHECK-R-M-0032",
           "CHECK-R-M-0035",
           "CHECK-R-M-0036",
+          "CHECK-R-M-0036-ESTIMATE-001",
+          "CHECK-R-M-0036-PAYER-RESPONSE-001",
+          "CHECK-R-M-0036-SCOPE-PROPOSAL-001",
           "CHECK-R-M-0037",
           "CHECK-R-M-0038",
           "CHECK-R-M-0039",
@@ -19365,6 +19502,7 @@
           "CHECK-R-M-0135",
           "CHECK-R-M-0136",
           "CHECK-R-M-0137",
+          "CHECK-R-M-0137-CHECKLIST-SCOPE-001",
           "CHECK-R-M-0138",
           "CHECK-R-M-0141",
           "CHECK-R-M-0142",
@@ -19457,6 +19595,8 @@
           "CHECK-USER-021",
           "CHECK-USER-026",
           "CHECK-USER-027",
+          "CHECK-USER-027-REVIEW-RESPONSE-001",
+          "CHECK-USER-027-TECHNICIAN-REVIEW-REQUEST-001",
           "CHECK-USER-028",
           "CHECK-USER-029",
           "CHECK-USER-030",
@@ -19476,14 +19616,18 @@
           "CHECK-USER-039-SUPERVISOR-FEED",
           "CHECK-USER-039-TASK-ACTIVITY",
           "CHECK-USER-039-TASK-EVIDENCE-001",
+          "CHECK-USER-039-TASK-REVIEW-QUEUE-001",
           "CHECK-USER-039-WORK-HISTORY-001",
+          "CHECK-USER-039-CLOSEOUT-PATH-001",
           "CHECK-USER-040",
           "CHECK-USER-040-CALLBACKS-TODAY-001",
           "CHECK-USER-040-CONTEXT-001",
           "CHECK-USER-040-NAV-001",
           "CHECK-USER-040-ROLE-AWARE-PLAN-PANEL",
+          "CHECK-USER-040-WORK-QUEUES-001",
           "CHECK-USER-041-VEHICLE-LEARNING-001",
           "CHECK-USER-042-SOP-DRAFTS-001",
+          "CHECK-USER-043-ACTIVATION-001",
           "CHECK-USER-043-CHECKLISTS-001",
           "CHECK-USER-044-FINANCE-DRAFT-REGISTRY-001",
           "CHECK-USER-044-FINANCE-DRAFT-UI-001",
@@ -19629,7 +19773,26 @@
           "VERIFY-AT-18",
           "VERIFY-AT-19",
           "VERIFY-AT-20",
-          "VISUAL-001"
+          "VISUAL-001",
+          "BUILD-USER-039-CUSTOMER-UPDATES-001",
+          "BUILD-R-M-0133-HOLD-RESOLUTION-001",
+          "CHECK-R-M-0133-HOLD-RESOLUTION-001",
+          "BUILD-R-M-0166-DIAGNOSTIC-QUEUE-001",
+          "CHECK-R-M-0166-DIAGNOSTIC-QUEUE-001",
+          "BUILD-USER-039-COMPLETION-READINESS-001",
+          "BUILD-MANAGED-API-002",
+          "CHECK-MANAGED-API-002",
+          "BUILD-USER-040-SERVICE-HISTORY-001",
+          "CHECK-USER-040-SERVICE-HISTORY-001",
+          "BUILD-USER-040-ACTION-JUMP-001",
+          "CHECK-USER-040-ACTION-JUMP-001",
+          "DESIGN-USER-047-INTAKE-001",
+          "BUILD-USER-047-REQUEST-ENTRY-001",
+          "BUILD-USER-047-INSPECTION-TYPES-001",
+          "CONFIG-USER-047-PDI-FEE-001",
+          "CHECK-USER-047-REQUEST-ENTRY-001",
+          "BUILD-PILOT-MODULE-GATES-001",
+          "CHECK-PILOT-MODULE-GATES-001"
         ],
         "requiredRequirementIds": [
           "AT-01",
@@ -19889,7 +20052,9 @@
           "USER-043",
           "USER-044",
           "USER-045",
-          "USER-046"
+          "USER-046",
+          "USER-047",
+          "USER-048"
         ],
         "acceptedTerminalStatuses": [
           "verified",
@@ -20881,7 +21046,7 @@
         "upgrade-0055",
         "upgrade-0057"
       ],
-      "status": "implemented",
+      "status": "in-progress",
       "acceptance": [
         "Create/reload canonical customer/vehicle-linked drafts with server-owned site/tenant and unique visit/work-order IDs.",
         "Queue shows persisted data, loading/empty/failure/stale-version states. No G1 or repair approval is implied."
@@ -20894,7 +21059,7 @@
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Scoped reception queue and persisted intake projection are implemented with explicit loading, failure and empty states; browser/API acceptance of all queue states remains in S-004/S-005."
+      "statusNote": "Scoped queue and persisted intake behavior are implemented. Its F-005 tenancy/export dependency is still open, so the task is not a verified terminal task; remaining queue-state browser/API acceptance is tracked by S-004/S-005."
     },
     {
       "id": "S-002",
@@ -21638,7 +21803,12 @@
         "VERIFY-AT-17",
         "VERIFY-AT-18",
         "VERIFY-AT-19",
-        "VERIFY-AT-20"
+        "VERIFY-AT-20",
+        "DESIGN-USER-047-INTAKE-001",
+        "BUILD-USER-047-REQUEST-ENTRY-001",
+        "BUILD-USER-047-INSPECTION-TYPES-001",
+        "CONFIG-USER-047-PDI-FEE-001",
+        "CHECK-USER-047-REQUEST-ENTRY-001"
       ],
       "requirementIds": [
         "USER-003",
@@ -22210,7 +22380,12 @@
           "VERIFY-AT-17",
           "VERIFY-AT-18",
           "VERIFY-AT-19",
-          "VERIFY-AT-20"
+          "VERIFY-AT-20",
+          "DESIGN-USER-047-INTAKE-001",
+          "BUILD-USER-047-REQUEST-ENTRY-001",
+          "BUILD-USER-047-INSPECTION-TYPES-001",
+          "CONFIG-USER-047-PDI-FEE-001",
+          "CHECK-USER-047-REQUEST-ENTRY-001"
         ],
         "requiredRequirementIds": [
           "AT-02",
@@ -22438,7 +22613,8 @@
           "USER-041",
           "USER-043",
           "USER-044",
-          "USER-046"
+          "USER-046",
+          "USER-047"
         ],
         "acceptedTerminalStatuses": [
           "verified",
@@ -22688,14 +22864,15 @@
         "docs/architecture/oidc-vmms-integration.md",
         "docs/verification/checks/staff-oidc-rate-limit-2026-11-09.md",
         "docs/verification/checks/central-oidc-logout-2026-11-09.md",
-        "apps/api/test/config.test.ts"
+        "apps/api/test/config.test.ts",
+        "docs/verification/auth-role-fixture-2026-11-18.md"
       ],
       "owner": {
         "role": "verification-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Local PostgreSQL/API checks cover OIDC state, browser binding, replay, site access, local logout/session revocation, 61 simultaneous staff OIDC starts, a synthetic signed back-channel logout, stale callback denial, cleanup and trusted/untrusted forwarded-IP handling. Actual ingress ranges, a full local provider/browser delivery, central browser sign-out, Google federation, provider outage and recovery operations remain unverified."
+      "statusNote": "Local PostgreSQL/API checks cover OIDC state, browser binding, replay, site access, local logout/session revocation, 61 simultaneous staff OIDC starts, a synthetic signed back-channel logout, stale callback denial, cleanup and trusted/untrusted forwarded-IP handling. The isolated local Keycloak browser rehearsal also passed all 14 staff role logins with Operator/Head separation and role-appropriate API denials; see docs/verification/auth-role-fixture-2026-11-18.md. Actual ingress ranges, production identity, Google federation, provider outage and recovery operations remain unverified."
     },
     {
       "id": "AUTH-008",
@@ -23412,6 +23589,7 @@
         "apps/web/src/worker.ts",
         "apps/web/src/worker.test.ts",
         "docs/verification/checks/hosting-compatibility-2026-11-14.md",
+        "docs/verification/full-local-verification-2026-11-18.md",
         "docs/delivery/managed-services-redesign-plan-2026-11-16.md",
         "docs/discovery/managed-auth-and-storage-2026-11-16.md"
       ],
@@ -23420,7 +23598,7 @@
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "The 2026-11-14 review records a per-service hybrid recommendation and updated provider limits/costs. VMMS frontend preview and fixed-origin proxy have prior local synthetic evidence; direct Fastify Worker compatibility re-failed at router registration before tenant routes, commands or uploads. Platform source review flags secondary DB fire-and-forget writes and disabled TLS certificate validation for remediation/review; remote support forwarded-address/timeout/protection gaps and vehicle-services geolocation/CSP conflict and placeholder protected routes are documented. Auth README/Dockerfile now describe Railway-hosted Keycloak/PostgreSQL; DEPLOYMENT.md limits runtime/persistence verification. No production deployment, DNS, secret or online DB was touched. Remaining: finish API behavior matrix on a viable host, durable storage/scanner and max upload path, per-service browser/build checks, region/price/availability decisions, restricted staging, restore and rollback. See docs/verification/checks/hosting-compatibility-2026-11-14.md. USER-046 supersedes the future Railway/container recommendation; managed replacement checks are separate and planned."
+      "statusNote": "The 2026-11-14 review records a per-service hybrid recommendation and updated provider limits/costs. VMMS frontend preview and fixed-origin proxy have prior local synthetic evidence; direct Fastify Worker compatibility re-failed at router registration before tenant routes, commands or uploads. Platform source review flags secondary DB fire-and-forget writes and disabled TLS certificate validation for remediation/review; remote support forwarded-address/timeout/protection gaps and vehicle-services geolocation/CSP conflict and placeholder protected routes are documented. Auth README/Dockerfile now describe Railway-hosted Keycloak/PostgreSQL; DEPLOYMENT.md limits runtime/persistence verification. The 2026-11-18 full local verification passed all 15 stages, including the Cloudflare Worker proxy, PostgreSQL-backed API, upload service, responsive UI, and role queues; see docs/verification/full-local-verification-2026-11-18.md and docs/verification/checks/results.json. This does not complete provider review: no production deployment, DNS, secret or online DB was touched. Remaining: finish API behavior matrix on a viable host, per-service browser/build checks, region/price/availability decisions, restricted staging, restore and rollback. See docs/verification/checks/hosting-compatibility-2026-11-14.md. USER-046 supersedes the future Railway/container recommendation; managed replacement checks are separate and planned."
     },
     {
       "id": "HOST-002",
@@ -23452,7 +23630,7 @@
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "16 November managed-services plan prepared. Exact accounts/regions/budgets and hosted acceptance evidence are still missing; no staging or production deployment claimed."
+      "statusNote": "16 November managed-services plan prepared. Exact accounts/regions/budgets and hosted acceptance evidence are still missing; no staging or production deployment claimed. On 18 November the full local API/web tests, 69-check browser journey, typecheck, build and docs check passed. Vercel remains at an older commit with project live=false; the tested local main has 100 modified/untracked paths, including OIDC/session and API changes, and the API/evidence-worker production target and migration state are unverified. Do not promote this mixed worktree. See docs/verification/production-release-preflight-2026-11-18.md."
     },
     {
       "id": "VISUAL-001",
@@ -23609,17 +23787,19 @@
       "phase": "3-safety-qa",
       "parentId": "E03",
       "dependencies": [
+        "BUILD-CMD-LOCK-ORDER-001",
+        "BUILD-R-M-0012",
+        "BUILD-R-M-0037",
+        "BUILD-R-M-0038",
+        "BUILD-R-U-0046",
+        "BUILD-USER-027-REVIEW-RESPONSE-001",
+        "BUILD-USER-027-TECHNICIAN-REVIEW-REQUEST-001",
+        "DESIGN-R-M-0037-0038",
         "F-002",
-        "F-009",
         "F-003",
         "F-005",
         "F-006",
-        "BUILD-R-M-0012",
-        "BUILD-R-M-0038",
-        "BUILD-R-U-0046",
-        "BUILD-R-M-0037",
-        "DESIGN-R-M-0037-0038",
-        "BUILD-CMD-LOCK-ORDER-001"
+        "F-009"
       ],
       "requirementIds": [
         "USER-027",
@@ -23658,14 +23838,16 @@
         "scripts/work-plan-browser.mjs",
         "docs/verification/browser-work-plan/results.json",
         "docs/verification/checks/work-plan-drafts-2026-11-09.md",
-        "docs/verification/checks/work-plan-browser-ui-2026-11-09.md"
+        "docs/verification/checks/work-plan-browser-ui-2026-11-09.md",
+        "docs/verification/operational-pilot-priority-checkpoint-2026-11-19.md",
+        "docs/verification/technician-task-declaration-2026-11-19.md"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Operations review, team-lead assignment, versioned draft work plans and plan-bound supervisor handoff are implemented. Current evidence includes 46 passing API tests with 1 optional S3/ClamAV skip, the 34-check staff browser smoke and a disposable real-browser role flow for assigned lead draft creation, qualified supervisor handoff and unassigned-staff denial. G2 repair authorization, G3 supervisor completion, G4 lead release, collection-zone custody, finance and full USER-027 acceptance remain open; REV-006/008/009/035 and production grant mapping remain pending. Browser evidence now confirms authorized Operations review and assignment plus lead plan/handoff UI; G3, G4 and physical departure remain separate and incomplete."
+      "statusNote": "The 20 November local work-plan journey passed 80 browser checks with no errors after clearing stale generated test databases and correcting the final responsive-test page target. Operations review, qualified lead assignment, plan/handoff, Technician activity/evidence/time, immutable declarations, Supervisor responses, reports and role boundaries are covered. Supervisor G3, Team Lead G4, independent Head inspection and Advisor completion-contact eligibility remain unavailable pending effective procedures, inspection criteria, action grants, qualifications and evidence rules. See docs/verification/workshop-operations-journey-2026-11-20.md."
     },
     {
       "id": "CHECK-USER-027",
@@ -23676,7 +23858,9 @@
       "parentId": "E03",
       "dependencies": [
         "BUILD-USER-027",
-        "CHECK-CMD-LOCK-ORDER-001"
+        "CHECK-CMD-LOCK-ORDER-001",
+        "CHECK-USER-027-REVIEW-RESPONSE-001",
+        "CHECK-USER-027-TECHNICIAN-REVIEW-REQUEST-001"
       ],
       "requirementIds": [
         "USER-027",
@@ -23695,14 +23879,17 @@
         "Verify assignments, handoffs, transitions and failures remain attributable in the audit history."
       ],
       "evidence": [
-        "docs/verification/checks/work-plan-browser-ui-2026-11-09.md"
+        "docs/verification/checks/work-plan-browser-ui-2026-11-09.md",
+        "docs/verification/operational-pilot-priority-checkpoint-2026-11-19.md",
+        "docs/verification/technician-task-declaration-2026-11-19.md",
+        "docs/verification/workshop-operations-journey-2026-11-20.md"
       ],
       "owner": {
         "role": "verification-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Granted Operations review and qualified team-lead assignment, plan-gated handoff and saved plan UI are now verified in an isolated browser/PostgreSQL workflow. G3/G4 denials and timestamps, hold-release races, collection-zone and commercial controls remain outstanding."
+      "statusNote": "The 20 November current-tree checks passed 80 disposable-PostgreSQL browser checks, 167 API tests (one optional integration skipped) and 46 web tests. G3/G4 and Head inspection commands remain unavailable; production and staff UAT are unverified. See docs/verification/workshop-operations-journey-2026-11-20.md."
     },
     {
       "id": "BUILD-USER-028",
@@ -24530,6 +24717,7 @@
         "Keep the synthetic persona manifest aligned with every active built-in staff role, including Sales Representative and PDI Observer; use its private credential guide as the login username source.",
         "Start the web app and API on the exact loopback origins recorded in the private installation state.",
         "Verify real local OIDC login, workspace and site scope for each persona, mutual Head/Operator denials, owner audience isolation, and safe repeat/partial-failure behavior.",
+        "Enforce active work-order role access on queue, detail and direct checklist, scope, service-report and source-report reads; verify site membership alone is insufficient and Finance/Records cannot open the work-order workspace.",
         "Establish owner login through the real approved relationship and invitation claim path, or explicitly record that acceptance case incomplete if its evidence path cannot safely be exercised."
       ],
       "evidence": [
@@ -24542,14 +24730,15 @@
         "docs/verification/checks/auth-owner-claim-2026-11-10.md",
         "scripts/local-role-fixtures/verify-logins.mjs",
         "docs/verification/checks/auth-role-fixture-2026-11-14-recheck.md",
-        "scripts/local-role-fixtures/verify-owner-claim.mjs"
+        "scripts/local-role-fixtures/verify-owner-claim.mjs",
+        "docs/verification/auth-role-fixture-2026-11-18.md"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "A 2026-11-14 rerun of the owned loopback fixture reconfirmed real local OIDC login, exact single-site/single-role sessions, logout revocation and Operator/Head denials for all 14 active staff roles; Sales/PDI workspaces opened. See docs/verification/checks/auth-role-fixture-2026-11-14-recheck.md. The earlier owner approval/invitation/claim journey remains separately verified: 15 marked Keycloak identities, 14 site role placements, and zero operational grants. Real authorization-code/PKCE browser verification passed all roles with exact single-site/single-role sessions, logout revocation, Operator/Head API separation, the current Head route redirect, and Sales/PDI workspace access. The owner approval, single-use invitation, claim, owner-only vehicle response, and logout revocation passed; the temporary approval grant was revoked. Repeated auth reconciliation and VMMS preparation passed without resetting the fixture. The private guide maps VMMS personas to Keycloak usernames; the Advisor login is vmms.review.07. AUTH-013 remains in progress because this is synthetic local evidence, the login run did not configure evidence storage/scanning, staff UAT and production identity/storage proof remain open, and fixture cleanup is required before launch. The older c0ad fixture remains stopped; a guarded prepare applied schema migrations and stopped on catalog drift before seeding. See docs/verification/checks/auth-role-fixture-2026-11-13.md."
+      "statusNote": "18 November 2026: a fresh isolated loopback rehearsal passed sign-in, single-site/single-role session checks, role-appropriate workspace access and logout revocation for all 14 active staff roles. Finance and Compliance Records were denied their work-order queue and detail requests; Operator and Head account/workshop separation passed. A direct API regression confirms site membership without an active work-order role is denied on queue, detail, checklist, checklist report, scope proposal, service report and source report reads. The same run verified zero operational grants. The fixture resume path and its 30 Python safety tests passed. See docs/verification/auth-role-fixture-2026-11-18.md. AUTH-013 remains in progress: the separate owner claim path, production identity and storage, real staff UAT, and final fixture cleanup remain open. Earlier owner approval/invitation/claim evidence and previous 14-role runs are retained below. The final API suite passed 152 tests with one optional S3/ClamAV integration test skipped; TypeScript typecheck passed. Prior 2026-11-14 evidence: exact single-site/single-role sessions, logout revocation and Operator/Head denials for all 14 active staff roles; Sales/PDI workspaces opened. The owner approval, single-use invitation, claim, owner-only vehicle response, and logout revocation passed; the temporary approval grant was revoked. The private guide maps VMMS personas to Keycloak usernames; the Advisor login is vmms.review.07. The older c0ad fixture remains stopped; a guarded prepare applied schema migrations and stopped on catalog drift before seeding. See docs/verification/checks/auth-role-fixture-2026-11-13.md."
     },
     {
       "id": "BUILD-POLICY-002",
@@ -24984,7 +25173,7 @@
       "sourceRefs": [
         "user-request-2026-11-12-sales-pdi-vehicle-history"
       ],
-      "status": "in-progress",
+      "status": "deferred",
       "acceptance": [
         "Verify sales-only permission boundaries, explicit vehicle/client linking, PDI provenance and owner/payer non-inference.",
         "Verify vehicle history remains site/organisation scoped and cannot grant workshop or safety authority.",
@@ -25004,7 +25193,7 @@
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Initial delivery, role-scoped vehicle history, one-delivery constraint and reasoned append-only PDI correction UI are implemented. Historical source reconciliation/promotion, expanded access, service-client relation and staff acceptance remain open."
+      "statusNote": "Owner reprioritized sales delivery/PDI on 19 November 2026 to after the single-site workshop operations pilot. Existing implementation is retained; remaining reconciliation, access and staff-acceptance work is deferred."
     },
     {
       "id": "CHECK-USER-037",
@@ -25022,7 +25211,7 @@
       "sourceRefs": [
         "user-request-2026-11-12-sales-pdi-vehicle-history"
       ],
-      "status": "in-progress",
+      "status": "deferred",
       "acceptance": [
         "Exercise the real implementation and denied/incomplete states using the approved role boundaries.",
         "Check same-vehicle service history link, source attribution, duplicate prevention and denied cross-site/unauthorised edits.",
@@ -25037,7 +25226,7 @@
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Disposable PostgreSQL/API and real-browser evidence now includes PDI correction authority, reason, replay and original history preservation. Workbook import/reconciliation, screen-reader testing, full role coverage and staff acceptance remain open."
+      "statusNote": "Sales delivery/PDI verification is deferred by the owner until after the single-site workshop operations pilot. Existing database/browser evidence is retained; remaining coverage and staff acceptance will resume with that work."
     },
     {
       "id": "BUILD-USER-038",
@@ -25226,7 +25415,8 @@
         "BUILD-R-M-0038",
         "BUILD-USER-029",
         "BUILD-R-M-0164",
-        "CHECK-USER-039-WORK-HISTORY-001"
+        "CHECK-USER-039-WORK-HISTORY-001",
+        "BUILD-USER-039-CUSTOMER-UPDATES-001"
       ],
       "requirementIds": [
         "USER-039"
@@ -25238,20 +25428,25 @@
       "status": "in-progress",
       "acceptance": [
         "Current assignment acknowledgement and append-only progress, blocker, request and comment records use server-checked plan and assignment revisions.",
+        "When a Supervisor is responsible for task work but technical sign-off is not configured, show the permitted next action and explain that progress, requests and evidence do not sign off completion or vehicle release.",
         "Implement separately authorized supervisor technical completion, Team Lead final release and collection-zone movement, then Head inspection/sign-off, then Service Advisor customer updates.",
         "Keep invoice, external payment or guarantee, collection and delivery as separate G5/handover transitions.",
         "Keep transitions blocked until the required authority, SOP, evidence and commercial policies are approved; follow the owner-approved sequence recorded in REV-046."
       ],
       "evidence": [
         "docs/architecture/task-progress-and-acknowledgement.md",
-        "docs/verification/checks/task-progress-and-acknowledgement-2026-11-13.md"
+        "docs/verification/checks/task-progress-and-acknowledgement-2026-11-13.md",
+        "apps/web/src/pages/work-order.tsx",
+        "scripts/work-plan-browser.mjs",
+        "docs/verification/supervisor-signoff-blocked-state-2026-11-18.md",
+        "docs/verification/work-order-customer-contact-history-2026-11-18.md"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Work-action journal and purpose-built daily service reports remain open."
+      "statusNote": "The 20 November 80-check disposable-PostgreSQL browser journey verifies the Operations → Team Lead → Supervisor → Technician flow, reports and role boundaries. API/web typechecks and builds passed during the current checkpoint; focused proxy and Supervisor assignment tests also passed. Exact G2 technical authorization is still missing; Supervisor completion, Team Lead release, Head inspection and customer handover remain unavailable until effective vehicle procedures, evidence criteria, action grants and qualifications are configured. No outbound message is sent."
     },
     {
       "id": "CHECK-USER-039",
@@ -25272,17 +25467,22 @@
       "status": "in-progress",
       "acceptance": [
         "Exercise the real implementation and denied/incomplete states using the approved role boundaries.",
+        "Verify the Supervisor task-work step clearly distinguishes progress updates from technical completion and vehicle release when sign-off is unavailable.",
         "Verify permitted and denied role transitions, independent inspection, holds, stale versions, replay, customer timeline and paid/guaranteed handover.",
         "Record browser/API/database results and all untested limitations."
       ],
       "evidence": [
-        "docs/verification/checks/task-progress-and-acknowledgement-2026-11-13.md"
+        "docs/verification/checks/task-progress-and-acknowledgement-2026-11-13.md",
+        "docs/verification/workshop-operations-journey-2026-11-18.md",
+        "docs/verification/workshop-operations-journey-2026-11-20.md",
+        "docs/verification/browser-work-plan/results.json"
       ],
       "owner": {
         "role": "verification-agent",
         "person": null
       },
-      "blockedBy": []
+      "blockedBy": [],
+      "statusNote": "The 20 November current-tree run passed 86 disposable-PostgreSQL browser checks, 168 API tests (one optional integration skipped), and 46 web tests; API/web typechecks and the production build passed. Coverage includes Operations review/assignment, the G2 boundary, Team Lead planning and Supervisor handoff, Technician progress/time/evidence, immutable correction, Supervisor replies, hold resolution, reports and responsive/accessibility behavior. G3/G4/Head inspection/G5 transitions, production authority configuration, physical-device checks and staff UAT remain unverified, so this task stays in progress."
     },
     {
       "id": "BUILD-USER-040",
@@ -25292,18 +25492,21 @@
       "phase": "2-core-workflow",
       "parentId": "E18",
       "dependencies": [
-        "F-002",
-        "F-009",
-        "F-003",
-        "F-005",
-        "F-006",
         "BUILD-USER-037",
         "BUILD-USER-038",
         "BUILD-USER-039",
-        "BUILD-USER-040-NAV-001",
+        "BUILD-USER-040-CALLBACKS-TODAY-001",
         "BUILD-USER-040-CONTEXT-001",
+        "BUILD-USER-040-NAV-001",
         "BUILD-USER-040-ROLE-AWARE-PLAN-PANEL",
-        "BUILD-USER-040-CALLBACKS-TODAY-001"
+        "BUILD-USER-040-WORK-QUEUES-001",
+        "F-002",
+        "F-003",
+        "F-005",
+        "F-006",
+        "F-009",
+        "BUILD-USER-040-SERVICE-HISTORY-001",
+        "BUILD-USER-040-ACTION-JUMP-001"
       ],
       "requirementIds": [
         "USER-040"
@@ -25319,14 +25522,52 @@
       ],
       "evidence": [
         "docs/architecture/service-journey.md",
-        "docs/verification/today-callbacks-2026-11-13.md"
+        "docs/verification/today-callbacks-2026-11-13.md",
+        "docs/verification/work-order-next-action-navigation-2026-11-20.md",
+        "docs/verification/browser-work-plan/results.json",
+        "apps/web/src/workspace-navigation.test.ts"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Role-aware Today, Requests, Work orders and Vehicles navigation now includes a read-only callback summary, and job pages show the current stored workflow step. Due-time policy, approved SOP evidence, full role UAT and manual assistive-technology checks remain open; this does not complete the full service journey."
+      "statusNote": "Role-aware Today, Requests, Work orders and Vehicles navigation includes current workflow context and direct links from the job current-step card to each existing action section. The five current-step links passed focus/scroll checks, and the 80-check local PostgreSQL/browser journey passed at 200%/400% zoom. Due-time policy, approved SOP evidence, full role UAT and manual assistive-technology checks remain open; this does not complete the full service journey. The first workshop pilot also hides the deferred Sales delivery and Finance setup pages while preserving the Sales service-request path."
+    },
+    {
+      "id": "BUILD-USER-040-ACTION-JUMP-001",
+      "title": "Link the current job step to its action section",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "2-core-workflow",
+      "parentId": "BUILD-USER-040",
+      "dependencies": [
+        "BUILD-USER-040-CONTEXT-001"
+      ],
+      "requirementIds": [
+        "USER-040"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-12-simplify-role-based-journey"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Each current workflow action links to the matching existing work-order action heading.",
+        "The jump preserves the current job page, updates the hash, scrolls the target into view, and focuses its heading.",
+        "Navigation does not change server authorization, workflow state, or sign-off availability."
+      ],
+      "evidence": [
+        "apps/web/src/work-order-workflow-navigation.ts",
+        "apps/web/src/pages/work-order.tsx",
+        "scripts/work-plan-browser.mjs",
+        "docs/verification/work-order-next-action-navigation-2026-11-20.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Added a direct current-step jump for Operations review, Team-lead assignment, Team Lead work plan, Supervisor handover, and task assignment/progress. The focused heading is scrolled within the independent workspace below its sticky header. All five targets passed browser focus/visibility checks at native zoom; all relevant forms passed 200% and 400% zoom. No server permissions or workflow state changed."
     },
     {
       "id": "CHECK-USER-040",
@@ -25337,10 +25578,13 @@
       "parentId": "E18",
       "dependencies": [
         "BUILD-USER-040",
-        "CHECK-USER-040-NAV-001",
+        "CHECK-USER-040-CALLBACKS-TODAY-001",
         "CHECK-USER-040-CONTEXT-001",
+        "CHECK-USER-040-NAV-001",
         "CHECK-USER-040-ROLE-AWARE-PLAN-PANEL",
-        "CHECK-USER-040-CALLBACKS-TODAY-001"
+        "CHECK-USER-040-WORK-QUEUES-001",
+        "CHECK-USER-040-SERVICE-HISTORY-001",
+        "CHECK-USER-040-ACTION-JUMP-001"
       ],
       "requirementIds": [
         "USER-040"
@@ -25357,14 +25601,50 @@
       "evidence": [
         "docs/architecture/service-journey.md",
         "docs/verification/today-callbacks-2026-11-13.md",
-        "docs/verification/browser-smoke-2026-11-14.md"
+        "docs/verification/browser-smoke-2026-11-14.md",
+        "docs/verification/work-order-next-action-navigation-2026-11-20.md"
       ],
       "owner": {
         "role": "verification-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "The 14 November local browser smoke passed 64 checks, including owner/staff session separation, an explicit no-work-role state for a read-only QA identity, staff sign-out, intake and responsive checks. Central provider logout is mocked; callback widget coverage, manual screen-reader checks, broad role UAT and later workflow steps remain open."
+      "statusNote": "The 20 November current-tree workshop journey passed 86 disposable-PostgreSQL browser checks with zero failures, including all five current-step section jumps and the Operations-to-technician flow. API tests passed 168/168 with one optional scanner integration skipped; web tests passed 46/46; both typechecks and the production build passed. This does not replace staff UAT, manual screen-reader checks, physical-device checks, production verification, or later technical sign-off workflows."
+    },
+    {
+      "id": "CHECK-USER-040-ACTION-JUMP-001",
+      "title": "Verify current job step navigation across workshop roles",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "2-core-workflow",
+      "parentId": "CHECK-USER-040",
+      "dependencies": [
+        "BUILD-USER-040-ACTION-JUMP-001"
+      ],
+      "requirementIds": [
+        "USER-040"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-12-simplify-role-based-journey"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "The disposable-PostgreSQL browser journey verifies each workflow action link reaches and focuses its matching section.",
+        "The wider Operations-to-technician browser journey passes without failures and records untested limits."
+      ],
+      "evidence": [
+        "docs/verification/work-order-next-action-navigation-2026-11-20.md",
+        "docs/verification/browser-work-plan/results.json",
+        "scripts/work-plan-browser.mjs"
+      ],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [
+        "BUILD-USER-040-ACTION-JUMP-001"
+      ],
+      "statusNote": "The 20 November local journey passed 80 browser checks with zero failures, including five explicit current-step target/scroll/focus checks. API tests passed 170/170 with one optional scanner integration skipped; web tests passed 46/46; both typechecks and the production build passed. Synthetic local data only; staff UAT and manual screen-reader/device checks remain open."
     },
     {
       "id": "BUILD-USER-039-TASK-ACTIVITY",
@@ -26233,14 +26513,16 @@
         "apps/web/src/api.ts",
         "apps/web/src/pages/print-work-order.tsx",
         "docs/verification/checks/site-local-work-entry-time-2026-11-13.md",
-        "docs/verification/work-entry-evidence-report-labels-2026-11-13.md"
+        "docs/verification/work-entry-evidence-report-labels-2026-11-13.md",
+        "docs/verification/workshop-operations-journey-2026-11-19.md",
+        "docs/verification/task-execution-entry-gate-2026-11-20.md"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "Work-entry observed/performed times, accepted evidence selection, append-only corrections and separate task-scoped uploads after Supervisor handoff are implemented. PostgreSQL/API and browser runs verify accepted file name and media type in report JSON and selectable-text PDF, with no storage key; task uploads preserve the handoff without changing work-order scope. Generic work-order evidence added after handoff still invalidates the assignment. Specific task-execution authority and G2 scope, full report scope, sign-offs and Shirley intake after physical VIN verification remain open."
+      "statusNote": "The 20 November 88-check API foundation run and technician browser check passed. Current assigned workers can record observations and open follow-ups; technical test/action/completion claims are now fail-closed until effective G2 scope, vehicle instructions, exact-scope qualifications and signed action authority can be verified. Service-report pagination, evidence labels and corrections remain covered. Supervisor G3, Team Lead G4, Head inspection, staff UAT and the Shirley report VIN verification remain open."
     },
     {
       "id": "CHECK-USER-039-WORK-HISTORY-001",
@@ -26273,7 +26555,8 @@
         "docs/verification/work-history-service-report-2026-11-13.md",
         "docs/verification/browser-work-plan/results.json",
         "docs/verification/checks/site-local-work-entry-time-2026-11-13.md",
-        "docs/verification/work-entry-evidence-report-labels-2026-11-13.md"
+        "docs/verification/work-entry-evidence-report-labels-2026-11-13.md",
+        "docs/verification/workshop-operations-journey-2026-11-19.md"
       ],
       "owner": {
         "role": "verification-agent",
@@ -26283,7 +26566,7 @@
       "verificationTargets": [
         "BUILD-USER-039-WORK-HISTORY-001"
       ],
-      "statusNote": "A fresh 50-check PostgreSQL/browser run passed the 101-entry report, delayed-page fail-closed behavior, selectable-text PDF, accepted evidence label, storage-key exclusion, four report widths and WCAG 2.1 A/AA. Separate task-evidence PostgreSQL/API and browser verification confirms accepted uploads after handoff preserve the assignment and report labels. Generic work-order evidence added after handoff still invalidates assignments by design. Specific work-authority/G2 checks, full sign-off scope, staff UAT and physical-vehicle verification remain open."
+      "statusNote": "The 19 November 80-check disposable-PostgreSQL browser run passed the 101-entry report, delayed-page fail-closed behavior, selectable-text PDF, accepted evidence labels, print isolation, current work handoff, responsive/zoom checks and blocked sign-off states. Exact task-work authority/G2 dispatch checks, staff UAT, physical-device acceptance and physical-vehicle verification remain open."
     },
     {
       "id": "BUILD-USER-039-TASK-EVIDENCE-001",
@@ -26412,6 +26695,45 @@
       },
       "blockedBy": [],
       "statusNote": "Capture, accepted source-file selection, reasoned correction, attribution and separate printable history are implemented. Focused disposable PostgreSQL/API regression on 2026-11-14 verifies the Service Advisor path, cross-organisation denial with no write, correction and Operations-review races with one commit and one conflict, plus outbox failure rollback of the work-order version, complaint, report, items, event and receipt; the same idempotency key succeeds on retry. Dedicated disposable browser evidence verifies report save/correction/file linkage/print, pagination, 200% and 400% zoom and accessible interaction. Keep in progress while dependency BUILD-USER-039-WORK-HISTORY-001 and whole-flow user acceptance remain open. The Shirley report awaits physical/documentary VIN verification."
+    },
+    {
+      "id": "BUILD-USER-039-CUSTOMER-UPDATES-001",
+      "title": "Show linked customer contact history on the work order",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "2-core-workflow",
+      "parentId": "E18",
+      "dependencies": [
+        "BUILD-USER-038"
+      ],
+      "requirementIds": [
+        "USER-039",
+        "R-M-0057"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-12-joined-workorder-lifecycle",
+        "master-0057"
+      ],
+      "status": "in-progress",
+      "acceptance": [
+        "Show recent contact attempts from requests linked to the current work order, with outcome, staff member, channel, time and recorded notes.",
+        "Let the Head of Service Centre and Service Advisor open the canonical request to continue its existing contact and callback history.",
+        "Use the existing audited request-contact record; do not create a second communication history or claim that the system sent a message.",
+        "Keep customer contact details out of work-role screens that are not allowed to read service requests.",
+        "Make correction status clear and show a loading, empty, failure and retry state."
+      ],
+      "evidence": [
+        "docs/architecture/service-requests-and-callbacks.md",
+        "apps/web/src/pages/work-order.tsx",
+        "scripts/work-plan-browser.mjs",
+        "docs/verification/work-order-customer-contact-history-2026-11-18.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "The 72-check disposable PostgreSQL/API/browser journey verifies the Head and Service Advisor contact-history view and canonical request link, and confirms the Technician sees no contact notes and makes no contact-history request. No outbound message is sent. Keep this task in progress until its broader service-request prerequisite (BUILD-USER-038) is terminal; parent USER-039 also remains open for G3/G4, Head inspection and customer-update sequencing."
     },
     {
       "id": "CHECK-USER-039-SOURCE-REPORT-001",
@@ -26577,7 +26899,7 @@
         "user-request-2026-11-13-daily-service-report",
         "user-request-2026-11-13-pdi-maintenance-forms"
       ],
-      "status": "in-progress",
+      "status": "verified",
       "acceptance": [
         "Draft intake/job control, PDI, routine maintenance, and invoice/payment/receipt/handover procedures.",
         "Provide a PDI and maintenance checklist/report template with statuses, reasons, assignments, reviews and distinct approvals.",
@@ -26589,16 +26911,15 @@
         "docs/operations/sops/SOP-002-PDI-and-vehicle-condition-record.md",
         "docs/operations/sops/SOP-003-routine-maintenance-and-inspection.md",
         "docs/operations/sops/SOP-004-invoice-payment-receipt-and-vehicle-handover.md",
-        "docs/operations/forms/pdi-and-maintenance-checklist-draft.md"
+        "docs/operations/forms/pdi-and-maintenance-checklist-draft.md",
+        "docs/verification/sop-content-review-2026-11-19.md"
       ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
-      "blockedBy": [
-        "Named document/process owners, Finance and technical review under REV-008/REV-012/REV-053"
-      ],
-      "statusNote": "Draft pack created. Do not publish or treat as effective until appointed owners review and approve."
+      "blockedBy": [],
+      "statusNote": "The four workflow SOP drafts and PDI/maintenance checklist template are complete and reviewed for traceability and unsupported authority. They remain draft-only. Controlled publication and staff acknowledgement require a named document owner and the exact technical, emergency, site and Finance sources listed in the documents and review register. See docs/verification/sop-content-review-2026-11-19.md."
     },
     {
       "id": "CHECK-USER-042-SOP-DRAFTS-001",
@@ -26616,7 +26937,7 @@
       "sourceRefs": [
         "user-request-2026-11-13-interim-sops"
       ],
-      "status": "planned",
+      "status": "verified",
       "acceptance": [
         "Cross-check role/handoff sequence against approved user directions and architecture.",
         "Confirm draft metadata and warnings prevent effective status or authorization.",
@@ -26626,7 +26947,8 @@
       "evidence": [
         "docs/operations/sops/",
         "docs/operations/forms/pdi-and-maintenance-checklist-draft.md",
-        "docs/decisions/review-register.md"
+        "docs/decisions/review-register.md",
+        "docs/verification/sop-content-review-2026-11-19.md"
       ],
       "owner": {
         "role": "verification-agent",
@@ -26636,7 +26958,7 @@
       "verificationTargets": [
         "BUILD-USER-042-SOP-DRAFTS-001"
       ],
-      "statusNote": "Independent content review remains open."
+      "statusNote": "Reviewed the four drafts against RG-VMMS-POL-001 and owner directions. Confirmed the role sequence, draft-only warnings, traceability, and absence of invented technical thresholds, emergency instructions, financial rules or authority grants. SOP-001 now points to the approved interim stop-work policy and site emergency plan rather than implying that an unprovided emergency SOP exists. Detailed SOPs remain drafts pending named owners, exact manufacturer sources, Finance and technical approval. See docs/verification/sop-content-review-2026-11-19.md."
     },
     {
       "id": "BUILD-USER-043-CHECKLISTS-001",
@@ -26717,7 +27039,12 @@
         "docs/verification/checklist-template-storage-2026-11-14.md",
         "apps/api/test/foundation.test.ts",
         "apps/api/src/work-order-checklists.ts",
-        "apps/web/src/work-order-checklists.tsx"
+        "apps/web/src/work-order-checklists.tsx",
+        "scripts/checklist-review-browser.mjs",
+        "scripts/checklist-preparation-browser.mjs",
+        "docs/verification/checklist-record-review-2026-11-19.md",
+        "docs/verification/checklist-record-review-browser-results-2026-11-19.json",
+        "docs/verification/checklist-preparation-browser-2026-11-19.json"
       ],
       "owner": {
         "role": "verification-agent",
@@ -26730,7 +27057,7 @@
       "verificationTargets": [
         "BUILD-USER-043-CHECKLISTS-001"
       ],
-      "statusNote": "Checklist verification is underway; current storage and availability checks pass, while operational authorization and user acceptance remain open."
+      "statusNote": "Fresh 13:13 UTC local suite recheck: API 163 passed/0 failed/1 optional integration skipped; web 43 passed/0 failed; typecheck and build passed. PostgreSQL tests cover source binding, grant denial, review authorization, audit, replay and conflict. Focused PostgreSQL review checks additionally deny a Technician reviewer, stale work-plan/checklist/assignment revisions and a superseded outcome, with no review rows created. Follow-up Chromium runs at 12:29 UTC verified lost-response draft retry and draft-only wording, the missing-evidence return and reason-required review, plus seven-width report layout and print isolation; all three browser runs had zero automated WCAG violations and no page errors. Preparation and review use synthetic APIs. Effective vehicle-specific templates, production grants, full checklist activation, remaining negative cases, screen-reader checks and staff acceptance remain open. See docs/verification/checklist-record-review-2026-11-19.md, docs/verification/checklist-preparation-browser-2026-11-19.json, and docs/verification/operational-pilot-priority-checkpoint-2026-11-19.md."
     },
     {
       "id": "BUILD-USER-044-MANUAL-FINANCE-001",
@@ -26757,7 +27084,7 @@
       "sourceRefs": [
         "user-request-2026-11-13-manual-invoice-payment-receipt-email"
       ],
-      "status": "in-progress",
+      "status": "deferred",
       "acceptance": [
         "Keep payment processing/gateway out of scope; record only verified external payments or separately approved guarantees.",
         "Generate draft and issued invoices only from approved work and Finance-approved configuration; require independent check.",
@@ -26786,7 +27113,7 @@
       "blockedBy": [
         "Finance-approved rates/taxes/currency/numbering/terms, grants, templates and mail provider under REV-012"
       ],
-      "statusNote": "Exact minor-unit validation, the non-effective Finance proposal registry and setup UI are implemented and verified. Invoice work depends on trustworthy labour/part source records and compatible issue/traceability paths; no inference from narrative work notes is permitted. Invoicing, manual payment, allocation, receipts, client email and G5 remain unimplemented; policy and grants remain pending."
+      "statusNote": "Owner reprioritized invoice, payment, receipt and client-email work on 19 November 2026 to after the single-site workshop operations pilot. Existing money validation and non-effective Finance configuration work is retained; G5 departure controls remain fail-closed."
     },
     {
       "id": "CHECK-USER-044-MANUAL-FINANCE-001",
@@ -26902,7 +27229,7 @@
         "Record verified external payments and generate receipts only after verification.",
         "Send approved financial documents through an approved client email route."
       ],
-      "status": "in-progress",
+      "status": "deferred",
       "evidence": [
         "docs/operations/sops/SOP-004-invoice-payment-receipt-and-vehicle-handover.md"
       ],
@@ -26916,7 +27243,7 @@
       "requirementIds": [
         "USER-044"
       ],
-      "statusNote": "Exact money validation and the non-effective Finance configuration proposal registry are verified. The main invoice/payment/receipt/email workflow and its operational approval gates remain open."
+      "statusNote": "Manual invoicing, payment recording and receipt issuance will follow the single-site workshop operations pilot. Physical departure remains blocked until its separate G5 requirements are met."
     },
     {
       "kind": "task",
@@ -27066,7 +27393,7 @@
       "sourceRefs": [
         "user-request-2026-11-13-pdi-maintenance-forms"
       ],
-      "status": "in-progress",
+      "status": "implemented",
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -27080,17 +27407,24 @@
         "Bind each maintenance instance to one current work order, its vehicle snapshot and an effective exact-context template revision.",
         "Keep schedule basis explicitly unknown when verified history is absent.",
         "Use the 10,000 km or 12-month trigger as a reminder only.",
-        "Check current consent, holds, membership and version under the work-order root lock.",
+        "Check writable site membership, preparation authority, exact vehicle/template applicability and work-order version under the work-order root lock.",
+        "Keep preparation non-authorizing: it must not clear consent or safety holds, or imply permission to inspect, diagnose, repair or release the vehicle. Activation must recheck those gates separately.",
         "Do not expose workshop PDI as part of the first scope unless its separate applicability and authority decision is resolved."
       ],
       "evidence": [
         "docs/architecture/work-order-checklists.md",
         "docs/architecture/work-order-lifecycle-and-booking.md",
         "apps/api/migrations/068_work_order_checklist_instances.sql",
+        "apps/api/migrations/082_work_order_checklist_drafts.sql",
+        "apps/api/src/work-order-checklist-preparation.ts",
         "apps/api/test/foundation.test.ts",
-        "docs/verification/checklist-template-storage-2026-11-14.md"
+        "apps/web/src/work-order-checklists.tsx",
+        "scripts/checklist-preparation-browser.mjs",
+        "docs/verification/checklist-preparation-browser-2026-11-19.json",
+        "docs/verification/checklist-template-storage-2026-11-14.md",
+        "docs/verification/work-order-checklist-draft-creation-2026-11-18.md"
       ],
-      "statusNote": "Work-order child and immutable outcome storage and exact-vehicle read availability are implemented and PostgreSQL-tested. Routine-maintenance start/outcome commands and UI remain open."
+      "statusNote": "Non-authorizing draft creation is implemented in the API and work-order screen. Disposable PostgreSQL tests cover exact vehicle/source binding, current version, grant denial, snapshots, idempotent replay and duplicate refusal. A focused Chromium check now verifies the UI command body, retry after a lost response, visible draft-only boundary, seven widths and automated WCAG scan. The full checklist lifecycle remains open: activation is separately tracked and stays blocked pending G2 consent, current holds, effective source and authority."
     },
     {
       "kind": "task",
@@ -27103,7 +27437,7 @@
       "sourceRefs": [
         "user-request-2026-11-13-pdi-maintenance-forms"
       ],
-      "status": "planned",
+      "status": "in-progress",
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -27111,8 +27445,7 @@
       "id": "BUILD-USER-043-OUTCOMES-001",
       "title": "Record reasoned checklist outcomes and correction history",
       "dependencies": [
-        "BUILD-USER-043-INSTANCE-001",
-        "BUILD-USER-043-DELIVERY-PDI-001"
+        "BUILD-USER-043-INSTANCE-001"
       ],
       "acceptance": [
         "Record all six defined item outcomes with required reasons and applicability reasons.",
@@ -27122,8 +27455,91 @@
       ],
       "evidence": [
         "docs/architecture/work-order-checklists.md",
-        "docs/operations/forms/pdi-and-maintenance-checklist-draft.md"
-      ]
+        "apps/api/src/work-order-checklist-outcomes.ts",
+        "apps/api/src/app.ts",
+        "apps/api/src/sensitive-read-audit.ts",
+        "apps/api/migrations/089_my_task_checklist_read_audit.sql",
+        "apps/web/src/task-checklist-outcomes.tsx",
+        "apps/web/src/pages/my-assigned-tasks.tsx",
+        "scripts/my-assigned-tasks-browser.mjs",
+        "docs/verification/assigned-technician-checklist-outcomes-2026-11-18.md"
+      ],
+      "statusNote": "Assigned technicians can record reasoned outcomes and append-only corrections for after-sales maintenance instances. Sales delivery/PDI is explicitly deferred and is not a prerequisite for this workshop task. Synthetic API authorization and real-device acceptance remain open."
+    },
+    {
+      "id": "BUILD-R-M-0137-CHECKLIST-SCOPE-001",
+      "title": "Enforce exact qualification scope for checklist outcomes",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "3-safety-qa",
+      "parentId": "E08",
+      "dependencies": [],
+      "requirementIds": [
+        "R-M-0137",
+        "USER-043"
+      ],
+      "sourceRefs": [
+        "master-0137",
+        "user-request-2026-11-13-pdi-maintenance-forms"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Source-backed maintenance checklist items require explicit system and task-class codes; missing classification cannot be recorded.",
+        "At outcome time, lock the latest accepted qualification and require exact vehicle model, powertrain, system and task-class scope with no unevaluated restrictions.",
+        "Snapshot the accepted qualification with the immutable outcome; do not grant repair, checklist activation, G3, G4 or vehicle-movement authority."
+      ],
+      "evidence": [
+        "apps/api/migrations/100_checklist_qualification_exact_scope.sql",
+        "apps/api/src/work-order-checklist-outcomes.ts",
+        "apps/api/src/work-order-checklist-preparation.ts",
+        "apps/api/test/work-order-checklist-outcomes.test.ts",
+        "apps/api/test/foundation.test.ts",
+        "docs/architecture/work-order-checklists.md",
+        "docs/architecture/staff-authority-and-qualification.md",
+        "docs/verification/checklist-qualification-scope-2026-11-19.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Verified through PostgreSQL denial cases for wrong model, system, task class, powertrain and unresolved restrictions, then a successful exactly scoped outcome whose qualification snapshot was read back. This scoped checklist recording permission does not complete G3/G4 or authorize repairs."
+    },
+    {
+      "id": "CHECK-R-M-0137-CHECKLIST-SCOPE-001",
+      "title": "Verify exact qualification scope for checklist outcomes",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "3-safety-qa",
+      "parentId": "E08",
+      "dependencies": [
+        "BUILD-R-M-0137-CHECKLIST-SCOPE-001"
+      ],
+      "requirementIds": [
+        "R-M-0137",
+        "USER-043"
+      ],
+      "sourceRefs": [
+        "master-0137",
+        "user-request-2026-11-13-pdi-maintenance-forms"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Use PostgreSQL to deny each wrong or missing qualification dimension and any unresolved restriction.",
+        "Verify successful exact-scope outcome persistence and qualification snapshot.",
+        "Verify source classification is mandatory and no G3/G4 state is implied."
+      ],
+      "evidence": [
+        "apps/api/test/foundation.test.ts",
+        "apps/api/test/work-order-checklist-outcomes.test.ts",
+        "docs/verification/checklist-qualification-scope-2026-11-19.md"
+      ],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Focused PostgreSQL/API tests and the full VMMS test suite pass. Full G3 qualification scope and operational sign-off remain pending effective repair-task classifications, procedures, named grants and qualification provisioning."
     },
     {
       "kind": "task",
@@ -27136,7 +27552,7 @@
       "sourceRefs": [
         "user-request-2026-11-13-pdi-maintenance-forms"
       ],
-      "status": "planned",
+      "status": "in-progress",
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -27154,8 +27570,22 @@
       ],
       "evidence": [
         "docs/architecture/work-order-checklists.md",
-        "docs/architecture/work-order-lifecycle-and-booking.md"
+        "docs/architecture/work-order-lifecycle-and-booking.md",
+        "docs/architecture/candidates/checklist-record-review-synthesis-2026-11-19.md",
+        "apps/api/src/work-order-checklist-reviews.ts",
+        "apps/api/migrations/094_work_order_checklist_item_reviews.sql",
+        "apps/api/migrations/096_checklist_outcome_authority_lock.sql",
+        "apps/api/migrations/097_checklist_qualification_lock.sql",
+        "apps/api/migrations/098_checklist_item_aggregate_roots.sql",
+        "apps/api/test/work-order-checklist-reviews.test.ts",
+        "apps/api/test/foundation.test.ts",
+        "docs/verification/checklist-review-safeguards-2026-11-20.md",
+        "apps/web/src/checklist-review-queue.tsx",
+        "docs/verification/checklist-record-review-2026-11-19.md",
+        "scripts/checklist-review-browser.mjs",
+        "docs/verification/checklist-record-review-browser-results-2026-11-19.json"
       ],
+      "statusNote": "Item-level review command, site-scoped queue, immutable authority snapshot and role-aware UI are implemented. The 20 November disposable PostgreSQL/API suite now also verifies cross-site denial, current direct-report enforcement, grant revocation at decision time, evidence-required outcome rejection without history creation, and database rejection of review updates/deletes. The full foundation suite passed 89 tests; checklist review schema tests, API typecheck and docs checks passed. Evidence that becomes stale or unavailable after outcome capture, production grants, model-specific approved templates and real UAT remain open. See docs/verification/checklist-review-safeguards-2026-11-20.md.",
       "blockedBy": [
         "REV-053: reviewer/independent inspection grants and failure routing"
       ]
@@ -27171,7 +27601,7 @@
       "sourceRefs": [
         "user-request-2026-11-13-pdi-maintenance-forms"
       ],
-      "status": "planned",
+      "status": "in-progress",
       "owner": {
         "role": "implementation-agent",
         "person": null
@@ -27189,8 +27619,16 @@
       ],
       "evidence": [
         "docs/architecture/work-order-checklists.md",
-        "docs/architecture/data-export-and-reporting.md"
-      ]
+        "docs/architecture/data-export-and-reporting.md",
+        "apps/api/src/work-order-checklist-report.ts",
+        "apps/api/test/foundation.test.ts",
+        "apps/web/src/pages/print-maintenance-checklist-report.tsx",
+        "apps/web/src/api.test.ts",
+        "scripts/work-order-checklist-report-browser.mjs",
+        "docs/verification/work-order-checklist-report-2026-11-18.md",
+        "docs/verification/work-order-checklist-report-2026-11-18/browser-results.json"
+      ],
+      "statusNote": "Staff-only, site-scoped routine-maintenance report is implemented with version-pinned pagination, stale-version rejection, sensitive-read audit, purpose-built print layout and focused API/web coverage. Full API and web suites, typecheck and production build passed. Chromium verified synthetic two-page version pinning, seven responsive widths, print isolation and zero automated WCAG 2.1 A/AA violations. Client allow-listed output, manual assistive-technology review, full checklist lifecycle and staff acceptance remain open."
     },
     {
       "kind": "task",
@@ -27222,13 +27660,17 @@
       ],
       "evidence": [
         "docs/architecture/work-order-checklists.md",
-        "docs/operations/forms/pdi-and-maintenance-checklist-draft.md",
         "apps/web/src/work-order-checklists.tsx",
-        "apps/web/src/pages/work-order.tsx",
-        "apps/web/src/api.ts",
-        "docs/verification/checklist-template-storage-2026-11-14.md"
+        "scripts/checklist-preparation-browser.mjs",
+        "docs/verification/checklist-preparation-browser-2026-11-19.json",
+        "apps/web/src/task-checklist-outcomes.tsx",
+        "apps/web/src/pages/my-assigned-tasks.tsx",
+        "scripts/my-assigned-tasks-browser.mjs",
+        "docs/verification/maintenance-checklist-start-gate-2026-11-18.md",
+        "docs/verification/workshop-checklist-workbench-2026-11-18.md",
+        "docs/verification/operational-pilot-priority-checkpoint-2026-11-19.md"
       ],
-      "statusNote": "Read-only availability and existing-record panel is wired; checklist commands and browser/device verification remain open."
+      "statusNote": "Assigned maintenance checklist entry, draft preparation, review queue and version-pinned report UI pass local browser checks. The 12:29 UTC follow-up verified lost-response retry, draft-only wording, evidence-blocked review, reasoned decisions, seven widths, print isolation, and zero automated WCAG violations or page errors. The task remains in progress: delivery PDI lifecycle, exact effective model schedules, active review grants, complete conflict coverage and staff/device acceptance are still open."
     },
     {
       "id": "BUILD-USER-044-MONEY-001",
@@ -27488,7 +27930,7 @@
         "user-request-2026-11-13-manual-invoice-payment-receipt-email",
         "manual-finance-source-line-readiness"
       ],
-      "status": "planned",
+      "status": "in-progress",
       "acceptance": [
         "Use only attributable approved labour records and compatible parts actually issued/fitted to the work order; never infer a charge from a narrative action, diagnostic finding, parts request or checklist answer.",
         "Snapshot the exact source record IDs/revisions and payer/work-order identity used by the preview; reject stale or cross-site sources.",
@@ -28103,18 +28545,26 @@
       "sourceRefs": [
         "user-managed-services-redesign-2026-11-16"
       ],
-      "status": "planned",
+      "status": "implemented",
       "acceptance": [
         "Preserve domain commands, non-owner RLS roles and atomic mutation/event/receipt/outbox operations; isolate migrations and provider admin keys.",
         "Configure measured connection limits, transaction-local tenant/site scope, TLS, same-origin routing and verified ingress handling; no evidence bytes through Vercel bodies."
       ],
-      "evidence": [],
+      "evidence": [
+        "apps/api/api/v1/handler.ts",
+        "apps/api/vercel.json",
+        "apps/web/api/proxy.ts",
+        "apps/web/src/worker.ts",
+        "apps/web/vercel.json",
+        "docs/verification/neon-vmms-identity-integration-2026-11-19.md",
+        "docs/verification/production-route-recheck-2026-11-19.md"
+      ],
       "owner": {
         "role": "implementation-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "See docs/delivery/managed-services-redesign-plan-2026-11-16.md. Provider runtime evidence and production authorization remain separate."
+      "statusNote": "Vercel Node API and same-origin frontend proxy are deployed to protected Preview aliases using the isolated Neon integration branch. The corrected API Preview builds from the full repository upload with Root Directory apps/api; the stable API alias now targets it. Direct and proxied health/session return JSON and proxied OIDC start redirects to the central issuer using the stable Preview callback. The central client is still unregistered. Current Production probes show /api/v1 falling through to frontend HTML; Production runtime variables are absent and the Neon Production branch has no application schema. Production DB configuration, managed PostgreSQL concurrency, full login and cutover remain open. See docs/verification/production-routing-state-2026-11-19.md."
     },
     {
       "id": "CHECK-MANAGED-API-001",
@@ -28132,18 +28582,92 @@
       "sourceRefs": [
         "user-managed-services-redesign-2026-11-16"
       ],
-      "status": "planned",
+      "status": "in-progress",
       "acceptance": [
         "Run actual managed PostgreSQL role/RLS/context-reuse, locks, duplicate/stale commands, rollback and membership/grant-revocation race checks.",
-        "Exercise both login audiences, CSRF/session isolation, exact ingress paths and runtime failure recovery on the selected Vercel Node deployment; local/SQLite checks are not hosted proof."
+        "Exercise both login audiences, CSRF/session isolation, exact ingress paths and runtime failure recovery on the selected Vercel Node deployment; local/SQLite checks are not hosted proof.",
+        "Prove the API deployment package excludes local environment files, provider state and local databases and matches the configured Vercel project root before production deployment."
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/verification/neon-vmms-identity-integration-2026-11-19.md",
+        "docs/verification/production-route-recheck-2026-11-19.md",
+        "docs/verification/api-production-package-review-2026-11-20.md"
+      ],
       "owner": {
         "role": "verification-agent",
         "person": null
       },
       "blockedBy": [],
-      "statusNote": "See docs/delivery/managed-services-redesign-plan-2026-11-16.md. Provider runtime evidence and production authorization remain separate."
+      "statusNote": "20 November local verification passed: API 170 passed/0 failed (1 optional S3/ClamAV integration skipped), web 46 passed, API/web typechecks, production build, CodeGraph sync/affected scan, and docs traceability. Read-only Vercel checks found exactly the intended web + standalone API projects and attached production domains; the API Production deployment is ERROR because the uploaded source root does not contain the configured apps/api root. Production variables are absent, Cloudflare API DNS is absent, and a READY Preview is not production proof. Earlier deployment inventories included local environment files/provider state; rotate the affected Preview credentials and prove package exclusion before any new deployment. Hosted identity, database/RLS, storage, OIDC/MFA, ingress, rollback and recovery remain unverified. See docs/verification/api-production-package-review-2026-11-20.md."
+    },
+    {
+      "id": "BUILD-MANAGED-API-002",
+      "title": "Pin the production web proxy to the canonical VMMS API",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "6-launch",
+      "parentId": "E12",
+      "dependencies": [
+        "BUILD-MANAGED-API-001"
+      ],
+      "requirementIds": [
+        "USER-046"
+      ],
+      "sourceRefs": [
+        "user-managed-services-redesign-2026-11-16"
+      ],
+      "status": "implemented",
+      "acceptance": [
+        "In production, proxy credentials only to https://api.raymond-gray.org; missing, invalid or noncanonical origins fail closed.",
+        "Never forward a Preview deployment-protection bypass token from production; keep Preview behavior explicitly stage-scoped."
+      ],
+      "evidence": [
+        "apps/web/src/worker.ts",
+        "apps/web/src/api-proxy.ts",
+        "apps/web/api/proxy.ts",
+        "apps/web/src/worker.test.ts",
+        "apps/web/src/vercel-proxy.test.ts",
+        "docs/verification/production-readiness-check-2026-11-19.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Local proxy implementation and focused tests are complete: Production requires the canonical API origin and strips the Preview bypass. It is verified locally but not deployed; Production variables and API DNS remain separate release work."
+    },
+    {
+      "id": "CHECK-MANAGED-API-002",
+      "title": "Verify production proxy origin and Preview token isolation",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "6-launch",
+      "parentId": "E12",
+      "dependencies": [
+        "BUILD-MANAGED-API-002"
+      ],
+      "requirementIds": [
+        "USER-046"
+      ],
+      "sourceRefs": [
+        "user-managed-services-redesign-2026-11-16"
+      ],
+      "status": "in-progress",
+      "acceptance": [
+        "Unit tests prove noncanonical production API origins fail before forwarding credentials and the canonical production origin receives no Preview bypass header.",
+        "Web and API workspace typechecks pass; hosted production routing remains a separate release check."
+      ],
+      "evidence": [
+        "apps/web/src/worker.test.ts",
+        "apps/web/src/vercel-proxy.test.ts",
+        "docs/verification/production-readiness-check-2026-11-19.md"
+      ],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Local focused proxy checks passed 12/12 and workspace typechecks passed. Production routing remains blocked by missing Production runtime configuration and API DNS; the implementation parent is not yet verified as a complete managed API release."
     },
     {
       "id": "BUILD-MANAGED-EVIDENCE-001",
@@ -28296,30 +28820,1273 @@
       },
       "blockedBy": [],
       "statusNote": "See docs/delivery/managed-services-redesign-plan-2026-11-16.md. Provider runtime evidence and production authorization remain separate."
+    },
+    {
+      "id": "BUILD-USER-043-ACTIVATION-001",
+      "title": "Keep checklist activation blocked until controlled sources and authority are ready",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "3-safety-qa",
+      "parentId": "BUILD-USER-043-CHECKLISTS-001",
+      "dependencies": [
+        "BUILD-USER-043-INSTANCE-001",
+        "BUILD-USER-043-OUTCOMES-001"
+      ],
+      "requirementIds": [
+        "USER-043"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-13-pdi-maintenance-forms"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Require a controlled, effective procedure revision and verified vehicle applicability for every required checklist item.",
+        "Recheck consent, safety holds, membership, assignment, authority and qualification at the time of activation.",
+        "Keep activation limited to recording inspection observations; do not grant repair, completion, release or financial authority.",
+        "Persist activation, audit, idempotency receipt and outbox atomically under the work-order root lock with stale-version rejection.",
+        "Keep drafts visibly blocked and explain the missing setup without presenting a draft as a work instruction."
+      ],
+      "evidence": [
+        "docs/architecture/checklist-lifecycle.md",
+        "docs/decisions/review-register.md",
+        "docs/verification/maintenance-checklist-start-gate-2026-11-18.md",
+        "apps/web/src/work-order-checklists.tsx",
+        "apps/web/src/task-checklist-outcomes.tsx"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [
+        "REV-006: signed authority grants",
+        "REV-008: controlled effective procedure source",
+        "REV-009: approved EV/HV procedures and controls",
+        "REV-035: execution and inspection evidence contract",
+        "REV-053: exact-model sources, applicability and reviewer authority"
+      ],
+      "statusNote": "Activation remains unavailable until controlled sources and signed authority records are configured; draft guidance and denial behavior are implemented."
+    },
+    {
+      "id": "CHECK-USER-043-ACTIVATION-001",
+      "title": "Verify checklist activation prerequisites and blocked-state behavior",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "3-safety-qa",
+      "parentId": "BUILD-USER-043-ACTIVATION-001",
+      "dependencies": [
+        "BUILD-USER-043-ACTIVATION-001"
+      ],
+      "requirementIds": [
+        "USER-043"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-13-pdi-maintenance-forms"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Verify draft templates cannot create active work instructions or accept technician outcomes.",
+        "Verify denied activation for missing or ineffective source, wrong vehicle applicability, absent consent, active hold, stale version, missing assignment or missing authority.",
+        "Verify concurrent safety-hold and activation commands serialize under the work-order root lock in PostgreSQL.",
+        "Verify idempotent replay, audit, outbox and stale-version behavior for any permitted activation.",
+        "Verify responsive accessible blocked-state guidance in a real browser at phone, tablet and desktop widths."
+      ],
+      "evidence": [
+        "docs/verification/maintenance-checklist-start-gate-2026-11-18.md",
+        "scripts/my-assigned-tasks-browser.mjs",
+        "apps/api/test/foundation.test.ts"
+      ],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [
+        "BUILD-USER-043-ACTIVATION-001"
+      ],
+      "statusNote": "Synthetic browser coverage verifies the draft-state block at five viewport widths; PostgreSQL activation concurrency and named source/authority setup remain open, and no activation command exists."
+    },
+    {
+      "id": "BUILD-USER-040-WORK-QUEUES-001",
+      "title": "Show role-specific workshop queues on Today",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "2-core-workflow",
+      "parentId": "BUILD-USER-040",
+      "dependencies": [
+        "BUILD-USER-040-NAV-001"
+      ],
+      "requirementIds": [
+        "USER-040"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-17-prioritize-operational-pages"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Show a Technician their assigned tasks and show Head, Team Lead and Supervisor the work queues relevant to their active site roles.",
+        "Link each preview to its matching filtered queue without duplicating business records or showing contact details.",
+        "Provide populated, empty, offline and retryable failure states."
+      ],
+      "evidence": [
+        "apps/web/src/pages/today.tsx",
+        "apps/web/src/workspace-navigation.ts",
+        "scripts/my-assigned-tasks-browser.mjs",
+        "docs/verification/today-work-queues-2026-11-18.md",
+        "docs/verification/browser/my-assigned-tasks.json"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Role-specific Today previews and matching queue links are implemented. Current browser evidence exercises combined roles, empty/failure states, five widths and Axe; API access is independently site-scoped."
+    },
+    {
+      "id": "CHECK-USER-040-WORK-QUEUES-001",
+      "title": "Verify Today workshop queues and responsive states",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "2-core-workflow",
+      "parentId": "CHECK-USER-040",
+      "dependencies": [
+        "BUILD-USER-040-WORK-QUEUES-001"
+      ],
+      "requirementIds": [
+        "USER-040"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-17-prioritize-operational-pages"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Verify Technician-only and combined Head/Team Lead/Supervisor/Technician queue visibility and matching queue links.",
+        "Check 320, 390, 768, 1024 and 1440 CSS-pixel widths and automated accessibility on the combined-role Today page.",
+        "Record that queue responses are synthetic and list API authorization, device and UAT boundaries."
+      ],
+      "evidence": [
+        "scripts/my-assigned-tasks-browser.mjs",
+        "docs/verification/today-work-queues-2026-11-18.md",
+        "docs/verification/browser/my-assigned-tasks.json"
+      ],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Browser evidence passes with no page errors across five widths, role-specific queues, matching queue links, populated/empty/retryable states and zero Axe findings. API scope and database authorization are verified separately; production identity, physical devices and staff UAT remain open."
+    },
+    {
+      "id": "BUILD-R-M-0036-SCOPE-PROPOSAL-001",
+      "title": "Record a draft work scope against exact planned tasks",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "2-core-workflow",
+      "parentId": "BUILD-R-M-0036",
+      "dependencies": [
+        "F-002",
+        "F-009"
+      ],
+      "requirementIds": [
+        "R-M-0036"
+      ],
+      "sourceRefs": [
+        "master-0036",
+        "upgrade-0036"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Create an immutable draft proposal bound to the current work-order version, exact planned tasks, rationale, requested kind and canonical scope digest.",
+        "Require a current action-specific grant and writable after-sales membership; reject stale versions, wrong-site/task references and changed idempotency payloads.",
+        "Persist the proposal, work-order version, authority snapshot, audit event, receipt and outbox atomically; mark the proposal as non-authorizing.",
+        "Show the non-authorizing boundary and hide proposal writes when the required grant is absent."
+      ],
+      "evidence": [
+        "apps/api/migrations/081_work_order_scope_proposals.sql",
+        "apps/api/src/work-order-scope-proposals.ts",
+        "apps/api/src/app.ts",
+        "apps/web/src/work-order-scope-proposals.tsx",
+        "apps/api/test/foundation.test.ts",
+        "docs/verification/work-order-scope-proposals-2026-11-18.md",
+        "docs/verification/work-order-scope-proposal-check/results.json"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Verified in disposable PostgreSQL integration and real-browser workflows. No production grant is seeded; proposal does not record payer approval or authorize work."
+    },
+    {
+      "id": "CHECK-R-M-0036-SCOPE-PROPOSAL-001",
+      "title": "Verify draft scope proposal safety and isolation",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "3-safety-qa",
+      "parentId": "CHECK-R-M-0036",
+      "dependencies": [
+        "BUILD-R-M-0036-SCOPE-PROPOSAL-001"
+      ],
+      "requirementIds": [
+        "R-M-0036"
+      ],
+      "sourceRefs": [
+        "master-0036",
+        "upgrade-0036"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Verify grant denial, exact task binding, current version, replay, changed-payload conflict and stale-version rejection against disposable PostgreSQL.",
+        "Verify cross-site and cross-tenant denial, append-only runtime access, audit and event persistence, and the browser no-grant state.",
+        "Keep full G2 authorization and repair dispatch open until owner policy, evidence and authority inputs are approved."
+      ],
+      "evidence": [
+        "apps/api/migrations/081_work_order_scope_proposals.sql",
+        "apps/api/src/work-order-scope-proposals.ts",
+        "apps/api/src/app.ts",
+        "apps/web/src/work-order-scope-proposals.tsx",
+        "apps/api/test/foundation.test.ts",
+        "docs/verification/work-order-scope-proposals-2026-11-18.md",
+        "docs/verification/work-order-scope-proposal-check/results.json"
+      ],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "The bounded draft-proposal acceptance passed. This does not close full G2 customer consent, technical/commercial approval or repair dispatch."
+    },
+    {
+      "id": "BUILD-R-M-0036-PAYER-RESPONSE-001",
+      "title": "Record the payer response to the current scope proposal",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "2-core-workflow",
+      "parentId": "BUILD-R-M-0036",
+      "dependencies": [
+        "BUILD-R-M-0036-SCOPE-PROPOSAL-001"
+      ],
+      "requirementIds": [
+        "R-M-0036"
+      ],
+      "sourceRefs": [
+        "master-0036",
+        "upgrade-0036"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Bind a response to the current payer, exact proposal revision and digest, current work-order version and unchanged planned task set.",
+        "Record response method, read-back, summary, respondent and authority checks as an immutable, site-scoped event.",
+        "Require accepted malware-scanned work-order evidence for a written response and prevent phone responses from linking written evidence.",
+        "Bind a repair response to the exact estimate in the scope digest; keep repair work blocked until technical policy, review and action authority are valid.",
+        "Label an approved Diagnosis response as consent to the exact diagnosis scope only; clearly state that it does not authorize diagnostic execution, repair, parts, charges, or dispatch. Never use this label for a Repair proposal or a declined response."
+      ],
+      "evidence": [
+        "apps/api/migrations/083_work_order_scope_payer_responses.sql",
+        "apps/api/migrations/084_work_order_scope_response_evidence.sql",
+        "apps/api/src/work-order-scope-responses.ts",
+        "apps/api/src/work-order-scope-proposals.ts",
+        "apps/web/src/work-order-scope-proposals.tsx",
+        "apps/api/test/foundation.test.ts",
+        "docs/verification/work-order-payer-scope-response-2026-11-18.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Estimate-bound payer response implementation verified through focused PostgreSQL/API coverage, the full API suite (157 passed, 0 failed, 1 optional scanner integration skipped), and the full work-plan browser journey; payer response remains non-authorizing."
+    },
+    {
+      "id": "CHECK-R-M-0036-PAYER-RESPONSE-001",
+      "title": "Verify payer response identity, evidence and authorization boundary",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "3-safety-qa",
+      "parentId": "CHECK-R-M-0036",
+      "dependencies": [
+        "BUILD-R-M-0036-PAYER-RESPONSE-001"
+      ],
+      "requirementIds": [
+        "R-M-0036"
+      ],
+      "sourceRefs": [
+        "master-0036",
+        "upgrade-0036"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Verify current payer and exact proposal binding, phone and written response paths, idempotency, stale-version and denial cases.",
+        "Verify written evidence is accepted, malware-scanned and linked to the same work order, while phone responses cannot link it.",
+        "Verify response history cannot grant G2 dispatch or bypass technical policy, qualification, evidence and authority checks.",
+        "In the browser, verify an accepted repair response is bound to the exact estimate and stays visibly blocked from execution and release."
+      ],
+      "evidence": [
+        "apps/api/test/foundation.test.ts",
+        "docs/verification/work-order-payer-scope-response-2026-11-18.md",
+        "scripts/work-plan-browser.mjs",
+        "docs/verification/browser-work-plan/results.json",
+        "docs/verification/diagnostic-consent-display-2026-11-18.md"
+      ],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Verified exact estimate and task read-back, payer/proposal binding, blocked authorization state, responsive and print behavior in the 73/73 Chromium journey. Focused API/PostgreSQL and 42 web tests passed; the full API suite then passed 157 tests with 0 failures and 1 optional scanner integration skipped."
+    },
+    {
+      "id": "BUILD-R-M-0036-ESTIMATE-001",
+      "title": "Bind repair estimates to the exact payer-approved scope",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "2-core-workflow",
+      "parentId": "BUILD-R-M-0036",
+      "dependencies": [
+        "BUILD-R-M-0036-SCOPE-PROPOSAL-001",
+        "BUILD-R-M-0036-PAYER-RESPONSE-001"
+      ],
+      "requirementIds": [
+        "R-M-0036"
+      ],
+      "sourceRefs": [
+        "master-0036",
+        "upgrade-0036"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Require a positive exact amount and explicit currency on new Repair proposals; allow diagnosis-only consent without a repair estimate.",
+        "Include the immutable estimate in the scope digest and require the payer read-back to cover the exact amount and tasks.",
+        "Store exact currency minor units without tax, invoice, payment or receipt calculations; preserve tenant/site, idempotency, audit and outbox behavior.",
+        "Keep payer acceptance non-authorizing until the effective technical policy, review, qualification, evidence and action authority checks pass."
+      ],
+      "evidence": [
+        "apps/api/migrations/095_work_order_scope_estimates.sql",
+        "apps/api/src/work-order-scope-proposals.ts",
+        "apps/api/src/work-order-scope-responses.ts",
+        "apps/web/src/work-order-scope-proposals.tsx",
+        "apps/web/src/formatting.ts",
+        "apps/api/test/foundation.test.ts",
+        "apps/web/src/formatting.test.ts"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Verified with migration 095, exact minor-unit persistence and digest binding, API/PostgreSQL denial and replay coverage, web currency tests, and the 73-check Chromium work-plan journey. Estimate remains non-authorizing."
+    },
+    {
+      "id": "CHECK-R-M-0036-ESTIMATE-001",
+      "title": "Verify estimate precision, payer binding and authorization boundary",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "3-safety-qa",
+      "parentId": "CHECK-R-M-0036",
+      "dependencies": [
+        "BUILD-R-M-0036-ESTIMATE-001"
+      ],
+      "requirementIds": [
+        "R-M-0036"
+      ],
+      "sourceRefs": [
+        "master-0036",
+        "upgrade-0036"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Exercise exact decimal-to-minor-unit conversion for zero-, two-, and three-decimal currencies.",
+        "Verify repair proposals without positive estimates are denied and revisions bind the amount into their digest.",
+        "Verify the payer reads back the exact amount and accepted response still leaves technical work blocked.",
+        "Run the end-to-end browser workflow against disposable PostgreSQL and inspect all recorded scenarios."
+      ],
+      "evidence": [
+        "apps/api/test/foundation.test.ts",
+        "apps/web/src/formatting.test.ts",
+        "scripts/work-plan-browser.mjs"
+      ],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Verified: exact estimates and payer read-back were exercised in the disposable-PostgreSQL Chromium work-plan journey (73/73); API/PostgreSQL focused test and 42 web tests passed. The full API suite passed 157 tests with 0 failures and 1 optional scanner integration skipped."
+    },
+    {
+      "id": "BUILD-USER-027-TECHNICIAN-REVIEW-REQUEST-001",
+      "title": "Let assigned technicians request a Supervisor review",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "2-core-workflow",
+      "parentId": "BUILD-USER-027",
+      "dependencies": [
+        "BUILD-USER-039-TASK-ACTIVITY"
+      ],
+      "requirementIds": [
+        "USER-027",
+        "USER-039"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-12-joined-workorder-lifecycle"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Allow only the currently assigned worker to append a review request against the active plan and assignment revisions.",
+        "Make requests visible to the assigned Supervisor, Team Lead and Head with clear actor, time and task context.",
+        "Keep requests non-completing and unable to change scope, gates or work-order state."
+      ],
+      "evidence": [
+        "apps/api/migrations/085_supervisor_task_review_request.sql",
+        "apps/api/src/work-order-task-activity.ts",
+        "apps/api/src/app.ts",
+        "apps/web/src/pages/my-assigned-tasks.tsx",
+        "apps/web/src/task-allocations.tsx",
+        "docs/verification/technician-supervisor-review-request-2026-11-18.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Assigned technicians can submit an immutable Supervisor-review request; it is distinct from progress, technical completion, G3 and G4."
+    },
+    {
+      "id": "CHECK-USER-027-TECHNICIAN-REVIEW-REQUEST-001",
+      "title": "Verify assigned technician review requests",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "3-safety-qa",
+      "parentId": "CHECK-USER-027",
+      "dependencies": [
+        "BUILD-USER-027-TECHNICIAN-REVIEW-REQUEST-001"
+      ],
+      "requirementIds": [
+        "USER-027",
+        "USER-039"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-12-joined-workorder-lifecycle"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Verify current assignment, plan revision, site scope, grant, idempotency and denial behavior.",
+        "Verify browser activity shows the request and explicitly says it is not completion or sign-off.",
+        "Verify the request does not advance G3/G4 or change work-order status."
+      ],
+      "evidence": [
+        "apps/api/test/foundation.test.ts",
+        "scripts/my-assigned-tasks-browser.mjs",
+        "docs/verification/technician-supervisor-review-request-2026-11-18.md"
+      ],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "PostgreSQL/API and browser checks pass for the assigned technician request; no completion or gate transition occurs."
+    },
+    {
+      "id": "BUILD-USER-027-REVIEW-RESPONSE-001",
+      "title": "Let assigned Supervisors and leads answer review requests",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "2-core-workflow",
+      "parentId": "BUILD-USER-027",
+      "dependencies": [
+        "BUILD-USER-027-TECHNICIAN-REVIEW-REQUEST-001"
+      ],
+      "requirementIds": [
+        "USER-027",
+        "USER-039"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-12-joined-workorder-lifecycle"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Allow only the assigned Supervisor, Team Lead or Head with the action-specific review-response grant to reply.",
+        "Append a response linked to the original request and show it in technician activity and purpose-built task reports.",
+        "Keep responses from changing technical completion, inspection, release or work-order status."
+      ],
+      "evidence": [
+        "apps/api/migrations/086_supervisor_task_review_responses.sql",
+        "apps/api/src/work-order-task-activity.ts",
+        "apps/api/src/app.ts",
+        "apps/web/src/task-allocations.tsx",
+        "apps/web/src/pages/my-assigned-tasks.tsx",
+        "apps/web/src/pages/print-task-progress-report.tsx",
+        "docs/verification/technician-review-response-2026-11-18.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Authorized review replies are immutable and visible in scoped activity and task reports; they do not sign off the work."
+    },
+    {
+      "id": "CHECK-USER-027-REVIEW-RESPONSE-001",
+      "title": "Verify Supervisor review replies remain non-completing",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "3-safety-qa",
+      "parentId": "CHECK-USER-027",
+      "dependencies": [
+        "BUILD-USER-027-REVIEW-RESPONSE-001"
+      ],
+      "requirementIds": [
+        "USER-027",
+        "USER-039"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-12-joined-workorder-lifecycle"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Verify assigned-role authorization, request linkage, replay, site isolation and immutable response history.",
+        "Verify response appears in technician activity and report output with an explicit non-sign-off label.",
+        "Verify no G3, G4, inspection, repair authorization or work-order status transition occurs."
+      ],
+      "evidence": [
+        "apps/api/test/foundation.test.ts",
+        "scripts/work-plan-browser.mjs",
+        "docs/verification/technician-review-response-2026-11-18.md",
+        "docs/verification/browser-work-plan-final/results.json"
+      ],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "The disposable PostgreSQL/Chromium flow created a Technician request, submitted the authorized Supervisor reply, and verified scoped readback, report label, denial and non-completion behavior."
+    },
+    {
+      "id": "BUILD-USER-039-TASK-REVIEW-QUEUE-001",
+      "title": "Show unanswered technician review requests across current work",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "3-safety-qa",
+      "parentId": "BUILD-USER-039",
+      "dependencies": [
+        "BUILD-USER-039-TASK-ACTIVITY",
+        "BUILD-USER-039-SUPERVISOR-FEED"
+      ],
+      "requirementIds": [
+        "USER-039"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-12-joined-workorder-lifecycle"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Show unanswered requests only for current work plans, supervisor handoffs, assignment revisions, and active direct reports at the selected site.",
+        "Allow only the current Supervisor, the Team Lead assigned to each work order, and the Head of Service Centre to read the queue.",
+        "Audit queue reads, prevent caching, paginate results, and show offline, loading, error, empty, and recovery states on Today.",
+        "Make clear that a request is for guidance and does not complete or authorize work."
+      ],
+      "evidence": [
+        "apps/api/migrations/091_work_order_task_review_queue_audit.sql",
+        "apps/api/src/work-order-task-review-queue.ts",
+        "apps/api/src/app.ts",
+        "apps/web/src/pages/today.tsx",
+        "scripts/work-plan-browser.mjs",
+        "docs/architecture/task-progress-and-acknowledgement.md",
+        "docs/verification/technician-review-queue-2026-11-18.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Implemented and verified as a bounded inbox: current site/work-plan/handoff/assignment/direct-report filtering, Supervisor/assigned Team Lead/Head access, audited no-store pagination, and Today states. Parent USER-039 sign-off, release and handover work remains open."
+    },
+    {
+      "id": "CHECK-USER-039-TASK-REVIEW-QUEUE-001",
+      "title": "Verify unanswered technician review request queue",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "3-safety-qa",
+      "parentId": "BUILD-USER-039",
+      "dependencies": [
+        "BUILD-USER-039-TASK-REVIEW-QUEUE-001"
+      ],
+      "requirementIds": [
+        "USER-039"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-12-joined-workorder-lifecycle"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Verify visible and denied roles, site isolation, current assignment and unanswered-only filtering against disposable PostgreSQL data.",
+        "Verify Today queue loading, empty, failure, pagination, responsive layout, link to the work order and refresh after a response.",
+        "Record test data, commands, outcomes, and limits; do not claim workshop UAT."
+      ],
+      "evidence": [
+        "apps/api/test/foundation.test.ts",
+        "apps/web/src/api.test.ts",
+        "apps/web/src/workspace-navigation.test.ts",
+        "scripts/work-plan-browser.mjs",
+        "docs/verification/technician-review-queue-2026-11-18.md",
+        "docs/verification/technician-review-queue-2026-11-18.md"
+      ],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Verified on 2026-11-18: focused disposable PostgreSQL/API tests cover Supervisor, assigned Team Lead, Head, Technician denial, wrong-site denial, no-store, read audit and answered-only filtering. Full npm test passed (151 API, 40 web; one environment-dependent test skipped); typecheck/build and 68-check real-browser journey passed, including Today loading, error recovery, pagination, linking, response refresh and 280–1440px layout. Staff acceptance remains a release activity."
+    },
+    {
+      "id": "BUILD-R-M-0133-HOLD-RESOLUTION-001",
+      "title": "Resolve work-order holds with current Team Lead authority and evidence",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "3-safety-qa",
+      "parentId": "BUILD-R-M-0133",
+      "dependencies": [],
+      "requirementIds": [
+        "R-M-0133",
+        "BR-05"
+      ],
+      "sourceRefs": [
+        "master-0133",
+        "master-0114",
+        "RG-VMMS-POL-001"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Keep hold records visible after resolution and count only unresolved holds as open.",
+        "Require the current assigned Team Lead, an active matching qualification and a separately granted hold-resolution capability at action time.",
+        "Require a reason and accepted, clean, work-order-attached evidence; store the authority snapshot and evidence links append-only in the same audited, idempotent command.",
+        "A hold resolution must not sign off technical completion, inspection, release or vehicle departure.",
+        "Verify site isolation, denied authority, stale version, idempotency, evidence rejection, successful resolution and browser usability against PostgreSQL."
+      ],
+      "evidence": [
+        "apps/api/migrations/092_work_order_hold_resolutions.sql",
+        "apps/api/src/workshop.ts",
+        "apps/api/src/app.ts",
+        "apps/web/src/pages/work-order.tsx",
+        "apps/api/test/foundation.test.ts",
+        "docs/verification/browser-work-plan/results.json",
+        "docs/verification/work-order-hold-resolution-2026-11-18.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "The PostgreSQL command, accepted evidence binding, authority snapshots, open/resolved projection and staff form are implemented. Focused PostgreSQL verification passed for site isolation, missing grant, unattached evidence rejection, successful resolution, idempotent replay, stale version, revoked grant, audit/outbox/receipt, append-only protection and unchanged G1-G5 gates. The 73-check Chromium browser run created and resolved a hold through the actual pages with accepted evidence, confirmed zero open holds and confirmed independent gates remain unchanged. The separate verification task retains additional negative cases. The broader SafetyHold/Permit contract, G4 and vehicle/asset/incident hold scopes remain separate unfinished requirements."
+    },
+    {
+      "id": "CHECK-R-M-0133-HOLD-RESOLUTION-001",
+      "title": "Verify hold resolution authority, evidence and history",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "3-safety-qa",
+      "parentId": "CHECK-R-M-0133",
+      "dependencies": [
+        "BUILD-R-M-0133-HOLD-RESOLUTION-001"
+      ],
+      "requirementIds": [
+        "R-M-0133",
+        "BR-05"
+      ],
+      "sourceRefs": [
+        "RG-VMMS-POL-001"
+      ],
+      "status": "in-progress",
+      "acceptance": [
+        "Exercise permitted and denied actions with PostgreSQL, including no grant, no assignment, expired qualification, wrong-site evidence, unaccepted evidence, stale version and replay.",
+        "Verify the resolution snapshot, audit event, command receipt, outbox and append-only evidence relations commit or roll back together.",
+        "Verify the browser distinguishes open from resolved holds and never presents resolution as technical or vehicle release sign-off."
+      ],
+      "evidence": [
+        "docs/verification/browser-work-plan/results.json",
+        "docs/verification/work-order-hold-resolution-2026-11-18.md",
+        "apps/api/test/foundation.test.ts"
+      ],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "The focused PostgreSQL test and browser interaction prove the main permitted path and several denials. Complete the remaining explicit negative-case matrix, especially expired qualification and wrong-site evidence, before marking verification complete. Broader SafetyHold/Permit and release requirements are separate."
+    },
+    {
+      "kind": "task",
+      "phase": "3-safety-qa",
+      "parentId": "BUILD-R-M-0166",
+      "dependencies": [
+        "BUILD-R-M-0165-READ-001"
+      ],
+      "requirementIds": [
+        "R-M-0166"
+      ],
+      "sourceRefs": [
+        "master-0166",
+        "upgrade-0072"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "id": "BUILD-R-M-0166-DIAGNOSTIC-QUEUE-001",
+      "title": "Show latest diagnostic findings to the Head and assigned Team Lead",
+      "workType": "implementation",
+      "status": "verified",
+      "acceptance": [
+        "Provide a site-scoped, paginated read-only API queue for the Head of Service Centre and current assigned EV/ICE Team Lead; deny other roles and wrong-site access.",
+        "Return only non-superseded findings, preserving certainty, explanation, residual risk and restrictions without including customer contact details or inferring safety approval.",
+        "Audit each successful read and prevent shared/proxy caching.",
+        "Show the queue on Today for the Head and Team Leads with loading, failure, empty, offline and pagination states. State clearly that findings do not authorize repairs or sign-off."
+      ],
+      "evidence": [
+        "apps/api/src/work-order-diagnostic-review-queue.ts",
+        "apps/api/src/app.ts",
+        "apps/api/src/sensitive-read-audit.ts",
+        "apps/api/migrations/093_work_order_diagnostic_review_queue_audit.sql",
+        "apps/web/src/api.ts",
+        "apps/web/src/pages/today.tsx",
+        "apps/web/src/workspace-navigation.ts",
+        "docs/architecture/diagnostic-review-queue.md",
+        "docs/verification/diagnostic-review-queue-2026-11-18.md"
+      ],
+      "verificationTargets": [
+        "CHECK-R-M-0166-DIAGNOSTIC-QUEUE-001"
+      ]
+    },
+    {
+      "kind": "task",
+      "phase": "3-safety-qa",
+      "parentId": "BUILD-R-M-0166",
+      "dependencies": [
+        "BUILD-R-M-0166-DIAGNOSTIC-QUEUE-001"
+      ],
+      "requirementIds": [
+        "R-M-0166"
+      ],
+      "sourceRefs": [
+        "master-0166",
+        "upgrade-0072"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "id": "CHECK-R-M-0166-DIAGNOSTIC-QUEUE-001",
+      "title": "Verify diagnostic review queue access and presentation",
+      "workType": "verification",
+      "status": "verified",
+      "acceptance": [
+        "Verify Head and assigned Team Lead access, roleless denial, wrong-site denial, non-superseded finding selection and retention of certainty/risk/restrictions using PostgreSQL-backed API tests.",
+        "Verify the Today queue and pagination for Head and role visibility across workshop roles, including responsive layout and automated accessibility scan.",
+        "Record exact commands, outcomes and deployment/production limitations."
+      ],
+      "evidence": [
+        "apps/api/test/foundation.test.ts",
+        "apps/web/src/workspace-navigation.test.ts",
+        "scripts/workspace-navigation-browser.mjs",
+        "docs/verification/diagnostic-review-queue-2026-11-18.md"
+      ]
+    },
+    {
+      "id": "BUILD-USER-039-CLOSEOUT-PATH-001",
+      "title": "Show the work-order path through technical release and client update",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "3-safety-qa",
+      "parentId": "BUILD-USER-039",
+      "dependencies": [
+        "BUILD-USER-027-TECHNICIAN-REVIEW-REQUEST-001"
+      ],
+      "requirementIds": [
+        "USER-027",
+        "USER-039",
+        "R-M-0037",
+        "R-M-0038"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-08-workshop-workflow",
+        "master-0037",
+        "master-0038"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Project the seven work-order stages from Operations review through the Service Advisor's client status update using current server workflow context and current plan handoff.",
+        "Show completed and current stages only when supported by the current Operations review, plan handoff and server workflow stage; stale assignments return to the correct earlier step.",
+        "Keep Supervisor completion, Team Lead release and Head inspection unavailable while their required effective procedures, evidence rules, qualifications and action grants are not configured. Explain the missing controls in plain language and expose no sign-off action.",
+        "Explain that client status contact follows Head inspection and continues in the linked request contact history; do not create a parallel contact log or send messages.",
+        "Keep the projection site-scoped through the existing work-order detail API; it changes no gate, custody, completion or release state."
+      ],
+      "evidence": [
+        "apps/api/src/work-order-closeout-path.ts",
+        "apps/api/src/schemas.ts",
+        "apps/api/src/workshop.ts",
+        "apps/web/src/pages/work-order.tsx",
+        "scripts/work-plan-browser.mjs",
+        "docs/verification/work-order-closeout-path-2026-11-19.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Verified as a read-only current-state path only. It does not represent technical sign-off or enable G3/G4; effective policy and individual action authority remain required."
+    },
+    {
+      "id": "BUILD-USER-039-COMPLETION-READINESS-001",
+      "title": "Show task-bound work and blockers before Supervisor completion",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "3-safety-qa",
+      "parentId": "BUILD-USER-039",
+      "dependencies": [
+        "BUILD-USER-039-TASK-ACTIVITY"
+      ],
+      "requirementIds": [
+        "USER-039",
+        "R-M-0037"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-12-joined-workorder-lifecycle",
+        "master-0037"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Show the current work-plan tasks, current assignments, saved task work, checklist outcome counts, pending checklist reviews and open holds from the scoped work-order detail projection.",
+        "Identify task-bound partial or blocked actions, open follow-ups and checklist outcomes awaiting review as specific blockers before Supervisor review, without implying sign-off eligibility.",
+        "Do not report work-order checklist definition totals as per-task counts when checklist definitions are not task-bound.",
+        "For permitted Head, assigned Team Lead and current Supervisor users, task-specific blockers link to the exact task assignment/progress record, move focus there, and respect reduced-motion preferences.",
+        "Keep the readiness state blocked until effective G2 scope, vehicle-specific instructions, current task authority and the G3 command can be verified.",
+        "Expose no sign-off action and state that recorded activity counts do not establish safe or authorized completion."
+      ],
+      "evidence": [
+        "apps/api/src/work-order-completion-readiness.ts",
+        "apps/api/src/schemas.ts",
+        "apps/web/src/work-order-completion-readiness.tsx",
+        "apps/web/src/pages/work-order.tsx",
+        "scripts/work-plan-browser.mjs",
+        "apps/api/test/foundation.test.ts",
+        "apps/api/test/work-order-completion-readiness.test.ts",
+        "docs/verification/work-order-completion-readiness-2026-11-19.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "The read-only readiness projection and task-specific blockers for partial/blocked actions, open follow-ups and checklist outcomes awaiting review are verified by API unit tests, full API/web suites and the 76-check PostgreSQL/browser workflow. Permitted Head, assigned Team Lead, and current Supervisor users can navigate to the exact task record; no sign-off action is exposed. G3 technical completion, G4 Team Lead release and the separate Head inspection remain unavailable until effective procedures, criteria, grants and qualifications are configured."
+    },
+    {
+      "id": "CHECK-USER-039-CLOSEOUT-PATH-001",
+      "title": "Verify work-order closeout path and blocked sign-off states",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "3-safety-qa",
+      "parentId": "CHECK-USER-039",
+      "dependencies": [
+        "BUILD-USER-039-CLOSEOUT-PATH-001"
+      ],
+      "verificationTargets": [
+        "BUILD-USER-039-CLOSEOUT-PATH-001"
+      ],
+      "requirementIds": [
+        "USER-027",
+        "USER-039",
+        "R-M-0037",
+        "R-M-0038"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-08-workshop-workflow",
+        "master-0037",
+        "master-0038"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Test every workflow stage and stale handoff projection with the API's pure projection tests.",
+        "In the PostgreSQL-backed browser flow, verify Operations, Team Lead, Supervisor, Head and Service Advisor sequence wording and that no G3/G4/Head sign-off action is exposed.",
+        "Check narrow-screen rendering, keyboard navigation, and the existing linked-request contact action; confirm no duplicate contact record or outbound message is created."
+      ],
+      "evidence": [
+        "apps/api/test/work-order-closeout-path.test.ts",
+        "scripts/work-plan-browser.mjs",
+        "docs/verification/work-order-closeout-path-2026-11-19.md"
+      ],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Verified by API projection tests and the disposable-PostgreSQL Chromium work-plan journey; physical devices, production authority/SOP setup and staff UAT remain open."
+    },
+    {
+      "phase": "2-core-workflow",
+      "parentId": "E18",
+      "requirementIds": [
+        "USER-040"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-12-simplify-role-based-journey"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "id": "BUILD-USER-040-SERVICE-HISTORY-001",
+      "title": "Add a role-limited service-history screen",
+      "kind": "task",
+      "workType": "implementation",
+      "dependencies": [
+        "BUILD-USER-040-NAV-001"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Workshop roles can find vehicle service history by VIN within the selected site.",
+        "Show complaint and attributed task work entries without sales delivery, purchaser claims, current owner, or payer details.",
+        "Use the current site membership and an active workshop role; record the read in sensitive-read audit."
+      ],
+      "evidence": [
+        "apps/api/src/service-history.ts",
+        "apps/api/migrations/102_vehicle_service_history_audit.sql",
+        "apps/web/src/pages/service-history.tsx",
+        "apps/web/src/workspace.tsx",
+        "apps/web/src/workspace-navigation.ts",
+        "docs/verification/service-history-2026-11-20.md"
+      ],
+      "statusNote": "Implemented with strict workshop-role allowlist and site-local history query. Verification is recorded in CHECK-USER-040-SERVICE-HISTORY-001; this does not approve any work or sign-off."
+    },
+    {
+      "phase": "2-core-workflow",
+      "parentId": "E18",
+      "requirementIds": [
+        "USER-040"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-12-simplify-role-based-journey"
+      ],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "id": "CHECK-USER-040-SERVICE-HISTORY-001",
+      "title": "Verify scoped service-history access and display",
+      "kind": "task",
+      "workType": "verification",
+      "dependencies": [
+        "BUILD-USER-040-SERVICE-HISTORY-001"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "PostgreSQL confirms allowed workshop role, roleless denial, audit event, site isolation and organisation isolation.",
+        "Browser confirms advisor search/display, sales-purchaser claim exclusion, no narrow viewport overflow and no axe violations.",
+        "Record exact test results and limitations."
+      ],
+      "evidence": [
+        "docs/verification/service-history-2026-11-20.md",
+        "apps/api/test/foundation.test.ts",
+        "scripts/workspace-navigation-browser.mjs"
+      ],
+      "statusNote": "Passed PostgreSQL foundation integration test, web unit tests, API/web typechecks, and browser role/responsive/accessibility check. Browser data was synthetic and API browser path was mocked; staff UAT and physical-device/assistive-technology checks remain open."
+    },
+    {
+      "id": "DESIGN-USER-047-INTAKE-001",
+      "title": "Define typed service-request intake and inspection boundaries",
+      "kind": "task",
+      "workType": "design",
+      "phase": "2-core-workflow",
+      "parentId": "BUILD-USER-038",
+      "dependencies": [],
+      "requirementIds": [
+        "USER-047",
+        "USER-043"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-20-service-request-types-and-inspections"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Define one request intake for repair/maintenance, PSAI and Service Centre PDI, including third-party and staff-on-behalf entry.",
+        "Keep Service Centre PDI separate from internal Sales delivery-preparation PDI and distinguish requester, payer, owner, contact, vehicle source and recorder.",
+        "Define protected vehicle matching, advisor review/conversion, mandatory PSAI/PDI fee behavior, distinct inspection template/report paths and fail-closed gates."
+      ],
+      "evidence": [
+        "docs/architecture/service-request-types-and-inspections.md",
+        "docs/architecture/service-requests-and-callbacks.md",
+        "docs/delivery/operational-workshop-pilot-agent-plan.md",
+        "docs/decisions/review-register.md#REV-064",
+        "docs/decisions/review-register.md#REV-065"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Design reconciles the new management guidance with the existing canonical service-request/conversion model and Sales-PDI separation. Tracked open decisions are explicit; implementation and operational approval are not claimed."
+    },
+    {
+      "id": "BUILD-USER-047-REQUEST-ENTRY-001",
+      "title": "Accept customer and third-party requests for typed workshop work",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "2-core-workflow",
+      "parentId": "BUILD-USER-038",
+      "dependencies": [
+        "DESIGN-USER-047-INTAKE-001"
+      ],
+      "requirementIds": [
+        "USER-047",
+        "USER-038"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-20-service-request-types-and-inspections"
+      ],
+      "status": "in-progress",
+      "acceptance": [
+        "Add request types for repair/maintenance, PSAI and Service Centre PDI to staff and customer/third-party intake; preserve PDI source and PSAI shipment reference claims when supplied.",
+        "Create a privacy-safe customer/third-party form and retain staff-on-behalf intake, callback history and recoverable drafts.",
+        "For authenticated clients, allow identifier lookup/prefill only for vehicles already authorized to that account; for third-party or anonymous requests, accept reported identifiers without confirming a match or returning vehicle history.",
+        "Prevent vehicle/customer enumeration and enforce verified request/status access; expose existing vehicles only to already-authorized accounts.",
+        "Keep all request identities and vehicle/source facts distinct and preserve reported versus verified values.",
+        "Allow the Service Advisor to request missing details and convert an arrived request exactly once into a linked typed work order for Operations review."
+      ],
+      "evidence": [
+        "docs/architecture/service-request-types-and-inspections.md",
+        "apps/api/src/service-requests.ts",
+        "apps/api/migrations/103_service_request_kind.sql",
+        "apps/web/src/pages/service-requests.tsx",
+        "apps/web/src/drafts.ts",
+        "apps/api/migrations/104_work_order_service_kind.sql",
+        "apps/api/migrations/105_service_request_vehicle_context.sql",
+        "apps/api/src/workshop.ts",
+        "apps/web/src/pages/work-order.tsx",
+        "apps/web/src/pages/print-work-order.tsx",
+        "scripts/service-requests-real-browser.mjs"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [
+        "REV-064: final external requester identity/authority, status visibility and vehicle-match disclosure policy"
+      ],
+      "statusNote": "Staff intake stores and displays typed categories, PDI source claims and PSAI shipping references; Advisor reception carries these into work orders and standard reports. Focused PostgreSQL reception tests, saved-draft tests, API/web typechecks and the complete service-request browser flow passed, including source display, callbacks, contact history, four widths and accessibility checks. The latest management clarification adds authorized-client vehicle prefill and explicitly keeps third-party identifier matching private until Advisor review. Customer/third-party entry, privacy-safe identity proof and dedicated PSAI/PDI inspection templates/reports remain unfinished. See docs/verification/service-request-type-handoff-2026-11-20.md."
+    },
+    {
+      "id": "BUILD-USER-047-INSPECTION-TYPES-001",
+      "title": "Handle PSAI and Service Centre PDI as distinct workshop jobs",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "3-safety-qa",
+      "parentId": "BUILD-USER-043-CHECKLISTS-001",
+      "dependencies": [
+        "DESIGN-USER-047-INTAKE-001",
+        "BUILD-USER-047-REQUEST-ENTRY-001"
+      ],
+      "requirementIds": [
+        "USER-047",
+        "USER-043"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-20-service-request-types-and-inspections"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "Propagate PSAI versus Service Centre PDI from request through the work order and purpose-built report.",
+        "Record whether PDI source is showroom stock, partner garage or reviewed other; preserve shipment/source references for PSAI when supplied.",
+        "Keep Service Centre PDI work orders separate from internal Sales delivery-preparation PDI records.",
+        "Use separate source-bound PSAI and PDI checklists; do not activate generic or unapproved inspection steps.",
+        "Require an applicable PSAI/PDI fee line for every requester type and block quote/invoice/handover until the reviewed rate and grant exist."
+      ],
+      "evidence": [
+        "docs/architecture/service-request-types-and-inspections.md",
+        "docs/architecture/work-order-checklists.md",
+        "docs/operations/forms/pdi-and-maintenance-checklist-draft.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [
+        "REV-065: effective PSAI/PDI sources and review authority; approved PDI rate and financial grant"
+      ],
+      "statusNote": "PSAI and Service Centre PDI request types now pass into the work-order record, but purpose-built checklists/reports, delivery-source facts, fee handling and safe external entry remain unimplemented. Procedures and prices are intentionally not invented."
+    },
+    {
+      "id": "CONFIG-USER-047-PDI-FEE-001",
+      "title": "Configure mandatory PSAI and Service Centre PDI fees",
+      "kind": "task",
+      "workType": "configuration",
+      "phase": "4-parts-finance",
+      "parentId": "BUILD-USER-044-MANUAL-FINANCE-001",
+      "dependencies": [
+        "DESIGN-USER-047-INTAKE-001"
+      ],
+      "requirementIds": [
+        "USER-047",
+        "USER-044"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-20-service-request-types-and-inspections"
+      ],
+      "status": "configuration-required",
+      "acceptance": [
+    "Record owner-approved PSAI and Service Centre PDI amounts, currency and tax basis; state whether the rates are the same or different.",
+    "Record who may propose, approve and change each fee and its effective dates.",
+    "Ensure every PSAI and Service Centre PDI quote/invoice includes its applicable charge regardless of requester identity or staff-entry path, with no implicit waiver.",
+        "Keep quote, invoice, manual payment verification and receipt as separate states."
+      ],
+      "evidence": [
+        "docs/architecture/service-request-types-and-inspections.md",
+        "docs/decisions/review-register.md#REV-065"
+      ],
+      "owner": {
+        "role": "owner-management",
+        "person": null
+      },
+      "blockedBy": [
+    "Owner/management must provide the PSAI and Service Centre PDI rates, currency/tax basis and authorized configuration role."
+      ],
+  "statusNote": "Management direction treats both PSAI and Service Centre PDI as fee-bearing regardless of who submits or records the request. No amounts or tax basis were supplied, so do not issue either inspection quote/invoice or imply a price until configuration is approved."
+    },
+    {
+      "id": "CHECK-USER-047-REQUEST-ENTRY-001",
+      "title": "Verify request types, safe matching and advisor conversion",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "2-core-workflow",
+      "parentId": "BUILD-USER-047-REQUEST-ENTRY-001",
+      "dependencies": [
+        "BUILD-USER-047-REQUEST-ENTRY-001"
+      ],
+      "requirementIds": [
+        "USER-047"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-20-service-request-types-and-inspections"
+      ],
+      "status": "planned",
+      "acceptance": [
+        "PostgreSQL/API tests prove role, requester, site/org isolation, anti-enumeration, idempotency, stale-version and one-request/one-work-order behavior.",
+        "Browser checks prove client/third-party intake, staff-on-behalf flow, callback follow-up, missing-info cycle, request-to-arrival conversion and Operations routing.",
+        "Verify no vehicle/customer match is disclosed to unauthorized requesters; authorized customer matching remains limited to vehicles already linked to that account.",
+        "Verify a known vehicle appears as prefill only for an authenticated, already-authorized client account, while the same identifier submitted by an unrelated or anonymous requester produces no match signal or history disclosure.",
+        "Verify phone, tablet and desktop layouts, accessible controls and failure/retry states."
+      ],
+      "evidence": [
+        "docs/architecture/service-request-types-and-inspections.md",
+        "scripts/service-requests-real-browser.mjs"
+      ],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Planned; no verification evidence exists for the new request types or customer/third-party entry."
+    },
+    {
+      "id": "BUILD-PILOT-MODULE-GATES-001",
+      "title": "Keep deferred Sales and Finance setup outside the workshop pilot",
+      "kind": "task",
+      "workType": "implementation",
+      "phase": "2-core-workflow",
+      "parentId": "E18",
+      "dependencies": [],
+      "requirementIds": [
+        "USER-040",
+        "USER-048"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-20-workshop-operations-first"
+      ],
+      "status": "verified",
+      "acceptance": [
+        "Hide Sales delivery and Finance setup navigation during the workshop pilot and redirect direct web routes to the user’s permitted workshop home.",
+        "Return a non-disclosing unavailable response from Sales and Finance setup APIs outside isolated tests.",
+        "Keep Sales staff access to Today and service requests so they can report customer concerns on the customer’s behalf.",
+        "Keep the transaction-specific payment, guarantee and departure safeguards required by workshop operations in scope; defer the broader Sales and Finance modules.",
+        "Verify the default and direct-route behavior, including combined roles and read-only staff."
+      ],
+      "evidence": [
+        "apps/web/src/workspace-navigation.ts",
+        "apps/web/src/workspace-navigation.test.ts",
+        "apps/web/src/workspace.tsx",
+        "scripts/workspace-navigation-browser.mjs",
+        "apps/api/src/pilot-modules.ts",
+        "apps/api/src/routes.ts",
+        "apps/api/test/pilot-modules.test.ts",
+        "apps/api/test/foundation.test.ts",
+        "docs/verification/workshop-operations-journey-2026-11-20.md"
+      ],
+      "owner": {
+        "role": "implementation-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Local implementation is verified. The browser check covers eight personas, including Head+Operator, Sales-only request access, read-only Advisor, Finance-only, Operator-only and multi-site landing; direct Sales and Finance URLs return each permitted persona to Today. API route-level checks verify all guarded Sales and Finance setup handlers return the same generic 404 in development, staging and production, while the isolated test mode remains available. Full local suites pass: API 170 passed and one optional integration skipped; web 46 passed. The production build also passes. This does not establish production deployment or verify the separately required payment, guarantee, receipt and departure flow."
+    },
+    {
+      "id": "CHECK-PILOT-MODULE-GATES-001",
+      "title": "Verify deferred Sales and Finance setup gates",
+      "kind": "task",
+      "workType": "verification",
+      "phase": "2-core-workflow",
+      "parentId": "BUILD-PILOT-MODULE-GATES-001",
+      "dependencies": [
+        "BUILD-PILOT-MODULE-GATES-001"
+      ],
+      "requirementIds": [
+        "USER-048"
+      ],
+      "sourceRefs": [
+        "user-request-2026-11-20-workshop-operations-first"
+      ],
+      "status": "in-progress",
+      "acceptance": [
+        "Verify Sales and Finance setup APIs return the same non-disclosing 404 in development, staging and production, while isolated tests can exercise their underlying business logic.",
+        "Verify Sales-only and Finance-only staff land on Today, cannot open deferred pages directly, and retain the service-request path where permitted.",
+        "Verify essential payment, guarantee, receipt and vehicle-departure safeguards remain independent from the deferred broad Finance module."
+      ],
+      "evidence": [
+        "apps/api/test/pilot-modules.test.ts",
+        "apps/api/test/foundation.test.ts",
+        "apps/web/src/workspace-navigation.test.ts",
+        "scripts/workspace-navigation-browser.mjs",
+        "docs/verification/workshop-operations-journey-2026-11-20.md"
+      ],
+      "owner": {
+        "role": "verification-agent",
+        "person": null
+      },
+      "blockedBy": [],
+      "statusNote": "Locally verified: all seven guarded Sales and Finance setup API routes return identical non-disclosing 404 responses under development, staging and production modes; isolated tests remain available. The browser journey passes for eight personas, including direct-route denial for Sales-only, Finance-only and read-only Advisor, and preserves the Sales request path. Current full suites pass (API 170 passed, 1 optional integration skipped; web 46 passed), and production build passes. The broader closeout-safeguard regression and deployed-runtime proof remain open."
     }
   ],
   "counts": {
-    "tasks": 705,
+    "tasks": 744,
     "epics": 22,
     "byStatus": {
-      "configuration-required": 18,
-      "deferred": 5,
-      "implemented": 11,
-      "in-progress": 117,
+      "configuration-required": 19,
+      "deferred": 12,
+      "implemented": 13,
+      "in-progress": 129,
       "not-applicable": 1,
-      "planned": 475,
-      "verified": 78
+      "planned": 462,
+      "verified": 108
     },
     "byPhase": {
       "0-discovery": 20,
       "1-foundation": 127,
-      "2-core-workflow": 92,
-      "3-safety-qa": 127,
+      "2-core-workflow": 109,
+      "3-safety-qa": 146,
       "4-commercial": 118,
       "5-governance": 37,
+      "6-launch": 127,
+      "7-platforms": 26,
       "6-historical-import": 33,
-      "6-launch": 125,
-      "7-platforms": 26
+      "4-parts-finance": 1
     }
   },
   "phaseDefinitions": {

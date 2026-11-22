@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ApiError, request, supervisorTaskActivityPageSchema, supervisorTaskActivityPath, taskAllocationResultSchema, taskAllocationsPath, taskAllocationsSchema } from "./api";
+import { ApiError, request, supervisorTaskActivityPageSchema, supervisorTaskActivityPath, supervisorTaskReviewReplyPath, taskActivityResultSchema, taskAllocationResultSchema, taskAllocationsPath, taskAllocationsSchema } from "./api";
 import { useStaff } from "./workspace";
 import { Badge, Button, dateTime, Failure, FormError, Loading, useOnline, useToast } from "./ui";
 
@@ -32,6 +32,57 @@ const blockMessages: Record<NonNullable<ReturnType<typeof taskAllocationsSchema.
 
 type ActivityAudience = "supervisor" | "team-lead" | "head-service-centre";
 
+type SupervisorActivityItem = (typeof supervisorTaskActivityPageSchema)['_output']['items'][number];
+
+function SupervisorReviewReply({ siteId, workOrderId, planRevisionId, item }: {
+  siteId: string;
+  workOrderId: string;
+  planRevisionId: string;
+  item: SupervisorActivityItem;
+}) {
+  const client = useQueryClient();
+  const notify = useToast();
+  const [note, setNote] = useState("");
+  const attempt = useRef<{ id: string; body: Record<string, unknown> } | null>(null);
+  const reply = useMutation({
+    mutationFn: () => {
+      if (!attempt.current) attempt.current = {
+        id: crypto.randomUUID(),
+        body: { expectedWorkPlanRevisionId: planRevisionId, expectedAssignmentRevision: item.currentAssignmentRevision, note: note.trim() },
+      };
+      return request(supervisorTaskReviewReplyPath(siteId, workOrderId, item.taskId, item.id), taskActivityResultSchema,
+        { method: "POST", commandId: attempt.current.id, body: attempt.current.body });
+    },
+    onSuccess: async () => {
+      attempt.current = null;
+      setNote("");
+      notify("Response recorded. It does not sign off or complete work.");
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["supervisor-task-activity", siteId, workOrderId] }),
+        client.invalidateQueries({ queryKey: ["today-task-review-requests", siteId] }),
+      ]);
+    },
+    onError: error => {
+      if (error instanceof ApiError && error.status >= 400 && error.status < 500 && error.status !== 408) attempt.current = null;
+    },
+  });
+  if (item.entryType !== "request" || item.requestType !== "supervisor-review") return null;
+  if (item.assignmentRevision !== item.currentAssignmentRevision) {
+    return <p className="mt-3 text-xs text-amber-900">This request belongs to an earlier assignment and cannot be answered.</p>;
+  }
+  if (item.hasSupervisorResponse) return <p className="mt-3 text-xs font-medium text-emerald-800">A response is recorded for this request.</p>;
+  if (reply.isSuccess) return null;
+  return (
+    <form className="mt-3 grid gap-2 rounded-md border border-sky-200 bg-sky-50/60 p-3" onSubmit={event => { event.preventDefault(); reply.mutate(); }}>
+      <label className="text-xs font-semibold text-zinc-800" htmlFor={`review-reply-${item.id}`}>Reply to this review request</label>
+      <textarea id={`review-reply-${item.id}`} rows={2} maxLength={1500} required value={note} onChange={event => setNote(event.target.value)} />
+      {reply.isError && <p role="alert" className="text-sm text-red-800">{reply.error.message}</p>}
+      <Button type="submit" variant="secondary" disabled={reply.isPending || !note.trim()}>{reply.isPending ? "Sending response…" : "Send response"}</Button>
+      <p className="text-xs leading-5 text-zinc-600">This response does not approve repairs, complete the task or replace Supervisor sign-off.</p>
+    </form>
+  );
+}
+
 function SupervisorTaskActivity({ siteId, workOrderId, audience }: { siteId: string; workOrderId: string; audience: ActivityAudience }) {
   const { site } = useStaff();
   const [page, setPage] = useState(1);
@@ -54,7 +105,7 @@ function SupervisorTaskActivity({ siteId, workOrderId, audience }: { siteId: str
         <div>
           <h3 id="supervisor-task-activity-heading" className="text-base font-semibold text-zinc-950">Task updates from the team</h3>
           <p className="mt-1 text-sm text-zinc-600">
-            {audience === "supervisor" ? "Updates from workers who report directly to you." : "Updates from the current work plan."} Read-only: updates do not sign off work or approve requests.
+            {audience === "supervisor" ? "Updates from workers who report directly to you." : "Updates from the current work plan."} A review reply does not sign off work.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -83,9 +134,19 @@ function SupervisorTaskActivity({ siteId, workOrderId, audience }: { siteId: str
                   <p className="mt-1 text-xs text-zinc-600">Assigned to {item.currentAssigneeName} · assignment {item.currentAssignmentRevision}</p>
                 </div>
                 <div className="min-w-0 sm:text-right">
-                  <p className="text-sm font-medium text-zinc-900">{item.entryType === "acknowledgement" ? "Acknowledged" : item.entryType === "progress" ? `Progress · ${item.progressState}` : item.entryType === "request" ? `Request · ${item.requestType}` : "Comment"}</p>
+                  <p className="text-sm font-medium text-zinc-900">{item.entryType === "acknowledgement" ? "Acknowledged" : item.entryType === "progress" ? `Progress · ${item.progressState}` : item.entryType === "request" ? item.requestType === "supervisor-review" ? item.completionDeclaration ? "Work report sent for Supervisor review" : "Supervisor review requested" : `Request · ${item.requestType}` : item.entryType === "review-response" ? "Supervisor response" : "Comment"}</p>
+                  {item.entryType === "review-response" && item.responseToNote && <p className="mt-1 text-xs text-zinc-600">Reply to {item.responseToActorName ?? "worker"}: {item.responseToNote}</p>}
                   <p className="mt-1 break-words text-sm text-zinc-700">{item.note}</p>
+                  {item.completionDeclaration && <div className="mt-2 space-y-1 rounded-md border border-amber-200 bg-amber-50 p-3 text-left text-sm text-zinc-800">
+                    <p><strong>Actions:</strong> {item.completionDeclaration.actionsSummary}</p>
+                    <p><strong>Checks and results:</strong> {item.completionDeclaration.checksSummary}</p>
+                    <p><strong>Reported outcome:</strong> {item.completionDeclaration.outcome === "reported-complete" ? "Worker reports complete" : item.completionDeclaration.outcome === "reported-incomplete" ? "Worker reports work remains" : "Worker reports blocked"}</p>
+                    <p><strong>Remaining work:</strong> {item.completionDeclaration.remainingWork}</p>
+                    <p className="text-xs text-amber-950">Bound to {item.declarationWorkEntryIds?.length ?? 0} work entries from this assignment. This is not a sign-off.</p>
+                  </div>}
                   <p className="mt-1 text-xs text-zinc-500">{item.actorName} · {dateTime(item.createdAt, site.timeZone)}</p>
+                  {item.entryType === "request" && item.requestType === "supervisor-review" && updates.data.canRespond
+                    && <SupervisorReviewReply siteId={siteId} workOrderId={workOrderId} planRevisionId={updates.data.planRevisionId} item={item} />}
                 </div>
               </li>
             ))}
@@ -101,6 +162,8 @@ function SupervisorTaskActivity({ siteId, workOrderId, audience }: { siteId: str
               </Button>
             </nav>
           )}
+          {updates.data.responseBlockReason === "authority-required" && updates.data.items.some(item => item.entryType === "request" && item.requestType === "supervisor-review" && !item.hasSupervisorResponse)
+            && <p role="status" className="mt-3 text-xs text-zinc-600">A current permission is required to reply to a review request.</p>}
         </>
       )}
     </section>
@@ -167,7 +230,7 @@ export function TaskAllocations({ siteId, workOrderId, workOrderVersion }: Props
     <section className="panel mb-6" aria-labelledby="task-allocations-title">
       <div className="panel-heading">
         <div>
-          <h2 id="task-allocations-title" className="section-title">{canAssign ? "Assign tasks to your team" : "Tasks in the current work plan"}</h2>
+          <h2 id="task-allocations-title" tabIndex={-1} className="section-title scroll-mt-24">{canAssign ? "Assign tasks to your team" : "Tasks in the current work plan"}</h2>
           <p className="mt-1 text-sm text-zinc-600">
             {canAssign
               ? "Assign each task to an active team member who reports directly to you. Assignment does not authorize repairs or sign-off."
@@ -194,12 +257,34 @@ export function TaskAllocations({ siteId, workOrderId, workOrderVersion }: Props
           {!canAssign && query.data.blockReason && activityAudience !== "team-lead" && activityAudience !== "head-service-centre" && (
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">{blockMessages[query.data.blockReason]}</p>
           )}
+          {canAssign && query.data.assignees.length > 0 && (
+            <section aria-labelledby="task-team-workload-title" className="rounded-lg border border-zinc-200 bg-white p-4">
+              <h3 id="task-team-workload-title" className="text-sm font-semibold text-zinc-900">Team workload</h3>
+              <p className="mt-1 text-xs leading-5 text-zinc-600">Task counts come from current handed-over plans. Blocked and waiting counts show the latest progress report for each current assignment and update when this view refreshes. These figures do not show availability or authorize work.</p>
+              <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                {query.data.assignees.map(person => (
+                  <li key={person.placementId} className="flex min-w-0 items-center justify-between gap-3 rounded-md bg-zinc-50 px-3 py-2 text-sm">
+                    <span className="truncate font-medium text-zinc-800">{person.displayName}</span>
+                    <span className="shrink-0 text-right tabular-nums text-zinc-600">
+                      <span className="block">{person.currentPlanTaskCount} {person.currentPlanTaskCount === 1 ? "task" : "tasks"} assigned</span>
+                      <span className="block text-xs">Last reported: {person.lastReportedBlockedTaskCount} blocked · {person.lastReportedWaitingTaskCount} waiting</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           {query.data.tasks.length === 0 ? (
             <p className="py-4 text-sm text-zinc-600">No tasks are included in the current handed-over plan.</p>
           ) : (
             <div className="space-y-3">
-              {query.data.tasks.map((task) => (
-                <div key={task.taskId} className={`grid min-w-0 gap-3 rounded-xl border border-zinc-200 border-l-4 border-l-blue-500 bg-zinc-50/70 p-4 ${canAssign ? "sm:grid-cols-[minmax(0,1fr)_minmax(12rem,0.8fr)] sm:items-center" : ""}`}>
+              {query.data.tasks.map((task, index) => (
+                <div
+                  key={task.taskId}
+                  id={`task-allocation-${task.taskId}`}
+                  tabIndex={-1}
+                  className={`scroll-mt-24 grid min-w-0 gap-3 rounded-xl border border-zinc-200 border-l-4 border-l-blue-500 bg-zinc-50/70 p-4 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-blue-700 ${canAssign ? "sm:grid-cols-[minmax(0,1fr)_minmax(12rem,0.8fr)] sm:items-center" : ""}`}
+                >
                   <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{task.reference}</p>
                     <h3 className="mt-1 break-words text-sm font-semibold text-zinc-900">{task.title}</h3>
@@ -212,7 +297,7 @@ export function TaskAllocations({ siteId, workOrderId, workOrderVersion }: Props
                         className="field w-full min-w-0"
                         value={selected[task.taskId] ?? task.assigneeId ?? ""}
                         disabled={!online || pageChanged || mutation.isPending || query.data.assignees.length === 0}
-                        aria-label={`Assigned team member for ${task.reference}`}
+                        aria-label={`Assigned team member for task ${index + 1}: ${task.reference} — ${task.title}`}
                         onChange={(event) => setSelected((current) => ({ ...current, [task.taskId]: event.target.value }))}
                       >
                         {task.assigneeId ? (
@@ -221,7 +306,7 @@ export function TaskAllocations({ siteId, workOrderId, workOrderVersion }: Props
                           <option value="">Not assigned</option>
                         )}
                         {query.data.assignees.map((person) => (
-                          <option key={person.placementId} value={person.staffUserId}>{person.displayName} · Technician / Engineer / Trainee</option>
+                          <option key={person.placementId} value={person.staffUserId}>{person.displayName} · {person.currentPlanTaskCount} {person.currentPlanTaskCount === 1 ? "task" : "tasks"} assigned · {person.lastReportedBlockedTaskCount} last reported blocked</option>
                         ))}
                       </select>
                     </label>

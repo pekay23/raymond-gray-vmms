@@ -5,7 +5,7 @@ import { Readable } from 'node:stream';
 import { createServer, Socket } from 'node:net';
 import { z } from 'zod';
 import pg from 'pg';
-import { createApp } from '../../src/app.js';
+import { createApp } from '../../src/routes.js';
 import type { Config } from '../../src/config.js';
 import { makePool } from '../../src/db.js';
 import { hashPassword } from '../../src/identity.js';
@@ -87,7 +87,10 @@ export async function startEvidenceBrowserRuntime(options: {
   workerUrl.username = workerName;
   workerUrl.password = randomBytes(24).toString('hex');
   const dbOwner = new pg.Pool({ connectionString: testOwnerUrl.href, max: 12, connectionTimeoutMillis: 5000, statement_timeout: 0, idle_in_transaction_session_timeout: 0 });
-  const runtime = makePool(runtimeUrl.href);
+  // Browser journeys open several independent sessions and load multiple scoped
+  // projections at once. Keep the disposable test API's pool large enough for
+  // that concurrency, and report pool pressure when diagnosing a failed run.
+  const runtime = new pg.Pool({ connectionString: runtimeUrl.href, max: 12, connectionTimeoutMillis: 15000, statement_timeout: 10000, idle_in_transaction_session_timeout: 10000 });
   const worker = makePool(workerUrl.href);
   const evidenceMode = options.evidenceMode ?? 'synthetic';
   const syntheticStore = evidenceMode === 'synthetic' ? new MemoryPrivateStore() : undefined;
@@ -124,7 +127,10 @@ export async function startEvidenceBrowserRuntime(options: {
     closed = true;
     const failures: string[] = [];
     async function cleanup(label: string, run: () => Promise<unknown>) {
-      try { await run(); } catch { failures.push(label); }
+      try { await run(); } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown cleanup error.';
+        failures.push(`${label}: ${message}`);
+      }
     }
     if (app) await cleanup('api', () => app ? app.close() : runtime.end());
     else await cleanup('api-pool', () => runtime.end());
@@ -192,12 +198,13 @@ export async function startEvidenceBrowserRuntime(options: {
       teamLead: { id: randomUUID(), username: 'browser-team-lead', password },
       supervisor: { id: randomUUID(), username: 'browser-supervisor', password },
       technician: { id: randomUUID(), username: 'browser-technician', password },
+      advisor: { id: randomUUID(), username: 'browser-advisor', password },
     };
     const passwordHash = await hashPassword(password);
     await dbOwner.query('INSERT INTO organisations(id,name) VALUES($1,$2),($3,$4)', [organisationId, 'Synthetic Browser Organisation', otherOrganisationId, 'Synthetic Other Organisation']);
     await dbOwner.query('INSERT INTO sites(id,organisation_id,code,name) VALUES($1,$2,$3,$4),($5,$2,$6,$7),($8,$9,$10,$11)', [siteId, organisationId, 'BROWSE', 'Synthetic Browser Site', secondSiteId, 'SECOND', 'Synthetic Second Site', otherSiteId, otherOrganisationId, 'OTHER', 'Synthetic Other Site']);
     for (const actor of Object.values(actors)) await dbOwner.query('INSERT INTO staff_users(id,username,display_name,password_hash) VALUES($1,$2,$3,$4)', [actor.id, actor.username, `Synthetic ${actor.username}`, passwordHash]);
-    await dbOwner.query('INSERT INTO memberships(user_id,site_id,can_write) VALUES($1,$2,true),($1,$3,true),($4,$2,true),($5,$6,true),($7,$2,true),($8,$2,true),($9,$2,true)', [actors.creator.id, siteId, secondSiteId, actors.peer.id, actors.otherTenant.id, otherSiteId, actors.teamLead.id, actors.supervisor.id, actors.technician.id]);
+    await dbOwner.query('INSERT INTO memberships(user_id,site_id,can_write) VALUES($1,$2,true),($1,$3,true),($4,$2,true),($5,$6,true),($7,$2,true),($8,$2,true),($9,$2,true),($10,$2,true)', [actors.creator.id, siteId, secondSiteId, actors.peer.id, actors.otherTenant.id, otherSiteId, actors.teamLead.id, actors.supervisor.id, actors.technician.id, actors.advisor.id]);
     const placements = new Map<string, string>();
     for (const [staffUserId, roleCode] of [
       [actors.creator.id, 'head-service-centre'],
@@ -205,6 +212,7 @@ export async function startEvidenceBrowserRuntime(options: {
       [actors.teamLead.id, 'ev-team-lead'],
       [actors.supervisor.id, 'supervisor'],
       [actors.technician.id, 'technician-engineer-trainee'],
+      [actors.advisor.id, 'service-advisor'],
     ] as const) {
       const placementId = randomUUID();
       placements.set(staffUserId, placementId);
@@ -237,6 +245,7 @@ export async function startEvidenceBrowserRuntime(options: {
       SESSION_SECRET: randomBytes(32).toString('hex'),
       WEB_ORIGIN: web.origin,
       OIDC_ISSUER: 'http://127.0.0.1:1/unused', OIDC_CLIENT_ID: 'synthetic-browser-test',
+      OIDC_REQUIRE_MFA_ASSURANCE: false,
       OIDC_CALLBACK_URL: 'http://127.0.0.1:1/unused', PORT: 4100, HOST: '127.0.0.1', NODE_ENV: 'test',
       OIDC_LOGOUT_CALLBACK_URL: 'http://127.0.0.1:1/api/v1/auth/oidc/logout/callback',
       TRUSTED_PROXY_CIDRS: [],
@@ -246,6 +255,9 @@ export async function startEvidenceBrowserRuntime(options: {
     const apiOrigin = await app.listen({ host: '127.0.0.1', port: 0 });
     return {
       apiOrigin, databaseName, actors, siteId, secondSiteId, otherSiteId,
+      databasePoolStats() {
+        return { totalConnections: runtime.totalCount, idleConnections: runtime.idleCount, waitingRequests: runtime.waitingCount };
+      },
       setWebOrigin(value: string) {
         const origin = new URL(value);
         assert.equal(origin.hostname, '127.0.0.1');
@@ -267,6 +279,24 @@ export async function startEvidenceBrowserRuntime(options: {
           (id,organisation_id,site_id,staff_user_id,capability,grant_revision,granted_by,basis_reference,valid_from)
           VALUES($1,$2,$3,$4,$5,1,$6,'Synthetic browser verification grant only',now()-interval '1 minute')`,
         [id, organisationId, siteId, staffUserId, `finance.configuration-draft.${access}`, actors.creator.id]);
+        return id;
+      },
+      async grantScopeCapabilityForTest(staffUserId: string, capability: 'work-order.prepare-scope-proposal' | 'work-order.record-payer-scope-response') {
+        assert(Object.values(actors).some(actor => actor.id === staffUserId), 'Only an isolated synthetic browser actor can receive this test grant.');
+        const id = randomUUID();
+        await dbOwner.query(`INSERT INTO staff_authority_grants
+          (id,organisation_id,site_id,staff_user_id,capability,grant_revision,granted_by,basis_reference,valid_from)
+          VALUES($1,$2,$3,$4,$5,1,$6,'Synthetic browser verification grant only',now()-interval '1 minute')`,
+        [id, organisationId, siteId, staffUserId, capability, actors.creator.id]);
+        return id;
+      },
+      async grantWorkOrderHoldResolutionForTest(staffUserId: string) {
+        assert(Object.values(actors).some(actor => actor.id === staffUserId), 'Only an isolated synthetic browser actor can receive this test grant.');
+        const id = randomUUID();
+        await dbOwner.query(`INSERT INTO staff_authority_grants
+          (id,organisation_id,site_id,staff_user_id,capability,grant_revision,granted_by,basis_reference,valid_from)
+          VALUES($1,$2,$3,$4,'work-order.hold.resolve',1,$5,'Synthetic browser hold-resolution verification grant only',now()-interval '1 minute')`,
+        [id, organisationId, siteId, staffUserId, actors.creator.id]);
         return id;
       },
       async scanNext(verdict: 'clean' | 'infected' | 'unavailable' = 'clean') {

@@ -36,9 +36,13 @@ type TaskActivityReport = {
     currentAssigneeName: string;
     currentAssignmentRevision: number;
     assignmentRevision: number;
-    entryType: "acknowledgement" | "progress" | "request" | "comment";
+    entryType: "acknowledgement" | "progress" | "request" | "comment" | "review-response";
     progressState: "working" | "waiting" | "blocked" | null;
-    requestType: "help" | "parts" | "information" | "access" | "evidence" | null;
+    requestType: "help" | "parts" | "information" | "access" | "evidence" | "supervisor-review" | null;
+    responseToActivityId: string | null;
+    responseToActorName: string | null;
+    responseToNote: string | null;
+    hasSupervisorResponse: boolean;
     note: string;
     actorName: string;
     createdAt: string;
@@ -189,6 +193,7 @@ export function PrintTaskProgressReport() {
                   <time className="text-xs text-zinc-600" dateTime={item.createdAt}>{dateTime(item.createdAt, site.timeZone)}</time>
                 </div>
                 <p className="mt-1 text-sm font-medium text-zinc-800">{activityLabel(item)}</p>
+                {item.entryType === "review-response" && item.responseToNote && <p className="mt-1 text-xs text-zinc-600">Reply to {item.responseToActorName ?? "worker"}: {item.responseToNote}</p>}
                 <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-zinc-700">{item.note}</p>
                 <p className="mt-1 text-xs text-zinc-500">Recorded by {item.actorName} · assignment version {item.assignmentRevision}</p>
               </li>)}
@@ -209,7 +214,8 @@ export function PrintTaskProgressReport() {
 function activityLabel(item: TaskActivityReport["items"][number]) {
   if (item.entryType === "acknowledgement") return "Task acknowledged";
   if (item.entryType === "progress") return `Progress · ${progressLabel(item.progressState)}`;
-  if (item.entryType === "request") return `Request · ${requestLabel(item.requestType)}`;
+  if (item.entryType === "request") return item.requestType === "supervisor-review" ? "Supervisor review requested" : `Request · ${requestLabel(item.requestType)}`;
+  if (item.entryType === "review-response") return "Supervisor response · not a sign-off";
   return "Comment";
 }
 
@@ -226,6 +232,7 @@ function requestLabel(requestType: TaskActivityReport["items"][number]["requestT
   if (requestType === "information") return "Information";
   if (requestType === "access") return "Access";
   if (requestType === "evidence") return "Evidence";
+  if (requestType === "supervisor-review") return "Supervisor review requested";
   return "Not stated";
 }
 

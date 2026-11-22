@@ -6,6 +6,9 @@ import { ApiError } from './errors.js';
 import { requireActiveReadMembership, recordSensitiveRead } from './sensitive-read-audit.js';
 
 export const serviceRequestInputSchema=z.object({
+  requestKind:z.enum(['repair-maintenance','routine-maintenance','psai','service-centre-pdi']).default('repair-maintenance'),
+  vehicleSource:z.enum(['showroom-stock','partner-garage','other','unknown']).default('unknown'),
+  shippingReference:z.string().trim().max(160).nullable().default(null),
   sourceChannel:z.string().trim().min(1).max(80), concern:z.string().trim().min(1).max(4000),
   reportedContact:z.string().trim().max(500).nullable().default(null),
   reportedContactName:z.string().trim().min(1).max(160).nullable().default(null),
@@ -13,11 +16,13 @@ export const serviceRequestInputSchema=z.object({
   reportedContactRelationship:z.enum(['vehicle-owner','driver','client-contact','sales-contact','other','unknown']).default('unknown'),
   reportedVehicle:z.string().trim().max(500).nullable().default(null),
   reportedClient:z.string().trim().max(500).nullable().default(null),
+  preferredDropoffWindow:z.string().trim().min(1).max(240).nullable().default(null),
+  preferredCallbackWindow:z.string().trim().min(1).max(240).nullable().default(null),
   nextAction:z.string().trim().min(1).max(1000).nullable().default(null),
   callbackDueAt:z.iso.datetime({offset:true}).nullable().default(null),
 }).strict().refine(value=>value.callbackDueAt===null||value.nextAction!==null,{message:'Add a next action for the callback.',path:['nextAction']});
 const responseSchema=z.object({id:uuid,version:z.number().int().positive()});
-const readSchema=z.object({id:uuid,version:z.number().int().positive(),status:z.enum(['open','converted','closed']),sourceChannel:z.string(),concern:z.string(),reportedContact:z.string().nullable(),reportedContactName:z.string().nullable(),reportedContactPhone:z.string().nullable(),reportedContactRelationship:z.enum(['vehicle-owner','driver','client-contact','sales-contact','other','unknown']),reportedVehicle:z.string().nullable(),reportedClient:z.string().nullable(),nextAction:z.string().nullable(),callbackDueAt:z.date().nullable(),assignedTo:uuid.nullable(),assignedToName:z.string().nullable(),workOrderId:uuid.nullable()});
+const readSchema=z.object({id:uuid,version:z.number().int().positive(),status:z.enum(['open','converted','closed']),requestKind:z.enum(['repair-maintenance','routine-maintenance','psai','service-centre-pdi']),vehicleSource:z.enum(['showroom-stock','partner-garage','other','unknown']),shippingReference:z.string().nullable(),sourceChannel:z.string(),concern:z.string(),reportedContact:z.string().nullable(),reportedContactName:z.string().nullable(),reportedContactPhone:z.string().nullable(),reportedContactRelationship:z.enum(['vehicle-owner','driver','client-contact','sales-contact','other','unknown']),reportedVehicle:z.string().nullable(),reportedClient:z.string().nullable(),preferredDropoffWindow:z.string().nullable(),preferredCallbackWindow:z.string().nullable(),nextAction:z.string().nullable(),callbackDueAt:z.date().nullable(),assignedTo:uuid.nullable(),assignedToName:z.string().nullable(),workOrderId:uuid.nullable()});
 export const claimRequestSchema=z.object({expectedVersion:z.number().int().positive()}).strict();
 export const linkRequestSchema=z.object({expectedVersion:z.number().int().positive(),workOrderId:uuid,reason:z.string().trim().min(1).max(500)}).strict();
 export const unlinkRequestSchema=z.object({expectedVersion:z.number().int().positive(),reason:z.string().trim().min(1).max(500)}).strict();
@@ -45,8 +50,8 @@ export async function createServiceRequest(pool:Database,scope:Scope,key:string,
     apply:async client=>{
       const id=randomUUID();
       await client.query("INSERT INTO aggregate_roots(id,organisation_id,site_id,aggregate_type) VALUES($1,$2,$3,'service-request')",[id,scope.organisationId,scope.siteId]);
-      await client.query(`INSERT INTO service_requests(id,organisation_id,site_id,version,source_channel,concern,reported_contact,reported_contact_name,reported_contact_phone,reported_contact_relationship,reported_vehicle,reported_client,next_action,callback_due_at,assigned_to,created_by)
-        VALUES($1,$2,$3,1,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,[id,scope.organisationId,scope.siteId,body.sourceChannel,body.concern,body.reportedContact,body.reportedContactName,body.reportedContactPhone,body.reportedContactRelationship,body.reportedVehicle,body.reportedClient,body.nextAction,body.callbackDueAt,body.nextAction?scope.actorId:null,scope.actorId]);
+      await client.query(`INSERT INTO service_requests(id,organisation_id,site_id,version,request_kind,vehicle_source,shipping_reference,source_channel,concern,reported_contact,reported_contact_name,reported_contact_phone,reported_contact_relationship,reported_vehicle,reported_client,preferred_dropoff_window,preferred_callback_window,next_action,callback_due_at,assigned_to,created_by)
+        VALUES($1,$2,$3,1,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,[id,scope.organisationId,scope.siteId,body.requestKind,body.vehicleSource,body.shippingReference,body.sourceChannel,body.concern,body.reportedContact,body.reportedContactName,body.reportedContactPhone,body.reportedContactRelationship,body.reportedVehicle,body.reportedClient,body.preferredDropoffWindow,body.preferredCallbackWindow,body.nextAction,body.callbackDueAt,body.nextAction?scope.actorId:null,scope.actorId]);
       return {aggregateId:id,aggregateType:'service-request',version:1,previous:{},next:{id,version:1,...body},reason:'Service request recorded.'};
     },
     project:async(_client,mutation)=>responseSchema.parse(mutation.next),
@@ -73,8 +78,8 @@ export async function readServiceRequest(pool:Database,scope:Scope,id:string,req
     await requireActiveReadMembership(client,scope);
     const shared=await requestAccess(client,scope);
     const result=await client.query(`SELECT r.id,r.version,r.status,r.source_channel AS "sourceChannel",r.concern,
-      r.reported_contact AS "reportedContact",r.reported_contact_name AS "reportedContactName",r.reported_contact_phone AS "reportedContactPhone",r.reported_contact_relationship AS "reportedContactRelationship",r.reported_vehicle AS "reportedVehicle",r.reported_client AS "reportedClient",
-      r.next_action AS "nextAction",r.callback_due_at AS "callbackDueAt",r.assigned_to AS "assignedTo",u.display_name AS "assignedToName",r.work_order_id AS "workOrderId" FROM service_requests r
+      r.request_kind AS "requestKind",r.vehicle_source AS "vehicleSource",r.shipping_reference AS "shippingReference",r.reported_contact AS "reportedContact",r.reported_contact_name AS "reportedContactName",r.reported_contact_phone AS "reportedContactPhone",r.reported_contact_relationship AS "reportedContactRelationship",r.reported_vehicle AS "reportedVehicle",r.reported_client AS "reportedClient",
+      r.preferred_dropoff_window AS "preferredDropoffWindow",r.preferred_callback_window AS "preferredCallbackWindow",r.next_action AS "nextAction",r.callback_due_at AS "callbackDueAt",r.assigned_to AS "assignedTo",u.display_name AS "assignedToName",r.work_order_id AS "workOrderId" FROM service_requests r
       LEFT JOIN staff_users u ON u.id=r.assigned_to
       WHERE r.organisation_id=$1 AND r.site_id=$2 AND r.id=$3 AND (r.created_by=$4 OR $5::boolean)`,[scope.organisationId,scope.siteId,id,scope.actorId,shared]);
     if(!result.rowCount) throw new ApiError(404,'NOT_FOUND','The requested record was not found.');
@@ -305,8 +310,8 @@ export async function listServiceRequests(pool:Database,scope:Scope,requestId:st
     const values=[scope.organisationId,scope.siteId,scope.actorId,shared,selected];
     const count=await client.query(`SELECT count(*)::int AS total FROM service_requests r WHERE ${where}`,values);
     const total=z.object({total:z.number().int().nonnegative()}).parse(count.rows[0]).total;
-    const found=await client.query(`SELECT r.id,r.version,r.concern,r.reported_contact AS "reportedContact",r.reported_contact_name AS "reportedContactName",r.reported_contact_phone AS "reportedContactPhone",r.reported_contact_relationship AS "reportedContactRelationship",r.reported_vehicle AS "reportedVehicle",
-      r.reported_client AS "reportedClient",r.next_action AS "nextAction",r.callback_due_at AS "callbackDueAt",r.assigned_to AS "assignedTo",
+    const found=await client.query(`SELECT r.id,r.version,r.request_kind AS "requestKind",r.vehicle_source AS "vehicleSource",r.shipping_reference AS "shippingReference",r.concern,r.reported_contact AS "reportedContact",r.reported_contact_name AS "reportedContactName",r.reported_contact_phone AS "reportedContactPhone",r.reported_contact_relationship AS "reportedContactRelationship",r.reported_vehicle AS "reportedVehicle",
+      r.reported_client AS "reportedClient",r.preferred_dropoff_window AS "preferredDropoffWindow",r.preferred_callback_window AS "preferredCallbackWindow",r.next_action AS "nextAction",r.callback_due_at AS "callbackDueAt",r.assigned_to AS "assignedTo",
       u.display_name AS "assignedToName",CASE WHEN r.assigned_to IS NULL THEN NULL ELSE (coalesce(u.active,false) AND EXISTS
         (SELECT 1 FROM memberships m WHERE m.site_id=r.site_id AND m.user_id=r.assigned_to AND m.active AND m.can_write)
         AND (r.created_by=r.assigned_to OR EXISTS(SELECT 1 FROM staff_role_placements p JOIN staff_role_profiles rp ON rp.code=p.role_code AND rp.active
@@ -316,7 +321,7 @@ export async function listServiceRequests(pool:Database,scope:Scope,requestId:st
           AND NOT EXISTS(SELECT 1 FROM staff_role_placements p WHERE p.organisation_id=r.organisation_id AND p.site_id=r.site_id AND p.staff_user_id=r.assigned_to AND p.state='active' AND p.role_code<>'vmms-operator'))) END AS "assigneeActive"
       FROM service_requests r LEFT JOIN staff_users u ON u.id=r.assigned_to WHERE ${where}
       ORDER BY r.callback_due_at ASC NULLS LAST,r.id ASC LIMIT $6 OFFSET $7`,[...values,size,(number-1)*size]);
-    const row=z.object({id:uuid,version:z.number().int().positive(),concern:z.string(),reportedContact:z.string().nullable(),reportedContactName:z.string().nullable(),reportedContactPhone:z.string().nullable(),reportedContactRelationship:z.enum(['vehicle-owner','driver','client-contact','sales-contact','other','unknown']),reportedVehicle:z.string().nullable(),reportedClient:z.string().nullable(),nextAction:z.string().nullable(),callbackDueAt:z.date().nullable(),assignedTo:uuid.nullable(),assignedToName:z.string().nullable(),assigneeActive:z.boolean().nullable()});
+    const row=z.object({id:uuid,version:z.number().int().positive(),requestKind:z.enum(['repair-maintenance','routine-maintenance','psai','service-centre-pdi']),vehicleSource:z.enum(['showroom-stock','partner-garage','other','unknown']),shippingReference:z.string().nullable(),concern:z.string(),reportedContact:z.string().nullable(),reportedContactName:z.string().nullable(),reportedContactPhone:z.string().nullable(),reportedContactRelationship:z.enum(['vehicle-owner','driver','client-contact','sales-contact','other','unknown']),reportedVehicle:z.string().nullable(),reportedClient:z.string().nullable(),preferredDropoffWindow:z.string().nullable(),preferredCallbackWindow:z.string().nullable(),nextAction:z.string().nullable(),callbackDueAt:z.date().nullable(),assignedTo:uuid.nullable(),assignedToName:z.string().nullable(),assigneeActive:z.boolean().nullable()});
     const items=z.array(row).parse(found.rows).map(item=>({...item,callbackDueAt:item.callbackDueAt?.toISOString()??null}));
     await recordSensitiveRead(client,scope,'service-request-read-prepared',items.length,requestId);
     return {items,page:number,pageSize:size,totalCount:total,totalPages:Math.ceil(total/size)};

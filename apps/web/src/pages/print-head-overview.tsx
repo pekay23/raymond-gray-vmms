@@ -70,8 +70,30 @@ export function PrintHeadOverview() {
           </dl>
         </section>
 
+        <section className="overview-report-section mt-7" aria-labelledby="report-task-progress-title">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-red-800">03 · Reported task progress</p>
+          <h2 id="report-task-progress-title" className="mt-2 border-b border-zinc-300 pb-3 text-xl font-semibold text-zinc-950">Latest blocked and waiting reports</h2>
+          <p className="mt-3 text-sm leading-6 text-zinc-600">These counts reflect the latest progress entry for each current task assignment. They are reports, not live safety or completion decisions.</p>
+          <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+            <ReportMetric label="Last reported blocked" value={data.taskProgress.blockedCount} tone="amber" />
+            <ReportMetric label="Last reported waiting" value={data.taskProgress.waitingCount} tone="amber" />
+          </dl>
+          {data.taskProgress.items.length > 0 ? (
+            <ol className="mt-4 space-y-3">
+              {data.taskProgress.items.map(item => (
+                <li key={`${item.workOrderId}:${item.taskReference}`} className="keep-together border-l-4 border-zinc-400 bg-zinc-50 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-700">{item.state === "blocked" ? "Last reported blocked" : "Last reported waiting"} · {item.bookingReference} · {item.taskReference}</p>
+                  <p className="mt-1 text-sm font-semibold text-zinc-950">{item.taskTitle}</p>
+                  <p className="mt-1 text-xs text-zinc-600">Assigned to {item.assigneeName} · reported {dateTime(item.reportedAt, site.timeZone)}</p>
+                </li>
+              ))}
+            </ol>
+          ) : <p className="mt-4 text-sm text-zinc-600">No current task has a latest progress report marked blocked or waiting.</p>}
+          <p className="mt-3 text-xs text-zinc-600">Showing at most 12 current reports. Open the work order in VMMS to review the task history.</p>
+        </section>
+
         <section className="overview-report-section mt-7" aria-labelledby="report-staff-title">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-800">03 · People</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-800">04 · People</p>
           <h2 id="report-staff-title" className="mt-2 border-b border-zinc-300 pb-3 text-xl font-semibold text-zinc-950">Staff access</h2>
           <dl className="mt-4 grid gap-3 sm:grid-cols-2">
             <ReportMetric label="Active staff accounts" value={data.staff.active} />
@@ -80,7 +102,7 @@ export function PrintHeadOverview() {
         </section>
 
         <footer className="mt-8 border-t border-zinc-300 pt-4 text-xs leading-5 text-zinc-600">
-          This report contains current aggregate counts only. It is not a work authorization, vehicle release, invoice or financial statement. Open the relevant record in VMMS for its current status and history.
+          This report contains current site-scoped counts and latest reported task progress. It is not a work authorization, vehicle release, invoice or financial statement. Open the relevant record in VMMS for its current status and history.
         </footer>
       </article>
     </main>

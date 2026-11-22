@@ -3,16 +3,19 @@ import type { PoolClient } from 'pg';
 import { z } from 'zod';
 import { type Database, type Scope, scoped, uuid } from './db.js';
 import { ApiError, notFound } from './errors.js';
-import { clientMatchSchema, complaintSchema, detailSchema, eligibleTeamLeadSchema, eligibleSupervisorSchema, holdSchema, intakeSchema, leadAssignmentSchema, partyMatchSchema, supervisorHandoffSchema, summarySchema, taskSchema, vehicleMatchSchema, workPlanBlockReasonSchema, workPlanCommandSchema, workPlanSchema, type WorkOrderDetail } from './schemas.js';
+import { clientMatchSchema, complaintSchema, detailSchema, eligibleTeamLeadSchema, eligibleSupervisorSchema, holdResolutionSchema, holdSchema, intakeSchema, leadAssignmentSchema, partyMatchSchema, supervisorHandoffSchema, summarySchema, taskSchema, vehicleMatchSchema, workPlanBlockReasonSchema, workPlanCommandSchema, workPlanSchema, type WorkOrderDetail } from './schemas.js';
 import { lockAdvisoryRoots, lockWorkOrderRoot, runStaffCommand } from './commands.js';
 import { operationsReviewCommandSchema, operationsReviewResultSchema } from './schemas.js';
 import { recordSensitiveRead, requireActiveReadMembership } from './sensitive-read-audit.js';
 import { requestAccess } from './service-requests.js';
 import { projectWorkOrderWorkflowContext } from './work-order-workflow-context.js';
+import { projectWorkOrderCloseoutPath } from './work-order-closeout-path.js';
+import { readWorkOrderCompletionReadiness } from './work-order-completion-readiness.js';
 
 const summarySql = `SELECT w.id,w.reference,w.version,w.created_at AS "createdAt",p.display_name AS "clientName",concat_ws(' ',v.make,v.model,v.variant) AS "vehicleLabel",v.vin,v.registration,w.status,
 (SELECT count(*)::int FROM complaints x WHERE x.work_order_id=w.id) AS "complaintCount",
-(SELECT count(*)::int FROM holds x WHERE x.work_order_id=w.id) AS "openHoldCount"
+(SELECT count(*)::int FROM holds x WHERE x.organisation_id=w.organisation_id AND x.site_id=w.site_id AND x.work_order_id=w.id
+  AND NOT EXISTS(SELECT 1 FROM work_order_hold_resolutions r WHERE r.organisation_id=x.organisation_id AND r.site_id=x.site_id AND r.work_order_id=x.work_order_id AND r.hold_id=x.id)) AS "openHoldCount"
 FROM work_orders w LEFT JOIN parties p ON p.id=w.client_party_id AND p.organisation_id=w.organisation_id JOIN vehicles v ON v.id=w.vehicle_id`;
 
 const gates = [
@@ -34,6 +37,8 @@ export async function detail(client: PoolClient, id: string): Promise<WorkOrderD
       FROM vehicle_owner_observations oo JOIN parties op ON op.id=oo.party_id AND op.organisation_id=oo.organisation_id
       WHERE oo.work_order_id=w.id ORDER BY oo.recorded_at DESC,oo.id DESC LIMIT 1) AS owner,
     CASE WHEN vc.id IS NULL THEN NULL ELSE jsonb_build_object('id',vc.id,'kind',vc.party_kind,'name',vc.display_name,'phone',vc.phone,'email',vc.email) END AS "visitContact",
+    w.service_kind AS "serviceKind",
+    w.service_source AS "serviceSource",w.shipping_reference AS "shippingReference",
     w.client_code_snapshot AS "clientCode",w.client_booking_sequence AS "clientBookingSequence",w.powertrain_class AS "powertrainClass",w.warranty_status_at_booking AS "warrantyStatusAtBooking",
     jsonb_build_object('id',v.id,'vin',v.vin,'registration',v.registration,'make',v.make,'model',v.model,'variant',v.variant,'powertrain',v.powertrain) AS vehicle,
     w.odometer_km AS "odometerKm",w.soc_percent AS "socPercent"
@@ -41,7 +46,7 @@ export async function detail(client: PoolClient, id: string): Promise<WorkOrderD
     JOIN visits vs ON vs.id=w.visit_id AND vs.organisation_id=w.organisation_id
     LEFT JOIN parties vc ON vc.id=vs.visit_contact_party_id AND vc.organisation_id=vs.organisation_id
     JOIN vehicles v ON v.id=w.vehicle_id WHERE w.id=$1`,[id]);
-  const extra = z.object({client:detailSchema.shape.client,owner:detailSchema.shape.owner,visitContact:detailSchema.shape.visitContact,clientCode:detailSchema.shape.clientCode,clientBookingSequence:detailSchema.shape.clientBookingSequence,powertrainClass:detailSchema.shape.powertrainClass,warrantyStatusAtBooking:detailSchema.shape.warrantyStatusAtBooking,vehicle:detailSchema.shape.vehicle,odometerKm:z.number(),socPercent:z.number().nullable()}).parse(extraResult.rows[0]);
+  const extra = z.object({client:detailSchema.shape.client,owner:detailSchema.shape.owner,visitContact:detailSchema.shape.visitContact,serviceKind:detailSchema.shape.serviceKind,serviceSource:detailSchema.shape.serviceSource,shippingReference:detailSchema.shape.shippingReference,clientCode:detailSchema.shape.clientCode,clientBookingSequence:detailSchema.shape.clientBookingSequence,powertrainClass:detailSchema.shape.powertrainClass,warrantyStatusAtBooking:detailSchema.shape.warrantyStatusAtBooking,vehicle:detailSchema.shape.vehicle,odometerKm:z.number(),socPercent:z.number().nullable()}).parse(extraResult.rows[0]);
   const vehicleHistory = await client.query(`SELECT w.id,w.reference,w.created_at AS "openedAt",v.registration,
       (SELECT p.display_name FROM parties p WHERE p.id=w.client_party_id AND p.organisation_id=w.organisation_id) AS "clientName",
       (SELECT p.display_name FROM vehicle_owner_observations oo JOIN parties p ON p.id=oo.party_id AND p.organisation_id=oo.organisation_id WHERE oo.work_order_id=w.id ORDER BY oo.recorded_at DESC,oo.id DESC LIMIT 1) AS "reportedOwnerName",
@@ -54,7 +59,14 @@ export async function detail(client: PoolClient, id: string): Promise<WorkOrderD
   const historyItems=z.array(detailSchema.shape.vehicleHistory.element).parse(vehicleHistory.rows);
   const complaints = await client.query(`SELECT id,'C'||lpad(ordinal::text,2,'0') AS reference,wording FROM complaints WHERE work_order_id=$1 ORDER BY ordinal`,[id]);
   const tasks = await client.query(`SELECT id,'T'||lpad(ordinal::text,2,'0') AS reference,title,complaint_id AS "complaintId",state FROM tasks WHERE work_order_id=$1 ORDER BY ordinal`,[id]);
-  const holds = await client.query(`SELECT h.id,h.category,h.severity,h.reason,h.source,h.task_id AS "taskId",h.opened_at AS "openedAt",u.display_name AS "openedBy" FROM holds h JOIN staff_users u ON u.id=h.owner_id WHERE h.work_order_id=$1 ORDER BY h.opened_at,h.id`,[id]);
+  const holds = await client.query(`SELECT h.id,h.category,h.severity,h.reason,h.source,h.task_id AS "taskId",h.opened_at AS "openedAt",u.display_name AS "openedBy",
+      CASE WHEN r.id IS NULL THEN NULL ELSE jsonb_build_object('reason',r.resolution,'resolvedAt',r.resolved_at,'resolvedBy',resolver.display_name,
+        'evidenceIds',coalesce((SELECT jsonb_agg(re.evidence_id ORDER BY re.evidence_id) FROM work_order_hold_resolution_evidence re
+          WHERE re.organisation_id=r.organisation_id AND re.site_id=r.site_id AND re.resolution_id=r.id),'[]'::jsonb)) END AS resolution
+    FROM holds h JOIN staff_users u ON u.id=h.owner_id
+    LEFT JOIN work_order_hold_resolutions r ON r.organisation_id=h.organisation_id AND r.site_id=h.site_id AND r.work_order_id=h.work_order_id AND r.hold_id=h.id
+    LEFT JOIN staff_users resolver ON resolver.id=r.resolved_by
+    WHERE h.work_order_id=$1 ORDER BY h.opened_at,h.id`,[id]);
   const evidence = await client.query(`
     SELECT e.id AS "evidenceId",
            CASE WHEN l.id IS NULL THEN e.upload_intent_id ELSE NULL END AS "uploadIntentId",
@@ -119,6 +131,22 @@ export async function detail(client: PoolClient, id: string): Promise<WorkOrderD
         AND g.valid_from<=now() AND (g.valid_until IS NULL OR g.valid_until>now()) AND m.active AND m.can_write
     ) AS "canReviewOperations"`);
   const canReviewOperations=z.object({canReviewOperations:z.boolean()}).parse(reviewCapability.rows[0]).canReviewOperations;
+  const holdResolutionCapability=await client.query(`SELECT EXISTS(
+      SELECT 1 FROM staff_authority_grants g JOIN memberships m ON m.user_id=g.staff_user_id AND m.site_id=g.site_id
+      JOIN work_order_lead_assignments a ON a.organisation_id=g.organisation_id AND a.site_id=g.site_id AND a.work_order_id=$1 AND a.lead_user_id=g.staff_user_id
+      WHERE g.organisation_id=nullif(current_setting('app.organisation_id',true),'')::uuid AND g.site_id=nullif(current_setting('app.site_id',true),'')::uuid
+        AND g.staff_user_id=nullif(current_setting('app.actor_id',true),'')::uuid AND g.capability='work-order.hold.resolve'
+        AND g.revoked_at IS NULL AND g.valid_from<=clock_timestamp() AND (g.valid_until IS NULL OR g.valid_until>clock_timestamp())
+        AND m.active AND m.can_write AND a.id=(SELECT latest.id FROM work_order_lead_assignments latest
+          WHERE latest.organisation_id=a.organisation_id AND latest.site_id=a.site_id AND latest.work_order_id=a.work_order_id ORDER BY latest.created_at DESC,latest.id DESC LIMIT 1)
+        AND a.operations_review_id=(SELECT latest.id FROM work_order_operations_reviews latest WHERE latest.organisation_id=a.organisation_id AND latest.site_id=a.site_id AND latest.work_order_id=a.work_order_id ORDER BY latest.reviewed_work_order_version DESC,latest.id DESC LIMIT 1)
+        AND EXISTS(SELECT 1 FROM staff_qualifications q JOIN staff_users qu ON qu.id=q.staff_user_id JOIN memberships qm ON qm.user_id=qu.id AND qm.site_id=q.site_id
+          WHERE q.organisation_id=a.organisation_id AND q.site_id=a.site_id AND q.staff_user_id=a.lead_user_id AND q.qualification_code=a.powertrain_class||'-TEAM-LEAD'
+            AND q.state='accepted' AND q.powertrain_classes @> ARRAY[a.powertrain_class]::text[] AND q.restrictions='[]'::jsonb
+            AND q.qualification_revision=(SELECT max(q2.qualification_revision) FROM staff_qualifications q2 WHERE q2.organisation_id=q.organisation_id AND q2.site_id=q.site_id AND q2.staff_user_id=q.staff_user_id AND q2.qualification_code=q.qualification_code AND q2.state<>'pending')
+            AND q.valid_from<=clock_timestamp() AND (q.valid_until IS NULL OR q.valid_until>clock_timestamp()) AND qu.active AND qm.active AND qm.can_write)
+    ) AS "canResolveHolds"`,[id]);
+  const canResolveHolds=z.object({canResolveHolds:z.boolean()}).parse(holdResolutionCapability.rows[0]).canResolveHolds;
   const workPlanResult=teamLeadAssignment?await client.query(`SELECT r.id,r.revision_number AS "revisionNumber",r.lead_assignment_id AS "leadAssignmentId",
       r.created_work_order_version AS "workOrderVersion",author.display_name AS "plannedBy",r.created_at AS "plannedAt",r.rationale,
       coalesce(jsonb_agg(jsonb_build_object('taskId',t.id,'reference','T'||lpad(t.ordinal::text,2,'0'),'title',t.title) ORDER BY line.line_number),'[]'::jsonb) AS tasks,
@@ -172,7 +200,14 @@ export async function detail(client: PoolClient, id: string): Promise<WorkOrderD
   }
   const canPrepareWorkPlan=workPlanBlockReason===null;
   const workflowContext=projectWorkOrderWorkflowContext({version:summary.version,canReviewOperations,operationsReview,teamLeadAssignment,workPlan,canPrepareWorkPlan,workPlanBlockReason,supervisorHandoff});
-  return detailSchema.parse({...summary,...extra,canReviewOperations,operationsReview,teamLeadAssignment,supervisorHandoff,workPlan,canPrepareWorkPlan,workPlanBlockReason,workflowContext,vehicleHistory:historyItems,complaints:complaints.rows,tasks:tasks.rows,holds:holds.rows,evidence:evidence.rows,diagnosticFindings:diagnosticFindings.rows,intakeFacts:intakeFacts.rows,history:history.rows,gates});
+  const closeoutPath=projectWorkOrderCloseoutPath({workflowContext,operationsReviewIsCurrent:operationsReview?.isCurrent===true,supervisorHandoffIsCurrent:supervisorHandoff?.isCurrent===true});
+  const sessionScope=z.object({organisationId:uuid,siteId:uuid,actorId:uuid}).parse((await client.query(`SELECT
+    nullif(current_setting('app.organisation_id',true),'')::uuid AS "organisationId",
+    nullif(current_setting('app.site_id',true),'')::uuid AS "siteId",
+    nullif(current_setting('app.actor_id',true),'')::uuid AS "actorId"`)).rows[0]);
+  const completionReadiness=await readWorkOrderCompletionReadiness(client,sessionScope,id,
+    workPlan?.isCurrent===true?workPlan.id:null,supervisorHandoff?.isCurrent===true,summary.openHoldCount);
+  return detailSchema.parse({...summary,...extra,canReviewOperations,canResolveHolds,operationsReview,teamLeadAssignment,supervisorHandoff,workPlan,canPrepareWorkPlan,workPlanBlockReason,workflowContext,closeoutPath,completionReadiness,vehicleHistory:historyItems,complaints:complaints.rows,tasks:tasks.rows,holds:holds.rows,evidence:evidence.rows,diagnosticFindings:diagnosticFindings.rows,intakeFacts:intakeFacts.rows,history:history.rows,gates});
 }
 
 export type WorkOrderQueue = 'all'|'operations'|'awaiting-operations'|'held'|'awaiting-lead'|'assigned'|'team-lead'|'supervisor';
@@ -327,6 +362,9 @@ async function lockVersion(client: PoolClient, id: string, expected: number) {
 
 export async function createIntake(pool: Database, scope: Scope, key: string, body: z.infer<typeof intakeSchema>, source?:{requestId:string;expectedVersion:number;reason:string}) {
   let shared=false;
+  let serviceKind:'repair-maintenance'|'routine-maintenance'|'psai'|'service-centre-pdi'='repair-maintenance';
+  let serviceSource:'showroom-stock'|'partner-garage'|'other'|'unknown'='unknown';
+  let shippingReference:string|null=null;
   return runStaffCommand(pool,{
     scope,commandId:key,operation:'reception.draft-created',targetAggregateId:source?.requestId??'new',payload:source?{intake:body,source}:body,responseSchema:detailSchema,
     lockSerializationRoots:async client=>{
@@ -343,10 +381,13 @@ export async function createIntake(pool: Database, scope: Scope, key: string, bo
     authorize:async(_client,membership)=>{requireSiteWrite(membership.canWrite);if(source&&!shared)throw new ApiError(403,'ROLE_REQUIRED','Only customer care staff or the Head can create a job from a request.');},
     apply:async client => {
     if(source){
-      const found=await client.query('SELECT version,status FROM service_requests WHERE organisation_id=$1 AND site_id=$2 AND id=$3',[scope.organisationId,scope.siteId,source.requestId]);
-      const current=z.object({version:z.number().int().positive(),status:z.string()}).parse(found.rows[0]);
+      const found=await client.query('SELECT version,status,request_kind AS "requestKind",vehicle_source AS "vehicleSource",shipping_reference AS "shippingReference" FROM service_requests WHERE organisation_id=$1 AND site_id=$2 AND id=$3',[scope.organisationId,scope.siteId,source.requestId]);
+      const current=z.object({version:z.number().int().positive(),status:z.string(),requestKind:z.enum(['repair-maintenance','routine-maintenance','psai','service-centre-pdi']),vehicleSource:z.enum(['showroom-stock','partner-garage','other','unknown']),shippingReference:z.string().nullable()}).parse(found.rows[0]);
       if(current.version!==source.expectedVersion)throw new ApiError(409,'STALE_VERSION','This request changed. Refresh and try again.',current.version);
       if(current.status!=='open')throw new ApiError(409,'REQUEST_NOT_OPEN','This request is already linked or closed.');
+      serviceKind=current.requestKind;
+      serviceSource=current.vehicleSource;
+      shippingReference=current.shippingReference;
     }
     let vehicleId:string;
     if (body.vehicle.kind==='new') {
@@ -397,8 +438,8 @@ export async function createIntake(pool: Database, scope: Scope, key: string, bo
     const allocated=await client.query('SELECT public.allocate_client_booking_sequence($1,$2) AS sequence',[scope.organisationId,clientPartyId]);
     const bookingSequence=z.number().int().positive().parse(allocated.rows[0]?.sequence);
     const reference=`${body.powertrainClass}-${clientCode}-${String(bookingSequence).padStart(5,'0')}${body.warrantyStatus==='confirmed'?'W':''}`;
-    await client.query(`INSERT INTO work_orders(id,organisation_id,site_id,visit_id,customer_id,client_party_id,client_code_snapshot,client_booking_sequence,powertrain_class,warranty_status_at_booking,warranty_confirmation_note,vehicle_id,reference,odometer_km,soc_percent)
-      VALUES($1,$2,$3,$4,NULL,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,[workOrderId,scope.organisationId,scope.siteId,visitId,clientPartyId,clientCode,bookingSequence,body.powertrainClass,body.warrantyStatus,body.warrantyStatus==='confirmed'?body.warrantyConfirmationNote:null,vehicleId,reference,body.odometerKm,body.socPercent]);
+    await client.query(`INSERT INTO work_orders(id,organisation_id,site_id,visit_id,customer_id,client_party_id,client_code_snapshot,client_booking_sequence,powertrain_class,warranty_status_at_booking,warranty_confirmation_note,vehicle_id,reference,odometer_km,soc_percent,service_kind,service_source,shipping_reference)
+      VALUES($1,$2,$3,$4,NULL,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,[workOrderId,scope.organisationId,scope.siteId,visitId,clientPartyId,clientCode,bookingSequence,body.powertrainClass,body.warrantyStatus,body.warrantyStatus==='confirmed'?body.warrantyConfirmationNote:null,vehicleId,reference,body.odometerKm,body.socPercent,serviceKind,serviceSource,shippingReference]);
     await client.query("INSERT INTO vehicle_owner_observations(id,organisation_id,site_id,work_order_id,vehicle_id,party_id,recorded_by) VALUES($1,$2,$3,$4,$5,$6,$7)",[ownerObservationId,scope.organisationId,scope.siteId,workOrderId,vehicleId,ownerPartyId,scope.actorId]);
     await client.query('INSERT INTO complaints(id,organisation_id,site_id,work_order_id,ordinal,wording) VALUES($1,$2,$3,$4,1,$5)',[complaintId,scope.organisationId,scope.siteId,workOrderId,body.complaint]);
     if(source){
@@ -506,6 +547,53 @@ export async function openHold(pool: Database, scope: Scope, key: string, id: st
     const holdId=randomUUID();
     await client.query('INSERT INTO holds(id,organisation_id,site_id,work_order_id,task_id,category,severity,reason,source,owner_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[holdId,scope.organisationId,scope.siteId,id,taskId,body.category,body.severity,body.reason,body.source,scope.actorId]);
     return {aggregateId:id,aggregateType:'work-order',version:version+1,previous:{version},next:{version:version+1,holdId,taskId},reason:body.reason};
+    },
+    project:client=>detail(client,id),
+  });
+}
+
+const holdResolutionDecisionSchema=z.object({grant:z.object({id:uuid,grant_revision:z.number().int().positive()}).passthrough(),qualification:z.object({id:uuid,qualification_revision:z.number().int().positive()}).passthrough(),assignment:z.object({id:uuid,operationsReviewId:uuid}),decidedAt:z.iso.datetime()});
+
+export async function resolveHold(pool:Database,scope:Scope,key:string,id:string,holdId:string,body:z.infer<typeof holdResolutionSchema>) {
+  let decision:unknown;
+  return runStaffCommand(pool,{
+    scope,commandId:key,operation:'safety.hold-resolved',targetAggregateId:id,payload:{holdId,...body},responseSchema:detailSchema,
+    lockSerializationRoots:client=>lockWorkOrderRoot(client,scope,id),
+    authorize:async(client,membership)=>{
+      requireSiteWrite(membership.canWrite);
+      const grant=await client.query("SELECT public.lock_work_order_authority_grant('work-order.hold.resolve') AS grant");
+      if(!grant.rows[0]?.grant) throw new ApiError(403,'AUTHORITY_REQUIRED','An active hold-resolution grant is required.');
+      const assigned=await client.query(`SELECT a.id,a.lead_user_id,a.powertrain_class,a.operations_review_id AS "operationsReviewId" FROM work_order_lead_assignments a
+        WHERE a.organisation_id=$1 AND a.site_id=$2 AND a.work_order_id=$3
+          AND a.id=(SELECT latest.id FROM work_order_lead_assignments latest WHERE latest.organisation_id=$1 AND latest.site_id=$2 AND latest.work_order_id=$3 ORDER BY latest.created_at DESC,latest.id DESC LIMIT 1)
+          AND a.operations_review_id=(SELECT latest.id FROM work_order_operations_reviews latest WHERE latest.organisation_id=$1 AND latest.site_id=$2 AND latest.work_order_id=$3 ORDER BY latest.reviewed_work_order_version DESC,latest.id DESC LIMIT 1)
+          AND a.lead_user_id=$4`,[scope.organisationId,scope.siteId,id,scope.actorId]);
+      const parsedLead=z.object({id:uuid,lead_user_id:uuid,powertrain_class:z.enum(['EV','HYB','ICE']),operationsReviewId:uuid}).safeParse(assigned.rows[0]);
+      if(!parsedLead.success) throw new ApiError(409,'CURRENT_TEAM_LEAD_REQUIRED','Only the currently assigned Team Lead can resolve this hold.');
+      const lead=parsedLead.data;
+      const qualification=await client.query('SELECT public.lock_work_order_assignment_qualification($1,$2,$3) AS qualification',[lead.lead_user_id,`${lead.powertrain_class}-TEAM-LEAD`,lead.powertrain_class]);
+      if(!qualification.rows[0]?.qualification) throw new ApiError(403,'QUALIFICATION_REQUIRED','The current assigned Team Lead qualification is required to resolve this hold.');
+      const clock=await client.query('SELECT clock_timestamp() AS at');
+      decision=holdResolutionDecisionSchema.parse({grant:grant.rows[0].grant,qualification:qualification.rows[0].qualification,assignment:{id:lead.id,operationsReviewId:lead.operationsReviewId},decidedAt:z.date().parse(clock.rows[0].at).toISOString()});
+    },
+    apply:async client=>{
+      const version=await lockVersion(client,id,body.expectedVersion);
+      const hold=await client.query(`SELECT h.id FROM holds h WHERE h.organisation_id=$1 AND h.site_id=$2 AND h.work_order_id=$3 AND h.id=$4
+        AND NOT EXISTS(SELECT 1 FROM work_order_hold_resolutions r WHERE r.organisation_id=h.organisation_id AND r.site_id=h.site_id AND r.work_order_id=h.work_order_id AND r.hold_id=h.id)`,[scope.organisationId,scope.siteId,id,holdId]);
+      if(!hold.rowCount) throw new ApiError(409,'HOLD_NOT_OPEN','This hold is no longer open. Refresh the work order.');
+      const evidence=await client.query(`SELECT e.id FROM evidence_records e JOIN work_order_evidence_links link
+          ON link.organisation_id=e.organisation_id AND link.site_id=e.site_id AND link.work_order_id=$3 AND link.evidence_id=e.id
+        JOIN LATERAL(SELECT a.verdict,a.scanned_sha256 FROM evidence_scan_attempts a WHERE a.organisation_id=e.organisation_id AND a.site_id=e.site_id AND a.evidence_id=e.id ORDER BY a.attempt_no DESC LIMIT 1) scan ON true
+        WHERE e.organisation_id=$1 AND e.site_id=$2 AND e.target_id=$3 AND e.purpose_kind='work-order' AND e.scan_state='accepted'
+          AND e.accepted_key IS NOT NULL AND scan.verdict='clean' AND scan.scanned_sha256=e.sha256 AND e.id=ANY($4::uuid[])
+        ORDER BY e.id`,[scope.organisationId,scope.siteId,id,body.evidenceIds]);
+      if(evidence.rowCount!==body.evidenceIds.length) throw new ApiError(409,'ACCEPTED_EVIDENCE_REQUIRED','Attach accepted, clean evidence to this work order before resolving the hold.');
+      const authorityDecision=holdResolutionDecisionSchema.parse(decision);
+      const resolutionId=randomUUID();
+      await client.query(`INSERT INTO work_order_hold_resolutions(id,organisation_id,site_id,work_order_id,hold_id,resolved_by,resolved_at,resolution,authority_decision)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,[resolutionId,scope.organisationId,scope.siteId,id,holdId,scope.actorId,authorityDecision.decidedAt,body.resolution,JSON.stringify(authorityDecision)]);
+      for(const evidenceId of body.evidenceIds) await client.query(`INSERT INTO work_order_hold_resolution_evidence(organisation_id,site_id,work_order_id,resolution_id,evidence_id) VALUES($1,$2,$3,$4,$5)`,[scope.organisationId,scope.siteId,id,resolutionId,evidenceId]);
+      return {aggregateId:id,aggregateType:'work-order',version:version+1,previous:{version,holdId,state:'open'},next:{version:version+1,holdId,resolutionId,state:'resolved',evidenceIds:body.evidenceIds},reason:body.resolution};
     },
     project:client=>detail(client,id),
   });

@@ -1,0 +1,35 @@
+{
+  "recordedAt": "2026-11-20T04:26:13.592Z",
+  "scope": "Synthetic API responses in Chromium; checklist evidence block, required reason, return/confirm actions, idempotency header, queue refresh and automated accessibility scan.",
+  "result": "PASS",
+  "browser": "Chromium 157.0.4341.60",
+  "reviews": [
+    {
+      "commandId": "b8d9bf1b-2dbc-44a8-9b44-fe91e6ddc7e2",
+      "body": {
+        "expectedChecklistVersion": 7,
+        "expectedWorkPlanRevisionId": "80000000-0000-4000-8000-000000000001",
+        "expectedAssignmentRevision": 1,
+        "outcomeRevisionId": "50000000-0000-4000-8000-000000000001",
+        "disposition": "returned-for-correction",
+        "reason": "Please attach the required evidence before this record is confirmed."
+      }
+    },
+    {
+      "commandId": "9c79f52c-88f6-47b8-932d-e33cb4578ad7",
+      "body": {
+        "expectedChecklistVersion": 8,
+        "expectedWorkPlanRevisionId": "80000000-0000-4000-8000-000000000001",
+        "expectedAssignmentRevision": 1,
+        "outcomeRevisionId": "50000000-0000-4000-8000-000000000002",
+        "disposition": "record-confirmed",
+        "reason": "The recorded result matches the attached inspection record."
+      }
+    }
+  ],
+  "axeViolations": 0,
+  "pageErrors": [],
+  "limitations": [
+    "This is UI verification with synthetic API responses. PostgreSQL review authorization, audit and transaction behavior are not proven by this run."
+  ]
+}

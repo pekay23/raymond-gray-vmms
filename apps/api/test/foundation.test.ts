@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { config as loadEnv } from 'dotenv';
 import pg from 'pg';
 import { z } from 'zod';
-import { createApp } from '../src/app.js';
+import { createApp } from '../src/routes.js';
 import { lockWorkOrderRoot, runStaffCommand } from '../src/commands.js';
 import { makePool,scoped } from '../src/db.js';
 import { hashPassword } from '../src/identity.js';
@@ -15,6 +15,7 @@ import { detailSchema } from '../src/schemas.js';
 import { controlledDocumentListSchema } from '../src/controlled-documents.js';
 import { readWorkOrderChecklists } from '../src/work-order-checklists.js';
 import { checklistOutcomeInputSchema, validateOutcomeAgainstItemRules } from '../src/work-order-checklist-outcomes.js';
+import { readChecklistReviewQueue } from '../src/work-order-checklist-reviews.js';
 import { createVehicleLearningAssessment } from '../src/vehicle-learning-assessment.js';
 import { assignServiceRequest, claimServiceRequest, closeServiceRequest, contactAttemptSchema, correctServiceRequestContact, createServiceRequest, linkServiceRequestToWorkOrder, listRequestAssignees, listServiceRequests, listWorkOrderRequests, readServiceRequest, readServiceRequestContacts, readServiceRequestStatusHistory, recordServiceRequestContact, reopenServiceRequest, serviceRequestInputSchema, unlinkServiceRequest } from '../src/service-requests.js';
 import { assignTeamLead, handoffToSupervisor } from '../src/workshop.js';
@@ -33,12 +34,13 @@ const testRuntimeUrl=new URL(runtimeUrl);testRuntimeUrl.pathname=`/${name}`;
 const admin=new pg.Pool({connectionString:testOwnerUrl.toString()});
 const runtime=makePool(testRuntimeUrl.toString());
 const orgA=randomUUID(),orgB=randomUUID(),siteA=randomUUID(),siteA2=randomUUID(),siteB=randomUUID(),actorA=randomUUID(),actorB=randomUUID(),operatorA=randomUUID(),reader=randomUUID(),workerA=randomUUID(),workforceConcurrencyUser=randomUUID(),ownerAccountA=randomUUID(),ownerAccountB=randomUUID(),ownerAccountC=randomUUID(),ownerEvidence=randomUUID(),documentId=randomUUID(),documentRevisionId=randomUUID(),documentEvidenceId=randomUUID(),documentIntentId=randomUUID(),draftDocumentId=randomUUID(),draftRevisionId=randomUUID(),draftEvidenceId=randomUUID(),draftIntentId=randomUUID();
-const learningReviewer=randomUUID(),learningReviewerPlacementId=randomUUID(),learningReviewerGrantId=randomUUID();
+const learningReviewer=randomUUID(),learningReviewerPlacementId=randomUUID(),learningReviewerGrantId=randomUUID(),workOrderReader=randomUUID(),workOrderReaderPlacementId=randomUUID();
+const otherSiteStaff=randomUUID(),otherSiteStaffPlacementId=randomUUID();
 const password='Synthetic-test-account-7392';
 const origin='http://127.0.0.1:5173';
-const config:Config={DATABASE_URL:testRuntimeUrl.toString(),SESSION_SECRET:'test-session-secret-must-be-at-least-32-characters',WEB_ORIGIN:origin,OIDC_ISSUER:'http://localhost:8080/realms/raymond-gray-dev',OIDC_CLIENT_ID:'vmms-web-dev',OIDC_CALLBACK_URL:'http://127.0.0.1:4100/api/v1/auth/oidc/callback',OIDC_LOGOUT_CALLBACK_URL:'http://127.0.0.1:4100/api/v1/auth/oidc/logout/callback',TRUSTED_PROXY_CIDRS:['127.0.0.1'],PORT:4100,HOST:'127.0.0.1',NODE_ENV:'test',STAFF_MESSAGES_ENABLED:true};
+const config:Config={DATABASE_URL:testRuntimeUrl.toString(),SESSION_SECRET:'test-session-secret-must-be-at-least-32-characters',WEB_ORIGIN:origin,OIDC_ISSUER:'http://localhost:8080/realms/raymond-gray-dev',OIDC_CLIENT_ID:'vmms-web-dev',OIDC_REQUIRE_MFA_ASSURANCE:false,OIDC_CALLBACK_URL:'http://127.0.0.1:4100/api/v1/auth/oidc/callback',OIDC_LOGOUT_CALLBACK_URL:'http://127.0.0.1:4100/api/v1/auth/oidc/logout/callback',TRUSTED_PROXY_CIDRS:['127.0.0.1'],PORT:4100,HOST:'127.0.0.1',NODE_ENV:'test',STAFF_MESSAGES_ENABLED:true};
 let app:Awaited<ReturnType<typeof createApp>>;
-let jarA:Record<string,string>={},jarB:Record<string,string>={};
+let jarA:Record<string,string>={},jarB:Record<string,string>={},otherSiteJar:Record<string,string>={};
 let learningReviewerJar:Record<string,string>={};
 let operatorPlacementId:string;
 let orderA:z.infer<typeof detailSchema>;
@@ -149,15 +151,27 @@ before(async()=>{
   const hash=await hashPassword(password);
   await admin.query('INSERT INTO staff_users(id,username,display_name,password_hash) VALUES($1,$2,$3,$4),($5,$6,$7,$4),($8,$9,$10,$4),($11,$12,$13,$4),($14,$15,$16,$4),($17,$18,$19,$4)',[actorA,'test-advisor-a','Advisor A',hash,actorB,'test-advisor-b','Advisor B',reader,'test-reader','Reader',workerA,'test-worker-a','Worker A',operatorA,'test-operator-a','Operator A',workforceConcurrencyUser,'test-workforce-concurrency','Workforce Concurrency']);
   await admin.query('INSERT INTO staff_users(id,username,display_name,password_hash) VALUES($1,$2,$3,$4)',[learningReviewer,'test-learning-reviewer','Synthetic Learning Reviewer',hash]);
+  await admin.query('INSERT INTO staff_users(id,username,display_name,password_hash) VALUES($1,$2,$3,$4)',[workOrderReader,'test-work-order-reader','Synthetic Read-only Work-order Staff',hash]);
+  await admin.query('INSERT INTO staff_users(id,username,display_name,password_hash) VALUES($1,$2,$3,$4)',[otherSiteStaff,'test-other-site-head','Synthetic Other-site Head',hash]);
   await admin.query('INSERT INTO staff_identities(issuer,subject,staff_user_id) VALUES($1,$2,$3)',[config.OIDC_ISSUER,'synthetic-advisor-subject',actorA]);
   await admin.query('INSERT INTO memberships(user_id,site_id,can_write) VALUES($1,$2,true),($1,$3,true),($4,$5,true),($6,$2,false),($7,$2,true),($8,$2,true),($9,$2,true)',[actorA,siteA,siteA2,actorB,siteB,reader,workerA,operatorA,workforceConcurrencyUser]);
   await admin.query('INSERT INTO memberships(user_id,site_id,can_write) VALUES($1,$2,true)',[learningReviewer,siteA]);
+  await admin.query('INSERT INTO memberships(user_id,site_id,can_write) VALUES($1,$2,false)',[workOrderReader,siteA]);
+  await admin.query('INSERT INTO memberships(user_id,site_id,can_write) VALUES($1,$2,true)',[otherSiteStaff,siteA2]);
   hscPlacementId=randomUUID();
   await admin.query(`INSERT INTO aggregate_roots(id,organisation_id,site_id,aggregate_type) VALUES($1,$2,$3,'staff-role-placement')`,[hscPlacementId,orgA,siteA]);
   await admin.query(`INSERT INTO staff_role_placements(id,organisation_id,site_id,staff_user_id,role_code,created_by,updated_by)
     VALUES($1,$2,$3,$4,'head-service-centre',$4,$4)`,[hscPlacementId,orgA,siteA,actorA]);
   await admin.query(`INSERT INTO staff_role_placement_history(organisation_id,site_id,placement_id,revision,staff_user_id,role_code,state,changed_by)
     VALUES($1,$2,$3,1,$4,'head-service-centre','active',$4)`,[orgA,siteA,hscPlacementId,actorA]);
+  await admin.query(`INSERT INTO aggregate_roots(id,organisation_id,site_id,aggregate_type) VALUES($1,$2,$3,'staff-role-placement')`,[otherSiteStaffPlacementId,orgA,siteA2]);
+  await admin.query(`INSERT INTO staff_role_placements(id,organisation_id,site_id,staff_user_id,role_code,created_by,updated_by) VALUES($1,$2,$3,$4,'head-service-centre',$5,$5)`,[otherSiteStaffPlacementId,orgA,siteA2,otherSiteStaff,otherSiteStaff]);
+  await admin.query(`INSERT INTO staff_role_placement_history(organisation_id,site_id,placement_id,revision,staff_user_id,role_code,state,changed_by) VALUES($1,$2,$3,1,$4,'head-service-centre','active',$5)`,[orgA,siteA2,otherSiteStaffPlacementId,otherSiteStaff,otherSiteStaff]);
+  await admin.query(`INSERT INTO aggregate_roots(id,organisation_id,site_id,aggregate_type) VALUES($1,$2,$3,'staff-role-placement')`,[workOrderReaderPlacementId,orgA,siteA]);
+  await admin.query(`INSERT INTO staff_role_placements(id,organisation_id,site_id,staff_user_id,role_code,created_by,updated_by)
+    VALUES($1,$2,$3,$4,'quality-inspector',$5,$5)`,[workOrderReaderPlacementId,orgA,siteA,workOrderReader,actorA]);
+  await admin.query(`INSERT INTO staff_role_placement_history(organisation_id,site_id,placement_id,revision,staff_user_id,role_code,state,changed_by)
+    VALUES($1,$2,$3,1,$4,'quality-inspector','active',$5)`,[orgA,siteA,workOrderReaderPlacementId,workOrderReader,actorA]);
   await admin.query(`INSERT INTO aggregate_roots(id,organisation_id,site_id,aggregate_type) VALUES($1,$2,$3,'staff-role-placement')`,[learningReviewerPlacementId,orgA,siteA]);
   await admin.query(`INSERT INTO staff_role_placements(id,organisation_id,site_id,staff_user_id,role_code,created_by,updated_by)
     VALUES($1,$2,$3,$4,'technician-engineer-trainee',$5,$5)`,[learningReviewerPlacementId,orgA,siteA,learningReviewer,actorA]);
@@ -227,7 +241,7 @@ before(async()=>{
     if(token!=='synthetic-signed-logout'||!logoutEventForTest) throw new Error('Invalid synthetic logout token.');
     return logoutEventForTest;
   },admin);
-    jarA=await signIn('test-advisor-a');jarB=await signIn('test-advisor-b');learningReviewerJar=await signIn('test-learning-reviewer');
+    jarA=await signIn('test-advisor-a');jarB=await signIn('test-advisor-b');otherSiteJar=await signIn('test-other-site-head');learningReviewerJar=await signIn('test-learning-reviewer');
 });
 
 test('vehicle learning review is separately granted, site-scoped and version-bound',async()=>{
@@ -820,8 +834,11 @@ test('checklist availability is exact-vehicle scoped, staff-only, audited and fa
   [grantId,orgA,siteA,actorA]);
   await admin.query(`INSERT INTO public.workshop_checklist_template_revisions
     (id,organisation_id,site_id,template_code,revision,kind,vehicle_make,vehicle_model,vehicle_variant,powertrain,items)
-    VALUES($1,$2,$3,$4,1,'pdi',$5,$6,$7,$8,$9::jsonb)`,
-  [templateId,orgA,siteA,templateCode,orderA.vehicle.make,orderA.vehicle.model,orderA.vehicle.variant,orderA.vehicle.powertrain,JSON.stringify([{id:'visual-review',label:'Synthetic source-backed item'}])]);
+    VALUES($1,$2,$3,$4,1,'routine-maintenance',$5,$6,$7,$8,$9::jsonb)`,
+  [templateId,orgA,siteA,templateCode,orderA.vehicle.make,orderA.vehicle.model,orderA.vehicle.variant,orderA.vehicle.powertrain,JSON.stringify([
+    {id:'visual-review',label:'Synthetic source-backed item',classification:{systemCode:'SYNTHETIC.BODY',taskClassCode:'SYNTHETIC.VISUAL-CHECK'},requiredQualifications:['SYNTHETIC-QA']},
+    {id:'second-review',label:'Synthetic second item',classification:{systemCode:'SYNTHETIC.BODY',taskClassCode:'SYNTHETIC.SECOND-CHECK'},requiredQualifications:['SYNTHETIC-QA']},
+  ])]);
   await admin.query(`INSERT INTO public.workshop_checklist_template_sources
     (organisation_id,site_id,template_revision_id,source_revision_id) VALUES($1,$2,$3,$4)`,
   [orgA,siteA,templateId,documentRevisionId]);
@@ -832,6 +849,76 @@ test('checklist availability is exact-vehicle scoped, staff-only, audited and fa
   const approved=await app.inject({url:path,headers:headers(jarA)});
   assert.equal(approved.statusCode,200,approved.body);
   assert.deepEqual(approved.json().availableTemplates.map((template:{code:string})=>template.code),[templateCode]);
+  assert.equal(approved.json().canPrepare,false,'A published template alone does not grant checklist preparation.');
+  const expectedWorkOrderVersion=approved.json().workOrderVersion as number;
+  const preparePath=path;
+  const prepareBody={expectedWorkOrderVersion,templateRevisionId:templateId,scheduleBasis:'unknown'};
+  const deniedPrepare=await app.inject({method:'POST',url:preparePath,headers:headers(jarA),payload:prepareBody});
+  assert.equal(deniedPrepare.statusCode,403,deniedPrepare.body);
+  assert.equal(deniedPrepare.json().error.code,'CHECKLIST_PREPARATION_AUTHORITY_REQUIRED');
+  const prepareGrantId=randomUUID();
+  await admin.query(`INSERT INTO public.staff_authority_grants
+    (id,organisation_id,site_id,staff_user_id,capability,grant_revision,granted_by,basis_reference,valid_from,valid_until)
+    VALUES($1,$2,$3,$4,'work-order.checklist.prepare',1,$4,'Synthetic test grant',now()-interval '1 minute',now()+interval '1 hour')`,
+  [prepareGrantId,orgA,siteA,actorA]);
+  const preparedRead=await app.inject({url:path,headers:headers(jarA)});
+  assert.equal(preparedRead.statusCode,200,preparedRead.body);
+  assert.equal(preparedRead.json().canPrepare,true);
+  const commandId=randomUUID();
+  const prepared=await app.inject({method:'POST',url:preparePath,headers:headers(jarA,commandId),payload:prepareBody});
+  assert.equal(prepared.statusCode,200,prepared.body);
+  assert.equal(prepared.json().checklist.state,'draft');
+  assert.equal(prepared.json().checklist.scheduleBasis,'unknown');
+  assert.equal(prepared.json().checklist.templateRevisionId,templateId);
+  const checklistId=prepared.json().checklist.id as string;
+  const preparedRows=await admin.query(`SELECT checklist.state,checklist.schedule_basis AS "scheduleBasis",
+      checklist.vehicle_snapshot AS "vehicleSnapshot",checklist.created_by_placement_id AS "placementId",
+      checklist.preparation_authority_snapshot AS "authoritySnapshot",count(item.id)::int AS "itemCount"
+    FROM public.work_order_checklists checklist LEFT JOIN public.work_order_checklist_items item
+      ON item.organisation_id=checklist.organisation_id AND item.site_id=checklist.site_id
+      AND item.work_order_id=checklist.work_order_id AND item.checklist_id=checklist.id
+    WHERE checklist.organisation_id=$1 AND checklist.site_id=$2 AND checklist.work_order_id=$3 AND checklist.id=$4
+    GROUP BY checklist.id`,[orgA,siteA,orderA.id,checklistId]);
+  assert.equal(preparedRows.rows[0]?.state,'draft');
+  assert.equal(preparedRows.rows[0]?.scheduleBasis,'unknown');
+  assert.equal(preparedRows.rows[0]?.vehicleSnapshot.vin,orderA.vehicle.vin);
+  assert.ok(preparedRows.rows[0]?.placementId);
+  assert.equal(preparedRows.rows[0]?.authoritySnapshot.capability,'work-order.checklist.prepare');
+  assert.equal(preparedRows.rows[0]?.itemCount,2);
+  const reportPath=`/api/v1/sites/${siteA}/work-orders/${orderA.id}/checklists/${checklistId}/report`;
+  const firstReport=await app.inject({url:`${reportPath}?page=1&pageSize=1`,headers:headers(jarA)});
+  assert.equal(firstReport.statusCode,200,firstReport.body);
+  assert.equal(firstReport.headers['cache-control'],'no-store');
+  assert.equal(firstReport.json().checklist.state,'draft');
+  assert.equal(firstReport.json().checklist.version,1);
+  assert.equal(firstReport.json().summary.totalItems,2);
+  assert.equal(firstReport.json().summary.notChecked,2);
+  assert.equal(firstReport.json().items.length,1);
+  assert.equal(firstReport.json().items[0]?.result,null);
+  assert.equal(firstReport.json().checklist.sources[0]?.current,true);
+  const secondReport=await app.inject({url:`${reportPath}?page=2&pageSize=1&expectedChecklistVersion=1`,headers:headers(jarA)});
+  assert.equal(secondReport.statusCode,200,secondReport.body);
+  assert.equal(secondReport.json().items.length,1);
+  assert.notEqual(secondReport.json().items[0]?.id,firstReport.json().items[0]?.id);
+  const staleReport=await app.inject({url:`${reportPath}?expectedChecklistVersion=2`,headers:headers(jarA)});
+  assert.equal(staleReport.statusCode,409,staleReport.body);
+  assert.equal(staleReport.json().error.code,'CHECKLIST_REPORT_CHANGED');
+  const reportAudit=await admin.query(`SELECT count(*)::int AS count FROM sensitive_read_events
+    WHERE actor_id=$1 AND site_id=$2 AND action='work-order-checklist-report-read-prepared'`,[actorA,siteA]);
+  assert.equal(reportAudit.rows[0]?.count,2);
+  const otherSiteReport=await app.inject({url:`/api/v1/sites/${siteB}/work-orders/${orderA.id}/checklists/${checklistId}/report`,headers:headers(jarB)});
+  assert.equal(otherSiteReport.statusCode,404,otherSiteReport.body);
+  const readerReport=await app.inject({url:reportPath,headers:headers(readerJar)});
+  assert.equal(readerReport.statusCode,403,readerReport.body);
+  const prepareReplay=await app.inject({method:'POST',url:preparePath,headers:headers(jarA,commandId),payload:prepareBody});
+  assert.equal(prepareReplay.statusCode,200,prepareReplay.body);
+  assert.deepEqual(prepareReplay.json(),prepared.json());
+  const prepareChangedBody=await app.inject({method:'POST',url:preparePath,headers:headers(jarA,commandId),payload:{...prepareBody,scheduleBasis:'customer-request'}});
+  assert.equal(prepareChangedBody.statusCode,409,prepareChangedBody.body);
+  assert.equal(prepareChangedBody.json().error.code,'IDEMPOTENCY_CONFLICT');
+  const duplicatePrepare=await app.inject({method:'POST',url:preparePath,headers:headers(jarA),payload:prepareBody});
+  assert.equal(duplicatePrepare.statusCode,409,duplicatePrepare.body);
+  assert.equal(duplicatePrepare.json().error.code,'CHECKLIST_ALREADY_PREPARED');
 
   const invalidDocumentId=randomUUID(),invalidRevisionId=randomUUID(),invalidEvidenceId=randomUUID(),invalidIntentId=randomUUID();
   await admin.query(`INSERT INTO public.controlled_documents(id,organisation_id,site_id,reference,created_by)
@@ -917,6 +1004,9 @@ test('routine checklist outcomes require an assigned task and complete source bi
     `UPDATE public.work_order_checklists SET state='approved',version=version+1 WHERE id=$1`,[checklistId])),/permission denied/i);
   await assert.rejects(admin.query('UPDATE public.work_order_checklist_items SET item_code=$1 WHERE id=$2',['changed',itemId]),{code:'55000'});
   const outcomePath=`/api/v1/sites/${siteA}/my-tasks/${orderA.id}/${randomUUID()}/checklists/${checklistId}/items/${itemId}/outcomes`;
+  const checklistRead=await app.inject({url:`/api/v1/sites/${siteA}/my-tasks/${orderA.id}/${randomUUID()}/checklists`,headers:headers(jarA)});
+  assert.equal(checklistRead.statusCode,409,checklistRead.body);
+  assert.equal(checklistRead.json().error.code,'CURRENT_TASK_ASSIGNMENT_REQUIRED','Checklist item definitions must be read through the current assigned task.');
   const denied=await app.inject({method:'POST',url:outcomePath,headers:headers(jarA),payload:{
     expectedChecklistVersion:1,expectedWorkPlanRevisionId:randomUUID(),expectedAssignmentRevision:1,
     result:'not-checked',reason:'Synthetic assignment missing.',applicabilityReason:null,comments:null,measurement:null,evidenceIds:[],supersedesRevisionId:null,correctionReason:null,
@@ -930,13 +1020,14 @@ test('checklist outcome rules accept only source-bound synthetic requirements an
     result:'completed',reason:null,applicabilityReason:null,comments:'Synthetic observed value.',
     measurement:{field:'tire-pressure',value:'240',unit:'kPa'},evidenceIds:[randomUUID()],supersedesRevisionId:null,correctionReason:null});
   assert.equal(validateOutcomeAgainstItemRules(valid,{id:'synthetic-pressure',label:'Synthetic configured measurement',
+    classification:{systemCode:'SYNTHETIC.TIRE',taskClassCode:'SYNTHETIC.PRESSURE-CHECK'},
     requiredQualifications:['EV-MAINTENANCE-LEVEL-1'],evidenceRequired:true,measurementRule:{field:'tire-pressure',unit:'kPa',required:true}}).measurementRule?.unit,'kPa');
-  assert.throws(()=>validateOutcomeAgainstItemRules({...valid,evidenceIds:[]},{id:'synthetic-pressure',requiredQualifications:['EV-MAINTENANCE-LEVEL-1'],evidenceRequired:true}),
+  assert.throws(()=>validateOutcomeAgainstItemRules({...valid,evidenceIds:[]},{id:'synthetic-pressure',classification:{systemCode:'SYNTHETIC.TIRE',taskClassCode:'SYNTHETIC.PRESSURE-CHECK'},requiredQualifications:['EV-MAINTENANCE-LEVEL-1'],evidenceRequired:true}),
     (error:unknown)=>(error as {code?:string}).code==='CHECKLIST_EVIDENCE_REQUIRED');
-  assert.throws(()=>validateOutcomeAgainstItemRules({...valid,measurement:null},{id:'synthetic-pressure',requiredQualifications:['EV-MAINTENANCE-LEVEL-1'],measurementRule:{field:'tire-pressure',unit:'kPa',required:true}}),
+  assert.throws(()=>validateOutcomeAgainstItemRules({...valid,measurement:null},{id:'synthetic-pressure',classification:{systemCode:'SYNTHETIC.TIRE',taskClassCode:'SYNTHETIC.PRESSURE-CHECK'},requiredQualifications:['EV-MAINTENANCE-LEVEL-1'],measurementRule:{field:'tire-pressure',unit:'kPa',required:true}}),
     (error:unknown)=>(error as {code?:string}).code==='CHECKLIST_MEASUREMENT_REQUIRED');
   assert.throws(()=>validateOutcomeAgainstItemRules({...valid,result:'not-applicable',reason:'The procedure does not apply.',applicabilityReason:'Vehicle variant excludes this step.'},
-    {id:'synthetic-pressure',requiredQualifications:['EV-MAINTENANCE-LEVEL-1']}),
+    {id:'synthetic-pressure',classification:{systemCode:'SYNTHETIC.TIRE',taskClassCode:'SYNTHETIC.PRESSURE-CHECK'},requiredQualifications:['EV-MAINTENANCE-LEVEL-1']}),
     (error:unknown)=>(error as {code?:string}).code==='CHECKLIST_NOT_APPLICABLE_NOT_ALLOWED');
   assert.throws(()=>validateOutcomeAgainstItemRules(valid,{id:'synthetic-pressure'}),
     (error:unknown)=>(error as {code?:string}).code==='CHECKLIST_MODEL_RULES_INCOMPLETE');
@@ -945,9 +1036,17 @@ test('checklist outcome rules accept only source-bound synthetic requirements an
       reason:result==='completed'?null:`Synthetic ${result} reason.`,
       applicabilityReason:result==='not-applicable'?'Synthetic applicability review.':null,
       measurement:null,evidenceIds:[]});
-    assert.equal(validateOutcomeAgainstItemRules(candidate,{id:'synthetic-outcome',requiredQualifications:['EV-MAINTENANCE-LEVEL-1'],notApplicableAllowed:true}).id,'synthetic-outcome');
+    assert.equal(validateOutcomeAgainstItemRules(candidate,{id:'synthetic-outcome',classification:{systemCode:'SYNTHETIC.TIRE',taskClassCode:'SYNTHETIC.PRESSURE-CHECK'},requiredQualifications:['EV-MAINTENANCE-LEVEL-1'],notApplicableAllowed:true}).id,'synthetic-outcome');
   }
   assert.equal(checklistOutcomeInputSchema.safeParse({...valid,result:'not-applicable',reason:'Needs an applicability reason.',applicabilityReason:null}).success,false);
+});
+
+test('checklist review queue reveals no items when the Head lacks the action-specific review grant',async()=>{
+  const queue=await readChecklistReviewQueue(runtime,{actorId:actorA,organisationId:orgA,siteId:siteA},randomUUID(),1,10);
+  assert.equal(queue.canReview,false);
+  assert.equal(queue.blockReason,'authority-required');
+  assert.deepEqual(queue.items,[]);
+  assert.deepEqual(queue.pagination,{page:1,pageSize:10,totalItems:0,totalPages:0});
 });
 
 test('repeat intake reuses explicitly selected same-site parties and rejects cross-site selection',async()=>{
@@ -965,12 +1064,12 @@ test('repeat intake reuses explicitly selected same-site parties and rejects cro
 
 test('work-order detail reads append scoped metadata events for writable and read-only staff only',async()=>{
   const beforeCount=Number((await admin.query('SELECT count(*)::int AS count FROM work_order_read_events WHERE work_order_id=$1',[orderA.id])).rows[0]?.count);
-  const readerJar=await signIn('test-reader');
+  const readerJar=await signIn('test-work-order-reader');
   const first=await app.inject({url:`/api/v1/sites/${siteA}/work-orders/${orderA.id}`,headers:headers(jarA)});
   const second=await app.inject({url:`/api/v1/sites/${siteA}/work-orders/${orderA.id}`,headers:headers(readerJar)});
   assert.equal(first.statusCode,200,first.body);assert.equal(second.statusCode,200,second.body);
   const events=await admin.query('SELECT actor_id,action,projection_revision,work_order_version,request_id FROM work_order_read_events WHERE work_order_id=$1 ORDER BY created_at DESC LIMIT 2',[orderA.id]);
-  assert.equal(events.rows.length,2);assert.deepEqual(new Set(events.rows.map(row=>row.actor_id)),new Set([actorA,reader]));
+  assert.equal(events.rows.length,2);assert.deepEqual(new Set(events.rows.map(row=>row.actor_id)),new Set([actorA,workOrderReader]));
   assert.ok(events.rows.every(row=>row.action==='detail-read-prepared'&&row.projection_revision===1&&row.work_order_version===orderA.version));
   assert.notEqual(events.rows[0]?.request_id,events.rows[1]?.request_id);
   const denied=await app.inject({url:`/api/v1/sites/${siteB}/work-orders/${orderA.id}`,headers:headers(jarB)});
@@ -994,7 +1093,7 @@ test('work-order detail reads append scoped metadata events for writable and rea
 });
 
 test('staff queues and directory lookups audit returned metadata without retaining query values',async()=>{
-  const readerJar=await signIn('test-reader');
+  const readerJar=await signIn('test-work-order-reader');
   const searchSentinel='AUDIT-QUERY-SENTINEL-92741';
   const vinSentinel='WVWZZZ1JZXW000001';
   const clientQuery=orderA.client!.name;
@@ -1033,10 +1132,10 @@ test('staff queues and directory lookups audit returned metadata without retaini
     assert.ok(matching,`unexpected event ${JSON.stringify(event)}`);
     assert.equal(event.projection_revision,1);
     assert.match(event.request_id,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
-    assert.ok([actorA,reader].includes(event.actor_id));
+    assert.ok([actorA,workOrderReader].includes(event.actor_id));
   }
   for (const request of requests) assert.equal(events.rows.filter(event=>event.action===request.action&&event.result_count===request.count).length,2);
-  for (const actor of [actorA,reader]) assert.equal(events.rows.filter(event=>event.actor_id===actor).length,requests.length);
+  for (const actor of [actorA,workOrderReader]) assert.equal(events.rows.filter(event=>event.actor_id===actor).length,requests.length);
   assert.equal(new Set(events.rows.map(event=>event.request_id)).size,events.rows.length);
   assert.equal(JSON.stringify(events.rows).includes(searchSentinel),false);
   assert.equal(JSON.stringify(events.rows).includes(vinSentinel),false);
@@ -1124,10 +1223,28 @@ test('work-order queue paginates the site-filtered result set and keeps search s
   assert.deepEqual(heldQueue.json().items.map((item:{id:string})=>item.id),[heldOrder.id]);
   const invalidQueue=await app.inject({url:`/api/v1/sites/${siteA}/work-orders?queue=unknown`,headers:headers(jarA)});
   assert.equal(invalidQueue.statusCode,400);
-  const otherSite=await app.inject({url:`/api/v1/sites/${siteA2}/work-orders?page=1&pageSize=1`,headers:headers(jarA)});
+  const otherSite=await app.inject({url:`/api/v1/sites/${siteA2}/work-orders?page=1&pageSize=1`,headers:headers(otherSiteJar)});
   assert.equal(otherSite.statusCode,200,otherSite.body);assert.equal(otherSite.json().pagination.totalItems,0);assert.deepEqual(otherSite.json().items,[]);
   const invalidPage=await app.inject({url:`/api/v1/sites/${siteA}/work-orders?page=0`,headers:headers(jarA)});
   assert.equal(invalidPage.statusCode,400);
+});
+
+test('site membership without an active work-order role cannot read work-order routes directly',async()=>{
+  const noRoleJar=await signIn('test-reader');
+  const routes=[
+    `/api/v1/sites/${siteA}/work-orders`,
+    `/api/v1/sites/${siteA}/work-orders/${orderA.id}`,
+    `/api/v1/sites/${siteA}/work-orders/${orderA.id}/checklists`,
+    `/api/v1/sites/${siteA}/work-orders/${orderA.id}/checklists/${randomUUID()}/report`,
+    `/api/v1/sites/${siteA}/work-orders/${orderA.id}/scope-proposals`,
+    `/api/v1/sites/${siteA}/work-orders/${orderA.id}/service-report`,
+    `/api/v1/sites/${siteA}/work-orders/${orderA.id}/source-reports`,
+  ];
+  for(const url of routes){
+    const response=await app.inject({url,headers:headers(noRoleJar)});
+    assert.equal(response.statusCode,403,`${url}: ${response.body}`);
+    assert.equal(response.json().error.code,'WORK_ORDER_ROLE_REQUIRED',url);
+  }
 });
 
 test('team lead assignment requires scoped Operations grant and active class qualification; replay is idempotent',async()=>{
@@ -1138,6 +1255,10 @@ test('team lead assignment requires scoped Operations grant and active class qua
   const lead=randomUUID();
   await admin.query('INSERT INTO staff_users(id,username,display_name,password_hash) VALUES($1,$2,$3,$4)',[lead,`test-lead-${lead}`,'Synthetic EV Lead',await hashPassword(password)]);
   await admin.query('INSERT INTO memberships(user_id,site_id,can_write) VALUES($1,$2,true)',[lead,siteA]);
+  const leadPlacementId=randomUUID();
+  await admin.query(`INSERT INTO aggregate_roots(id,organisation_id,site_id,aggregate_type) VALUES($1,$2,$3,'staff-role-placement')`,[leadPlacementId,orgA,siteA]);
+  await admin.query(`INSERT INTO staff_role_placements(id,organisation_id,site_id,staff_user_id,role_code,created_by,updated_by) VALUES($1,$2,$3,$4,'ev-team-lead',$5,$5)`,[leadPlacementId,orgA,siteA,lead,actorA]);
+  await admin.query(`INSERT INTO staff_role_placement_history(organisation_id,site_id,placement_id,revision,staff_user_id,role_code,state,changed_by) VALUES($1,$2,$3,1,$4,'ev-team-lead','active',$5)`,[orgA,siteA,leadPlacementId,lead,actorA]);
   if(orderA.complaints.length===0){
     const complaint=await app.inject({method:'POST',url:`/api/v1/sites/${siteA}/work-orders/${orderA.id}/complaints`,headers:headers(jarA),payload:{expectedVersion:orderA.version,wording:'Synthetic proposed work for team-lead assignment coverage.'}});
     assert.equal(complaint.statusCode,200,complaint.body);orderA=detailSchema.parse(complaint.json());
@@ -1258,6 +1379,10 @@ test('team lead assignment requires scoped Operations grant and active class qua
   const supervisor=randomUUID();
   await admin.query('INSERT INTO staff_users(id,username,display_name,password_hash) VALUES($1,$2,$3,$4)',[supervisor,`test-supervisor-${supervisor}`,'Synthetic EV Supervisor',await hashPassword(password)]);
   await admin.query('INSERT INTO memberships(user_id,site_id,can_write) VALUES($1,$2,true)',[supervisor,siteA]);
+  const supervisorPlacementId=randomUUID();
+  await admin.query(`INSERT INTO aggregate_roots(id,organisation_id,site_id,aggregate_type) VALUES($1,$2,$3,'staff-role-placement')`,[supervisorPlacementId,orgA,siteA]);
+  await admin.query(`INSERT INTO staff_role_placements(id,organisation_id,site_id,staff_user_id,role_code,created_by,updated_by) VALUES($1,$2,$3,$4,'supervisor',$5,$5)`,[supervisorPlacementId,orgA,siteA,supervisor,actorA]);
+  await admin.query(`INSERT INTO staff_role_placement_history(organisation_id,site_id,placement_id,revision,staff_user_id,role_code,state,changed_by) VALUES($1,$2,$3,1,$4,'supervisor','active',$5)`,[orgA,siteA,supervisorPlacementId,supervisor,actorA]);
   await admin.query('INSERT INTO staff_authority_grants(id,organisation_id,site_id,staff_user_id,capability,grant_revision,granted_by,basis_reference,valid_from) VALUES($1,$2,$3,$4,\'work-order.handoff-supervisor\',1,$5,$6,now()-interval \'1 minute\')',[randomUUID(),orgA,siteA,lead,actorA,'Synthetic test-only handoff grant']);
   await admin.query('INSERT INTO staff_qualifications(id,organisation_id,site_id,staff_user_id,qualification_code,qualification_revision,state,evidence_reference,assessed_by,assessed_at,valid_from,valid_until,powertrain_classes) VALUES($1,$2,$3,$4,\'EV-SUPERVISOR\',1,\'accepted\',\'synthetic-test-evidence\',$5,now(),now()-interval \'1 minute\',now()+interval \'1 day\',ARRAY[\'EV\'])',[randomUUID(),orgA,siteA,supervisor,actorA]);
   const supervisorJar=await signIn(`test-lead-${lead}`);
@@ -1425,7 +1550,7 @@ test('command runner locks target roots before grants and rechecks grants before
   const denied=app.inject({method:'POST',url:reviewUrl,headers:headers(jarA,deniedKey),payload:{expectedVersion:target.version,notes:'Race test: grant expired while target root was locked.'}});
   let waitingForRoot=false;
   try {
-    for(let attempt=0;attempt<100;attempt++) {
+    for(let attempt=0;attempt<500;attempt++) {
       const activity=await admin.query(`SELECT EXISTS(SELECT 1 FROM pg_stat_activity
         WHERE datname=current_database() AND wait_event_type='Lock'
           AND position('SELECT id FROM work_orders WHERE organisation_id=' in query)>0) AS waiting`);
@@ -1520,7 +1645,7 @@ test('site-local VIN lookup supports an explicit repeat visit without changing v
   const originalAssociation=await admin.query('SELECT customer_id FROM vehicles WHERE id=$1',[original.vehicle.id]);
   const lookup=await app.inject({url:`/api/v1/sites/${siteA}/vehicles/lookup?vin=${original.vehicle.vin}`,headers:headers(jarA)});
   assert.equal(lookup.statusCode,200,lookup.body);assert.equal(lookup.json().id,original.vehicle.id);assert.equal(lookup.json().variant,'Touring');assert.equal(lookup.json().powertrain,'Battery electric');
-  const otherSite=await app.inject({url:`/api/v1/sites/${siteA2}/vehicles/lookup?vin=${original.vehicle.vin}`,headers:headers(jarA)});
+  const otherSite=await app.inject({url:`/api/v1/sites/${siteA2}/vehicles/lookup?vin=${original.vehicle.vin}`,headers:headers(otherSiteJar)});
   assert.equal(otherSite.statusCode,200,otherSite.body);assert.equal(otherSite.json(),null);
   const replayBody={...intake(),client:{kind:'existing' as const,partyId:original.client!.id},visitContact:{kind:'new' as const,name:'Different Visit Contact',phone:'+233200000099',email:''},vehicle:{kind:'existing' as const,vehicleId:original.vehicle.id},powertrainClass:'ICE' as const,warrantyStatus:'confirmed' as const,warrantyConfirmationNote:'Synthetic warranty portal confirmation 2026-11-08',complaint:'A later visit with a separate contact.'};
   const repeat=await app.inject({method:'POST',url:`/api/v1/sites/${siteA}/intake-drafts`,headers:headers(jarA),payload:replayBody});
@@ -1540,7 +1665,7 @@ test('site-local VIN lookup supports an explicit repeat visit without changing v
   try {
     const sameSiteDetail=await app.inject({url:`/api/v1/sites/${siteA}/work-orders/${next.id}`,headers:headers(jarA)});
     assert.equal(sameSiteDetail.statusCode,200,sameSiteDetail.body);assert.equal(detailSchema.parse(sameSiteDetail.json()).vehicleHistory.length,2);
-    const otherSiteDetail=await app.inject({url:`/api/v1/sites/${siteA2}/work-orders/${foreignOrderId}`,headers:headers(jarA)});
+    const otherSiteDetail=await app.inject({url:`/api/v1/sites/${siteA2}/work-orders/${foreignOrderId}`,headers:headers(otherSiteJar)});
     assert.equal(otherSiteDetail.statusCode,200,otherSiteDetail.body);
     const otherSiteHistory=detailSchema.parse(otherSiteDetail.json()).vehicleHistory;
     assert.equal(otherSiteHistory.length,1);assert.equal(otherSiteHistory[0]?.reference,foreignReference);
@@ -1841,13 +1966,13 @@ test('owner invitations are identity-bound, single-use, replay-safe and revocabl
 });
 
 test('owner access expires at the UTC interval boundary and then records an explicit expiry revision',async()=>{
-  const expiresAt=new Date(Date.now()+1800).toISOString();
+  const expiresAt=new Date(Date.now()+10000).toISOString();
   const approve=await app.inject({method:'POST',url:`/api/v1/sites/${siteA}/vehicles/${orderA.vehicle.id}/owner-access/approve`,headers:headers(jarA),payload:{expectedVersion:3,ownerAccountId:ownerAccountC,evidenceRecordId:ownerEvidence,reason:'Synthetic short-lived owner access.',validUntil:expiresAt}});
   assert.equal(approve.statusCode,200,approve.body);
   const summary=approve.json() as {accessScopeId:string;version:number;relationships:Array<{relationshipId:string;ownerAccountId:string;state:string;currentlyValid:boolean}>};
   assert.equal(summary.version,4);const relation=summary.relationships.find(item=>item.ownerAccountId===ownerAccountC);assert.ok(relation);assert.equal(relation.currentlyValid,true);
   const early=await app.inject({method:'POST',url:`/api/v1/sites/${siteA}/owner-access/${summary.accessScopeId}/relationships/${relation.relationshipId}/expire`,headers:headers(jarA),payload:{expectedVersion:4}});assert.equal(early.statusCode,409);
-  await new Promise(resolve=>setTimeout(resolve,1900));
+  await new Promise(resolve=>setTimeout(resolve,10100));
   const expired=await app.inject({method:'POST',url:`/api/v1/sites/${siteA}/owner-access/${summary.accessScopeId}/relationships/${relation.relationshipId}/expire`,headers:headers(jarA),payload:{expectedVersion:4}});
   assert.equal(expired.statusCode,200,expired.body);const result=expired.json() as typeof summary;
   assert.equal(result.version,5);assert.equal(result.relationships.find(item=>item.ownerAccountId===ownerAccountC)?.state,'expired');assert.equal(result.relationships.find(item=>item.ownerAccountId===ownerAccountC)?.currentlyValid,false);
@@ -1950,10 +2075,10 @@ test('concurrent same-version mutations yield exactly one commit',async()=>{
 });
 
 test('cross-site and cross-organisation IDs cannot read, mutate or inflate totals',async()=>{
-  assert.equal((await app.inject({url:`/api/v1/sites/${siteA2}/work-orders/${orderA.id}`,headers:headers(jarA)})).statusCode,404);
+  assert.equal((await app.inject({url:`/api/v1/sites/${siteA2}/work-orders/${orderA.id}`,headers:headers(otherSiteJar)})).statusCode,404);
   assert.equal((await app.inject({url:`/api/v1/sites/${siteA}/work-orders/${orderB.id}`,headers:headers(jarA)})).statusCode,404);
   assert.equal((await app.inject({url:`/api/v1/sites/${siteB}/work-orders`,headers:headers(jarA)})).statusCode,403);
-  const list=await app.inject({url:`/api/v1/sites/${siteA2}/work-orders`,headers:headers(jarA)});
+  const list=await app.inject({url:`/api/v1/sites/${siteA2}/work-orders`,headers:headers(otherSiteJar)});
   assert.deepEqual(z.object({items:z.array(z.unknown()),totals:z.object({open:z.number(),held:z.number(),intakeDrafts:z.number()})}).parse(list.json()),{items:[],totals:{open:0,held:0,intakeDrafts:0}});
   const mutation=await app.inject({method:'POST',url:`/api/v1/sites/${siteA}/work-orders/${orderB.id}/complaints`,headers:headers(jarA),payload:{expectedVersion:1,wording:'Cannot write other tenant'}});assert.equal(mutation.statusCode,404);
 });
@@ -1965,6 +2090,64 @@ test('planned task holds retain exact scope and do not prevent unrelated plannin
   const taskId=orderA.tasks[0]?.id;assert.ok(taskId);
   const hold=await app.inject({method:'POST',url:`/api/v1/sites/${siteA}/work-orders/${orderA.id}/holds`,headers:headers(jarA),payload:{expectedVersion:orderA.version,scope:{kind:'task',taskId},category:'parts',severity:'warning',reason:'Awaiting identification',source:'Advisor observation'}});assert.equal(hold.statusCode,200,hold.body);orderA=detailSchema.parse(hold.json());assert.equal(orderA.holds[0]?.taskId,taskId);
   const other=await app.inject({method:'POST',url:`/api/v1/sites/${siteA}/work-orders/${orderA.id}/tasks`,headers:headers(jarA),payload:{expectedVersion:orderA.version,complaintId:complaint.id,title:'Plan unrelated visual assessment'}});assert.equal(other.statusCode,200,other.body);orderA=detailSchema.parse(other.json());assert.equal(orderA.tasks.length,tasksBefore+2);assert.ok(orderA.tasks.every(t=>t.state==='planned'));
+});
+
+test('hold resolution requires current Team Lead authority and accepted evidence and remains distinct from release',async()=>{
+  const created=await create(jarA,siteA,'WVWZZZ1JZXW000777');assert.equal(created.statusCode,200,created.body);
+  let order=detailSchema.parse(created.json());
+  const opened=await app.inject({method:'POST',url:`/api/v1/sites/${siteA}/work-orders/${order.id}/holds`,headers:headers(jarA),payload:{expectedVersion:order.version,scope:{kind:'workOrder'},category:'safety',severity:'stop',reason:'Synthetic hold-resolution test.',source:'Synthetic test observation'}});
+  assert.equal(opened.statusCode,200,opened.body);order=detailSchema.parse(opened.json());
+  const hold=order.holds[0];assert.ok(hold);assert.equal(order.openHoldCount,1);assert.equal(hold.resolution,null);
+  const crossSiteResolve=await app.inject({method:'POST',url:`/api/v1/sites/${siteA2}/work-orders/${order.id}/holds/${hold.id}/resolution`,headers:headers(otherSiteJar),payload:{expectedVersion:order.version,resolution:'Cross-site test',evidenceIds:[randomUUID()]}});
+  assert.equal(crossSiteResolve.statusCode,404,crossSiteResolve.body);
+  const leadId=randomUUID(),leadName=`Synthetic Hold Lead ${leadId}`;
+  await admin.query('INSERT INTO staff_users(id,username,display_name,password_hash) VALUES($1,$2,$3,$4)',[leadId,`test-hold-lead-${leadId}`,leadName,await hashPassword(password)]);
+  await admin.query('INSERT INTO memberships(user_id,site_id,can_write) VALUES($1,$2,true)',[leadId,siteA]);
+  const qualificationId=randomUUID();
+  await admin.query(`INSERT INTO staff_qualifications(id,organisation_id,site_id,staff_user_id,qualification_code,qualification_revision,state,evidence_reference,assessed_by,assessed_at,valid_from,valid_until,powertrain_classes)
+    VALUES($1,$2,$3,$4,'EV-TEAM-LEAD',1,'accepted','synthetic-test-only qualification', $5,now(),now()-interval '1 minute',now()+interval '1 day',ARRAY['EV'])`,[qualificationId,orgA,siteA,leadId,actorA]);
+  const reviewId=randomUUID(),reviewGrantId=randomUUID();
+  const reviewGrantRevision=await admin.query(`SELECT coalesce(max(grant_revision),0)+1 AS revision FROM staff_authority_grants WHERE organisation_id=$1 AND site_id=$2 AND staff_user_id=$3 AND capability='work-order.operations-review'`,[orgA,siteA,actorA]);
+  await admin.query(`INSERT INTO staff_authority_grants(id,organisation_id,site_id,staff_user_id,capability,grant_revision,granted_by,basis_reference,valid_from)
+    VALUES($1,$2,$3,$4,'work-order.operations-review',$5,$6,'Synthetic test-only Operations authority',now()-interval '1 minute')`,[reviewGrantId,orgA,siteA,actorA,reviewGrantRevision.rows[0]?.revision,actorA]);
+  await admin.query(`INSERT INTO work_order_operations_reviews(id,organisation_id,site_id,work_order_id,reviewed_by,reviewed_at,notes,reviewed_work_order_version,authority_decision)
+    VALUES($1,$2,$3,$4,$5,now(),'Synthetic current review',$6,$7)`,[reviewId,orgA,siteA,order.id,actorA,order.version,JSON.stringify({grant:{id:reviewGrantId,grant_revision:1},decidedAt:new Date().toISOString()})]);
+  const assignmentId=randomUUID();
+  await admin.query(`INSERT INTO work_order_lead_assignments(id,organisation_id,site_id,work_order_id,lead_user_id,powertrain_class,assigned_by,reason,operations_review_id,authority_decision)
+    VALUES($1,$2,$3,$4,$5,'EV',$6,'Synthetic hold resolution authority fixture',$7,$8)`,[assignmentId,orgA,siteA,order.id,leadId,actorA,reviewId,JSON.stringify({grant:{id:randomUUID(),grant_revision:1},qualification:{id:qualificationId,qualification_revision:1},decidedAt:new Date().toISOString()})]);
+  const holdGrantId=randomUUID();
+  await admin.query(`INSERT INTO staff_authority_grants(id,organisation_id,site_id,staff_user_id,capability,grant_revision,granted_by,basis_reference,valid_from)
+    VALUES($1,$2,$3,$4,'work-order.hold.resolve',1,$5,'Synthetic test-only hold-resolution grant',now()-interval '1 minute')`,[holdGrantId,orgA,siteA,leadId,actorA]);
+  const leadJar=await signIn(`test-hold-lead-${leadId}`);
+  const deniedBeforeGrant=await app.inject({method:'POST',url:`/api/v1/sites/${siteA}/work-orders/${order.id}/holds/${hold.id}/resolution`,headers:headers(jarA),payload:{expectedVersion:order.version,resolution:'Synthetic test resolution',evidenceIds:[randomUUID()]}});
+  assert.equal(deniedBeforeGrant.statusCode,403,deniedBeforeGrant.body);assert.equal(deniedBeforeGrant.json().error.code,'AUTHORITY_REQUIRED');
+  const invalidEvidence=await app.inject({method:'POST',url:`/api/v1/sites/${siteA}/work-orders/${order.id}/holds/${hold.id}/resolution`,headers:headers(leadJar),payload:{expectedVersion:order.version,resolution:'Synthetic test resolution',evidenceIds:[randomUUID()]}});
+  assert.equal(invalidEvidence.statusCode,409,invalidEvidence.body);assert.equal(invalidEvidence.json().error.code,'ACCEPTED_EVIDENCE_REQUIRED');
+  const unchangedAfterEvidenceDenial=await admin.query(`SELECT w.version,(SELECT count(*)::int FROM holds h WHERE h.work_order_id=w.id AND NOT EXISTS(SELECT 1 FROM work_order_hold_resolutions r WHERE r.hold_id=h.id)) AS open_holds FROM work_orders w WHERE w.id=$1`,[order.id]);
+  assert.equal(unchangedAfterEvidenceDenial.rows[0]?.version,order.version);assert.equal(unchangedAfterEvidenceDenial.rows[0]?.open_holds,1);
+  const evidenceId=randomUUID(),sha='e'.repeat(64);
+  await admin.query(`INSERT INTO evidence_records(id,organisation_id,site_id,scan_state,sha256,media_type,size_bytes,created_by,purpose_kind,target_id,display_name,declared_media_type,quarantine_key,accepted_key)
+    VALUES($1,$2,$3,'accepted',$4,'application/pdf',128,$5,'work-order',$6,'Synthetic hold evidence.pdf','application/pdf',$7,$8)`,[evidenceId,orgA,siteA,sha,actorA,order.id,`quarantine/${evidenceId}`,`accepted/${evidenceId}`]);
+  await admin.query(`INSERT INTO evidence_scan_attempts(id,organisation_id,site_id,evidence_id,attempt_no,verdict,scanned_sha256,engine,engine_version,detail_code,scanned_at)
+    VALUES($1,$2,$3,$4,1,'clean',$5,'synthetic-test','1','clean',now())`,[randomUUID(),orgA,siteA,evidenceId,sha]);
+  await admin.query(`INSERT INTO work_order_evidence_links(organisation_id,site_id,work_order_id,evidence_id,attached_by) VALUES($1,$2,$3,$4,$5)`,[orgA,siteA,order.id,evidenceId,actorA]);
+  const body={expectedVersion:order.version,resolution:'The stated blocker was checked and the supporting record is attached.',evidenceIds:[evidenceId]};
+  const path=`/api/v1/sites/${siteA}/work-orders/${order.id}/holds/${hold.id}/resolution`,commandId=randomUUID();
+  const resolved=await app.inject({method:'POST',url:path,headers:headers(leadJar,commandId),payload:body});
+  assert.equal(resolved.statusCode,200,resolved.body);order=detailSchema.parse(resolved.json());
+  assert.equal(order.openHoldCount,0);assert.equal(order.holds[0]?.resolution?.resolvedBy,leadName);assert.deepEqual(order.holds[0]?.resolution?.evidenceIds,[evidenceId]);
+  assert.ok(order.gates.every(gate=>gate.state==='pending'),'Hold resolution must not complete any release gate.');
+  const replay=await app.inject({method:'POST',url:path,headers:headers(leadJar,commandId),payload:body});assert.equal(replay.statusCode,200,replay.body);assert.deepEqual(replay.json(),resolved.json());
+  const audit=await admin.query(`SELECT event_type FROM domain_events WHERE aggregate_id=$1 AND event_type='safety.hold-resolved'`,[order.id]);assert.equal(audit.rowCount,1);
+  const outbox=await admin.query(`SELECT count(o.id)::int AS count FROM outbox o JOIN domain_events e ON e.id=o.event_id WHERE e.aggregate_id=$1 AND e.event_type='safety.hold-resolved'`,[order.id]);assert.equal(outbox.rows[0]?.count,1);
+  const receipt=await admin.query('SELECT count(*)::int AS count FROM command_receipts WHERE organisation_id=$1 AND site_id=$2 AND actor_id=$3 AND command_id=$4',[orgA,siteA,leadId,commandId]);assert.equal(receipt.rows[0]?.count,1);
+  const decision=await admin.query('SELECT authority_decision FROM work_order_hold_resolutions WHERE organisation_id=$1 AND site_id=$2 AND hold_id=$3',[orgA,siteA,hold.id]);assert.equal(decision.rows[0]?.authority_decision.assignment.id,assignmentId);assert.equal(decision.rows[0]?.authority_decision.assignment.operationsReviewId,reviewId);
+  await assert.rejects(admin.query(`UPDATE work_order_hold_resolutions SET resolution='changed' WHERE work_order_id=$1`,[order.id]),{code:'55000'});
+  const stale=await app.inject({method:'POST',url:path,headers:headers(leadJar),payload:{...body,expectedVersion:body.expectedVersion}});
+  assert.equal(stale.statusCode,409,stale.body);assert.equal(stale.json().error.code,'STALE_VERSION');
+  await admin.query('UPDATE staff_authority_grants SET revoked_at=now(),revoked_by=$1,revocation_reason=$2 WHERE id=$3',[actorA,'Synthetic test revocation',holdGrantId]);
+  const revokedReplay=await app.inject({method:'POST',url:path,headers:headers(leadJar,commandId),payload:body});
+  assert.equal(revokedReplay.statusCode,403,revokedReplay.body);assert.equal(revokedReplay.json().error.code,'AUTHORITY_REQUIRED');
 });
 
 test('diagnostic findings preserve inconclusive risk, stay append-only, and never advance work gates',async()=>{
@@ -1990,6 +2173,40 @@ test('diagnostic findings preserve inconclusive risk, stay append-only, and neve
   assert.ok(result.gates.every(gate=>gate.state==='pending'));
   assert.equal(result.history.at(-1)?.action,'diagnostic.finding-recorded');
 
+  const leadPlacementId=randomUUID(),reviewId=randomUUID(),leadAssignmentId=randomUUID();
+  await admin.query(`INSERT INTO aggregate_roots(id,organisation_id,site_id,aggregate_type)
+    VALUES($1,$2,$3,'staff-role-placement')`,[leadPlacementId,orgA,siteA]);
+  await admin.query(`INSERT INTO staff_role_placements(id,organisation_id,site_id,staff_user_id,role_code,created_by,updated_by)
+    VALUES($1,$2,$3,$4,'ev-team-lead',$5,$5)`,[leadPlacementId,orgA,siteA,workerA,actorA]);
+  await admin.query(`INSERT INTO staff_role_placement_history(organisation_id,site_id,placement_id,revision,staff_user_id,role_code,state,changed_by)
+    VALUES($1,$2,$3,1,$4,'ev-team-lead','active',$5)`,[orgA,siteA,leadPlacementId,workerA,actorA]);
+  const operationsDecision={grant:{id:randomUUID(),grant_revision:1},decidedAt:new Date().toISOString()};
+  await admin.query(`INSERT INTO work_order_operations_reviews(id,organisation_id,site_id,work_order_id,reviewed_by,notes,reviewed_work_order_version,authority_decision)
+    VALUES($1,$2,$3,$4,$5,'Synthetic test fixture assignment', $6, $7)`,[reviewId,orgA,siteA,order.id,actorA,result.version,operationsDecision]);
+  const leadDecision={grant:{id:randomUUID(),grant_revision:1},qualification:{id:randomUUID(),qualification_revision:1},decidedAt:new Date().toISOString()};
+  await admin.query(`INSERT INTO work_order_lead_assignments(id,organisation_id,site_id,work_order_id,lead_user_id,powertrain_class,assigned_by,reason,operations_review_id,authority_decision)
+    VALUES($1,$2,$3,$4,$5,'EV',$6,'Synthetic test fixture assignment',$7,$8)`,[leadAssignmentId,orgA,siteA,order.id,workerA,actorA,reviewId,leadDecision]);
+
+  const reviewQueuePath=`/api/v1/sites/${siteA}/diagnostic-review-findings?page=1&pageSize=5`;
+  const reviewQueue=await app.inject({url:reviewQueuePath,headers:headers(jarA)});
+  assert.equal(reviewQueue.statusCode,200,reviewQueue.body);
+  const queuedFinding=reviewQueue.json().items.find((item:{findingId:string})=>item.findingId===result.diagnosticFindings[0]?.id);
+  assert.ok(queuedFinding,'Head of Service Centre can review the latest finding for the site.');
+  assert.equal(queuedFinding.certaintyState,'inconclusive');
+  assert.equal(queuedFinding.residualRisk,payload.residualRisk);
+  assert.equal(queuedFinding.restrictions,payload.restrictions);
+  const leadJar=await signIn('test-worker-a');
+  const leadQueue=await app.inject({url:reviewQueuePath,headers:headers(leadJar)});
+  assert.equal(leadQueue.statusCode,200,leadQueue.body);
+  assert.ok(leadQueue.json().items.some((item:{findingId:string})=>item.findingId===result.diagnosticFindings[0]?.id),
+    'The assigned Team Lead can review findings from their assigned work.');
+  const rolelessJar=await signIn('test-reader');
+  const rolelessQueue=await app.inject({url:reviewQueuePath,headers:headers(rolelessJar)});
+  assert.equal(rolelessQueue.statusCode,403,rolelessQueue.body);
+  assert.equal(rolelessQueue.json().error.code,'DIAGNOSTIC_REVIEW_QUEUE_REQUIRED');
+  const wrongSiteQueue=await app.inject({url:reviewQueuePath,headers:headers(otherSiteJar)});
+  assert.equal(wrongSiteQueue.statusCode,403,wrongSiteQueue.body);
+
   const replay=await app.inject({method:'POST',url:path,headers:headers(jarA,commandId),payload});
   assert.equal(replay.statusCode,200,replay.body);
   assert.equal(detailSchema.parse(replay.json()).diagnosticFindings.length,1);
@@ -2014,6 +2231,11 @@ test('diagnostic findings preserve inconclusive risk, stay append-only, and neve
   assert.equal(preserved?.recordedBy,original.recordedBy);
   assert.equal(preserved?.recordedAt,original.recordedAt);
   assert.ok(replacement);
+  const afterCorrectionQueue=await app.inject({url:reviewQueuePath,headers:headers(jarA)});
+  assert.equal(afterCorrectionQueue.statusCode,200,afterCorrectionQueue.body);
+  const orderFindings=afterCorrectionQueue.json().items.filter((item:{workOrderId:string})=>item.workOrderId===order.id);
+  assert.deepEqual(orderFindings.map((item:{findingId:string})=>item.findingId),[replacement.id],
+    'A superseded finding leaves the latest-findings queue without erasing its history.');
   assert.ok(current.gates.every(gate=>gate.state==='pending'));
   await assert.rejects(scoped(runtime,{actorId:actorA,organisationId:orgA,siteId:siteA},client=>client.query('UPDATE diagnostic_findings SET summary=$1 WHERE id=$2',['forged',original.id])),error=>error instanceof Error&&'code' in error&&error.code==='42501');
 });
@@ -2548,7 +2770,7 @@ test('Head overview counts the current site stages, audits reads, and permits re
   const otherSiteResponse=await app.inject({url:url(siteA2),headers:headersA});
   assert.equal(otherSiteResponse.statusCode,200,otherSiteResponse.body);
   assert.deepEqual(otherSiteResponse.json().workOrders,{active:0,held:0,awaitingOperationsReview:0,awaitingTeamLead:0,assignedToTeamLead:0});
-  assert.deepEqual(otherSiteResponse.json().staff,{active:2,activeRolePlacements:2});
+  assert.deepEqual(otherSiteResponse.json().staff,{active:3,activeRolePlacements:3});
   const nonHead=await app.inject({url:url(siteB),headers:headers(jarB)});
   assert.equal(nonHead.statusCode,403,nonHead.body);
   assert.equal(nonHead.json().error.code,'ROLE_REQUIRED');
@@ -2567,6 +2789,42 @@ test('Head overview counts the current site stages, audits reads, and permits re
   } finally {
     await admin.query('UPDATE memberships SET can_write=true WHERE user_id=$1 AND site_id=$2',[actorA,siteA]);
   }
+});
+
+test('Head site activity is site-scoped, privacy-limited, audited and keyset-paginated',async()=>{
+  const url=`/api/v1/sites/${siteA}/workforce/activity`;
+  const created=await create(jarA,siteA,`1HGCM82633A${String(200000+Math.floor(Math.random()*700000)).padStart(6,'0')}`);
+  assert.equal(created.statusCode,200,created.body);
+  const activityWorkOrder=created.json();
+  const activityVersion=Number((await admin.query(`SELECT COALESCE(MAX(aggregate_version),0)+1 AS version FROM domain_events
+    WHERE organisation_id=$1 AND site_id=$2 AND aggregate_id=$3 AND aggregate_type='work-order'`,[orgA,siteA,activityWorkOrder.id])).rows[0]?.version);
+  await admin.query(`INSERT INTO domain_events(id,organisation_id,site_id,aggregate_id,aggregate_type,aggregate_version,actor_id,event_type,reason,previous_state,new_state)
+    VALUES($1,$2,$3,$4,'work-order',$5,$6,'work-order.activity-test','PRIVATE_REASON_SENTINEL','{"private":"PRIVATE_PREVIOUS_SENTINEL"}'::jsonb,'{"private":"PRIVATE_NEW_SENTINEL"}'::jsonb)`,
+  [randomUUID(),orgA,siteA,activityWorkOrder.id,activityVersion,actorA]);
+  const response=await app.inject({url:`${url}?pageSize=1`,headers:headers(jarA)});
+  assert.equal(response.statusCode,200,response.body);
+  const first=response.json();
+  assert.equal(first.items.length,1);
+  assert.ok(first.nextCursor);
+  assert.deepEqual(Object.keys(first.items[0]).sort(),['actorName','aggregateType','aggregateVersion','createdAt','eventType','id','workOrderReference'].sort());
+  assert.equal('reason' in first.items[0],false);
+  assert.equal('previousState' in first.items[0],false);
+  assert.equal('newState' in first.items[0],false);
+  assert.doesNotMatch(response.body,/PRIVATE_(?:REASON|PREVIOUS|NEW)_SENTINEL/);
+  const next=await app.inject({url:`${url}?pageSize=1&cursor=${encodeURIComponent(first.nextCursor)}`,headers:headers(jarA)});
+  assert.equal(next.statusCode,200,next.body);
+  assert.notEqual(next.json().items[0].id,first.items[0].id,'Keyset pagination must advance without repeating an event.');
+  const denied=await app.inject({url:`/api/v1/sites/${siteB}/workforce/activity`,headers:headers(jarB)});
+  assert.equal(denied.statusCode,403,denied.body);
+  assert.equal(denied.json().error.code,'ROLE_REQUIRED');
+  const crossSite=await app.inject({url:`/api/v1/sites/${siteB}/workforce/activity`,headers:headers(jarA)});
+  assert.equal(crossSite.statusCode,403,crossSite.body);
+  assert.equal(crossSite.json().error.code,'SITE_FORBIDDEN');
+  const invalid=await app.inject({url:`${url}?cursor=not-a-valid-cursor`,headers:headers(jarA)});
+  assert.equal(invalid.statusCode,400,invalid.body);
+  const audit=await admin.query(`SELECT action,result_count FROM sensitive_read_events
+    WHERE organisation_id=$1 AND site_id=$2 AND actor_id=$3 AND action='workforce-site-activity-read-prepared' ORDER BY created_at DESC LIMIT 1`,[orgA,siteA,actorA]);
+  assert.deepEqual(audit.rows[0],{action:'workforce-site-activity-read-prepared',result_count:1});
 });
 
 test('internal staff messages are Head-sent, participant-only, immutable, no-store and membership-epoch scoped',async()=>{
@@ -2814,6 +3072,7 @@ test('Supervisor task allocations stay scoped to the current handed-off plan and
   await grantAuthority(actorA,'work-order.assign-lead');
   await grantAuthority(allocationLeadId,'work-order.prepare-work-plan');
   await grantAuthority(allocationLeadId,'work-order.handoff-supervisor');
+  await grantAuthority(allocationSupervisorId,'work-order.task.review-response');
   const taskResponse=await app.inject({method:'POST',url:`/api/v1/sites/${siteA}/work-orders/${order.id}/tasks`,headers:headers(jarA),payload:{expectedVersion:order.version,complaintId:order.complaints[0]!.id,title:'Synthetic allocation task'}});
   assert.equal(taskResponse.statusCode,200,taskResponse.body);order=detailSchema.parse(taskResponse.json());
 
@@ -2865,6 +3124,9 @@ test('Supervisor task allocations stay scoped to the current handed-off plan and
   assert.deepEqual(allocationView.json().assignees.map((staff:{staffUserId:string})=>staff.staffUserId),[technicianOne.id,technicianTwo.id]);
   assert.equal(allocationView.json().canAssign,true);
   assert.equal(allocationView.json().tasks.length,1);
+   assert.deepEqual(allocationView.json().assignees.map((staff:{currentPlanTaskCount:number;lastReportedBlockedTaskCount:number;lastReportedWaitingTaskCount:number})=>[
+     staff.currentPlanTaskCount,staff.lastReportedBlockedTaskCount,staff.lastReportedWaitingTaskCount,
+   ]),[[0,0,0],[0,0,0]]);
   const otherSupervisorView=await app.inject({url:allocationPath,headers:headers(restrictedJar)});
   assert.equal(otherSupervisorView.statusCode,200,otherSupervisorView.body);assert.equal(otherSupervisorView.json().canAssign,false);
   assert.equal(otherSupervisorView.json().blockReason,'handoff-required');assert.deepEqual(otherSupervisorView.json().assignees,[]);
@@ -2893,10 +3155,18 @@ test('Supervisor task allocations stay scoped to the current handed-off plan and
   const allocationsAfterOne=await app.inject({url:allocationPath,headers:headers(currentSupervisorJar)});
   assert.equal(allocationsAfterOne.statusCode,200,allocationsAfterOne.body);assert.equal(allocationsAfterOne.json().canAssign,true);
   assert.equal(allocationsAfterOne.json().tasks[0].assigneeId,technicianOne.id);
+   assert.deepEqual(allocationsAfterOne.json().assignees.map((staff:{staffUserId:string;currentPlanTaskCount:number;lastReportedBlockedTaskCount:number;lastReportedWaitingTaskCount:number})=>[
+     staff.staffUserId,staff.currentPlanTaskCount,staff.lastReportedBlockedTaskCount,staff.lastReportedWaitingTaskCount,
+   ]),[[technicianOne.id,1,0,0],[technicianTwo.id,0,0,0]]);
   const secondAllocationBody={expectedVersion:order.version,planRevisionId,assignments:[{taskId:assignedTaskId,staffUserId:technicianTwo.id}]};
   const secondAllocation=await app.inject({method:'POST',url:allocationPath,headers:headers(currentSupervisorJar),payload:secondAllocationBody});
   assert.equal(secondAllocation.statusCode,200,secondAllocation.body);assert.equal(secondAllocation.json().assignments[0].revision,2);
   order.version=secondAllocation.json().version;
+  const allocationsAfterReassignment=await app.inject({url:allocationPath,headers:headers(currentSupervisorJar)});
+  assert.equal(allocationsAfterReassignment.statusCode,200,allocationsAfterReassignment.body);
+   assert.deepEqual(allocationsAfterReassignment.json().assignees.map((staff:{staffUserId:string;currentPlanTaskCount:number;lastReportedBlockedTaskCount:number;lastReportedWaitingTaskCount:number})=>[
+     staff.staffUserId,staff.currentPlanTaskCount,staff.lastReportedBlockedTaskCount,staff.lastReportedWaitingTaskCount,
+   ]),[[technicianOne.id,0,0,0],[technicianTwo.id,1,0,0]],'workload and last-reported progress follow only each task\'s current assignment revision');
   const formerAssigneeSession=await signIn(`test-worker-${technicianOne.id}`);
   const currentAssigneeSession=await signIn(`test-worker-${technicianTwo.id}`);
   const formerAssigneeTasks=await app.inject({url:`/api/v1/sites/${siteA}/my-tasks?page=1&pageSize=1`,headers:headers(formerAssigneeSession)});
@@ -2910,6 +3180,217 @@ test('Supervisor task allocations stay scoped to the current handed-off plan and
   assert.equal(currentTask.taskId,assignedTaskId);
   assert.equal(currentTask.assignmentRevision,2);
   assert.equal(currentTask.supervisorName,'Synthetic Allocation Supervisor');
+   const allocationProgressPath=`/api/v1/sites/${siteA}/my-tasks/${order.id}/${assignedTaskId}/activity`;
+   const headProgressBefore=await app.inject({url:`/api/v1/sites/${siteA}/workforce/overview`,headers:headers(jarA)});
+   assert.equal(headProgressBefore.statusCode,200,headProgressBefore.body);
+   const headProgressBaseline=headProgressBefore.json().taskProgress;
+   for (const progressState of ['blocked','waiting'] as const) {
+     const progressResponse: {statusCode:number;body:string}=await app.inject({method:'POST',url:allocationProgressPath,headers:headers(currentAssigneeSession,randomUUID()),payload:{
+       expectedWorkPlanRevisionId:currentTask.workPlanRevisionId,expectedAssignmentRevision:currentTask.assignmentRevision,
+       entryType:'progress',progressState,requestType:null,note:`Synthetic current assignment reports ${progressState}.`,
+     }});
+     assert.equal(progressResponse.statusCode,200,progressResponse.body);
+     const latestReport=await app.inject({url:allocationPath,headers:headers(currentSupervisorJar)});
+     assert.equal(latestReport.statusCode,200,latestReport.body);
+     const assignee=latestReport.json().assignees.find((staff:{staffUserId:string})=>staff.staffUserId===technicianTwo.id);
+     assert(assignee);
+     assert.equal(assignee.currentPlanTaskCount,1);
+     assert.equal(assignee.lastReportedBlockedTaskCount,progressState==='blocked'?1:0);
+     assert.equal(assignee.lastReportedWaitingTaskCount,progressState==='waiting'?1:0,
+       'Only the latest progress state for the current assignment is included in the WIP summary.');
+     const headProgress=await app.inject({url:`/api/v1/sites/${siteA}/workforce/overview`,headers:headers(jarA)});
+     assert.equal(headProgress.statusCode,200,headProgress.body);
+     assert.equal(headProgress.json().taskProgress.blockedCount,headProgressBaseline.blockedCount+(progressState==='blocked'?1:0));
+     assert.equal(headProgress.json().taskProgress.waitingCount,headProgressBaseline.waitingCount+(progressState==='waiting'?1:0));
+     assert(headProgress.json().taskProgress.items.some((item:{workOrderId:string;taskReference:string;state:string;assigneeName:string})=>
+       item.workOrderId===order.id&&item.taskReference===`T${String(order.tasks.findIndex(task=>task.id===assignedTaskId)+1).padStart(2,'0')}`
+         &&item.state===progressState&&item.assigneeName==='Synthetic Direct Technician Two'),
+       'Head overview should expose the latest site-scoped progress for the currently assigned task.');
+   }
+
+  // Synthetic, source-backed active-checklist fixture. Activation policy is not
+  // configured in production; this fixture isolates the review command after a
+  // checklist has already been made available to assigned staff.
+  const reviewTemplateId=randomUUID(),reviewChecklistId=randomUUID(),reviewItemId=randomUUID(),evidenceRequiredItemId=randomUUID();
+  const reviewTemplateGrantId=randomUUID(),outcomeGrantId=randomUUID(),reviewGrantId=randomUUID();
+  const reviewTemplateCode=`SYNTHETIC-REVIEW-${reviewTemplateId}`;
+  const reviewDefinition={id:'synthetic-review-item',label:'Synthetic checklist review item',
+    classification:{systemCode:'SYNTHETIC.BRAKES',taskClassCode:'SYNTHETIC.ROUTINE-CHECK'},
+    requiredQualifications:['SYNTHETIC-QA'],evidenceRequired:false,notApplicableAllowed:true};
+  const evidenceRequiredDefinition={...reviewDefinition,id:'synthetic-evidence-required-item',label:'Synthetic evidence-required item',evidenceRequired:true};
+  const publishGrantRevision=z.number().int().positive().parse((await admin.query(`SELECT coalesce(max(grant_revision),0)+1 AS revision
+    FROM public.staff_authority_grants WHERE organisation_id=$1 AND site_id=$2 AND staff_user_id=$3
+      AND capability='work-order.checklist-template.publish'`,[orgA,siteA,actorA])).rows[0]?.revision);
+  await admin.query(`INSERT INTO public.staff_authority_grants
+    (id,organisation_id,site_id,staff_user_id,capability,grant_revision,granted_by,basis_reference,valid_from,valid_until)
+    VALUES($1,$2,$3,$4,'work-order.checklist-template.publish',$5,$6,'Synthetic isolated review fixture',now()-interval '1 minute',now()+interval '1 hour')`,
+  [reviewTemplateGrantId,orgA,siteA,actorA,publishGrantRevision,actorA]);
+  await admin.query(`INSERT INTO public.workshop_checklist_template_revisions
+    (id,organisation_id,site_id,template_code,revision,kind,vehicle_make,vehicle_model,vehicle_variant,powertrain,items)
+    VALUES($1,$2,$3,$4,1,'routine-maintenance',$5,$6,$7,$8,$9::jsonb)`,
+  [reviewTemplateId,orgA,siteA,reviewTemplateCode,order.vehicle.make,order.vehicle.model,order.vehicle.variant,order.vehicle.powertrain,JSON.stringify([reviewDefinition,evidenceRequiredDefinition])]);
+  await admin.query(`INSERT INTO public.workshop_checklist_template_sources
+    (organisation_id,site_id,template_revision_id,source_revision_id) VALUES($1,$2,$3,$4)`,
+  [orgA,siteA,reviewTemplateId,documentRevisionId]);
+  await admin.query(`INSERT INTO public.workshop_checklist_template_decisions
+    (organisation_id,site_id,template_revision_id,decision,decided_by,grant_snapshot,basis,effective_from)
+    VALUES($1,$2,$3,'effective',$4,$5::jsonb,'Synthetic isolated review fixture',now()-interval '1 minute')`,
+  [orgA,siteA,reviewTemplateId,actorA,JSON.stringify({id:reviewTemplateGrantId,capability:'work-order.checklist-template.publish',grant_revision:publishGrantRevision,staff_user_id:actorA})]);
+  await admin.query(`INSERT INTO public.work_order_checklists
+    (id,organisation_id,site_id,work_order_id,template_revision_id,kind,state,version,schedule_basis,odometer_at_start_km,vehicle_snapshot,created_by)
+    VALUES($1,$2,$3,$4,$5,'routine-maintenance','in-progress',1,'unknown',$6,$7::jsonb,$8)`,
+  [reviewChecklistId,orgA,siteA,order.id,reviewTemplateId,order.odometerKm,JSON.stringify({vin:order.vehicle.vin,make:order.vehicle.make,model:order.vehicle.model,variant:order.vehicle.variant,powertrain:order.vehicle.powertrain}),actorA]);
+  await admin.query(`INSERT INTO public.work_order_checklist_items
+    (id,organisation_id,site_id,work_order_id,checklist_id,item_code,ordinal,definition_snapshot)
+    VALUES($1,$2,$3,$4,$5,$6,1,$7::jsonb)`,
+  [reviewItemId,orgA,siteA,order.id,reviewChecklistId,reviewDefinition.id,JSON.stringify(reviewDefinition)]);
+  await admin.query(`INSERT INTO public.work_order_checklist_items
+    (id,organisation_id,site_id,work_order_id,checklist_id,item_code,ordinal,definition_snapshot)
+    VALUES($1,$2,$3,$4,$5,$6,2,$7::jsonb)`,
+  [evidenceRequiredItemId,orgA,siteA,order.id,reviewChecklistId,evidenceRequiredDefinition.id,JSON.stringify(evidenceRequiredDefinition)]);
+  await admin.query(`INSERT INTO public.aggregate_roots(id,organisation_id,site_id,aggregate_type)
+    VALUES($1,$2,$3,'work-order-checklist-item'),($4,$2,$3,'work-order-checklist-item')`,[reviewItemId,orgA,siteA,evidenceRequiredItemId]);
+  await admin.query(`INSERT INTO public.staff_authority_grants
+    (id,organisation_id,site_id,staff_user_id,capability,grant_revision,granted_by,basis_reference,valid_from,valid_until)
+    VALUES($1,$2,$3,$4,'work-order.checklist.item-outcome.record',1,$5,'Synthetic isolated review fixture',now()-interval '1 minute',now()+interval '1 hour')`,
+  [outcomeGrantId,orgA,siteA,technicianTwo.id,actorA]);
+  const itemOutcomePath=`/api/v1/sites/${siteA}/my-tasks/${order.id}/${assignedTaskId}/checklists/${reviewChecklistId}/items/${reviewItemId}/outcomes`;
+  const outcomeBody={expectedChecklistVersion:1,expectedWorkPlanRevisionId:currentTask.workPlanRevisionId,expectedAssignmentRevision:currentTask.assignmentRevision,
+    result:'completed',reason:null,applicabilityReason:null,comments:'Synthetic observation recorded by the assigned Technician.',measurement:null,evidenceIds:[],supersedesRevisionId:null,correctionReason:null};
+  const technicianSession=await signIn(`test-worker-${technicianTwo.id}`);
+  const normalizedVehicleScope=[order.vehicle.make,order.vehicle.model,order.vehicle.variant].map(value=>String(value??'').trim().replace(/\s+/g,' ').toLocaleLowerCase('en-US')).join('::');
+  const qualificationsByScope=[
+    {powertrain:['EV'],models:['different::model::variant'],systems:['SYNTHETIC.BRAKES'],taskClasses:['SYNTHETIC.ROUTINE-CHECK'],restrictions:[]},
+    {powertrain:['EV'],models:[normalizedVehicleScope],systems:['SYNTHETIC.STEERING'],taskClasses:['SYNTHETIC.ROUTINE-CHECK'],restrictions:[]},
+    {powertrain:['EV'],models:[normalizedVehicleScope],systems:['SYNTHETIC.BRAKES'],taskClasses:['SYNTHETIC.REPAIR'],restrictions:[]},
+    {powertrain:['ICE'],models:[normalizedVehicleScope],systems:['SYNTHETIC.BRAKES'],taskClasses:['SYNTHETIC.ROUTINE-CHECK'],restrictions:[]},
+    {powertrain:['EV'],models:[normalizedVehicleScope],systems:['SYNTHETIC.BRAKES'],taskClasses:['SYNTHETIC.ROUTINE-CHECK'],restrictions:['requires-supervision']},
+  ];
+  let qualificationRevision=0;
+  for (const qualificationScope of qualificationsByScope) {
+    qualificationRevision += 1;
+    await admin.query(`INSERT INTO public.staff_qualifications
+      (id,organisation_id,site_id,staff_user_id,qualification_code,qualification_revision,state,evidence_reference,
+       assessed_by,assessed_at,valid_from,valid_until,powertrain_classes,vehicle_models,systems,task_classes,restrictions)
+      VALUES($1,$2,$3,$4,'SYNTHETIC-QA',$5,'accepted','synthetic-review-qualification',$6,now(),now()-interval '1 minute',now()+interval '1 hour',$7,$8,$9,$10,$11::jsonb)`,
+    [randomUUID(),orgA,siteA,technicianTwo.id,qualificationRevision,actorA,qualificationScope.powertrain,
+      qualificationScope.models,qualificationScope.systems,qualificationScope.taskClasses,JSON.stringify(qualificationScope.restrictions)]);
+    const qualificationCheck=await scoped(runtime,{actorId:technicianTwo.id,organisationId:orgA,siteId:siteA},client=>
+      client.query('SELECT public.lock_work_order_checklist_qualification($1,$2,$3,$4,$5) AS qualification',
+        ['SYNTHETIC-QA',normalizedVehicleScope,'SYNTHETIC.BRAKES','SYNTHETIC.ROUTINE-CHECK','EV']));
+    assert.equal(qualificationCheck.rows[0]?.qualification,null,'Every mismatched qualification scope must fail closed in PostgreSQL.');
+    const deniedForScope=await app.inject({method:'POST',url:itemOutcomePath,headers:headers(technicianSession,randomUUID()),payload:outcomeBody});
+    assert.equal(deniedForScope.statusCode,403,deniedForScope.body);
+    assert.equal(deniedForScope.json().error.code,'CHECKLIST_QUALIFICATION_REQUIRED');
+  }
+  qualificationRevision += 1;
+  await admin.query(`INSERT INTO public.staff_qualifications
+    (id,organisation_id,site_id,staff_user_id,qualification_code,qualification_revision,state,evidence_reference,
+     assessed_by,assessed_at,valid_from,valid_until,powertrain_classes,vehicle_models,systems,task_classes,restrictions)
+    VALUES($1,$2,$3,$4,'SYNTHETIC-QA',$5,'accepted','synthetic-review-qualification',$6,now(),now()-interval '1 minute',now()+interval '1 hour',ARRAY['EV'],$7,ARRAY['SYNTHETIC.BRAKES'],ARRAY['SYNTHETIC.ROUTINE-CHECK'],'[]'::jsonb)`,
+  [randomUUID(),orgA,siteA,technicianTwo.id,qualificationRevision,actorA,[normalizedVehicleScope]]);
+  const outcomeResponse=await app.inject({method:'POST',url:itemOutcomePath,headers:headers(technicianSession,randomUUID()),payload:outcomeBody});
+  assert.equal(outcomeResponse.statusCode,200,outcomeResponse.body);
+  const savedOutcome=z.object({checklistVersion:z.number(),outcome:z.object({id:z.string().uuid(),actorName:z.string()})}).passthrough().parse(outcomeResponse.json());
+  assert.equal(savedOutcome.checklistVersion,2);
+  assert.equal(savedOutcome.outcome.actorName,'Synthetic Direct Technician Two');
+  const savedQualification=await admin.query(`SELECT qualification_snapshots->0->>'qualification_code' AS code,
+      qualification_snapshots->0->'systems' AS systems,qualification_snapshots->0->'task_classes' AS task_classes,
+      qualification_snapshots->0->'vehicle_models' AS vehicle_models
+    FROM public.work_order_checklist_item_revisions WHERE id=$1`,[savedOutcome.outcome.id]);
+  assert.deepEqual(savedQualification.rows[0],{code:'SYNTHETIC-QA',systems:['SYNTHETIC.BRAKES'],
+    task_classes:['SYNTHETIC.ROUTINE-CHECK'],vehicle_models:[normalizedVehicleScope]});
+  const evidenceRequiredOutcome=await app.inject({method:'POST',
+    url:`/api/v1/sites/${siteA}/my-tasks/${order.id}/${assignedTaskId}/checklists/${reviewChecklistId}/items/${evidenceRequiredItemId}/outcomes`,
+    headers:headers(technicianSession,randomUUID()),payload:{...outcomeBody,expectedChecklistVersion:2,
+      comments:'Synthetic outcome whose source requires current accepted evidence.'}});
+  assert.equal(evidenceRequiredOutcome.statusCode,409,evidenceRequiredOutcome.body);
+  assert.equal(evidenceRequiredOutcome.json().error.code,'CHECKLIST_EVIDENCE_REQUIRED',
+    'A source-required evidence item cannot be recorded as complete without current accepted evidence.');
+  const rejectedEvidenceRequiredOutcome=await admin.query(`SELECT count(*)::int AS count FROM public.work_order_checklist_item_revisions
+    WHERE organisation_id=$1 AND site_id=$2 AND checklist_item_id=$3`,[orgA,siteA,evidenceRequiredItemId]);
+  assert.equal(rejectedEvidenceRequiredOutcome.rows[0]?.count,0,'Rejected evidence must not create checklist history.');
+  const checklistQueuePath=`/api/v1/sites/${siteA}/checklist-review-queue?page=1&pageSize=10`;
+  const beforeReviewQueue=await app.inject({url:checklistQueuePath,headers:headers(currentSupervisorJar)});
+  assert.equal(beforeReviewQueue.statusCode,200,beforeReviewQueue.body);
+  assert.equal(beforeReviewQueue.json().canReview,false,'A Supervisor without the item-review grant sees no review authority.');
+  assert.deepEqual(beforeReviewQueue.json().items,[]);
+  const reviewPath=`/api/v1/sites/${siteA}/work-orders/${order.id}/tasks/${assignedTaskId}/checklists/${reviewChecklistId}/items/${reviewItemId}/reviews`;
+  const reviewBody={expectedChecklistVersion:2,expectedWorkPlanRevisionId:currentTask.workPlanRevisionId,expectedAssignmentRevision:currentTask.assignmentRevision,
+    outcomeRevisionId:savedOutcome.outcome.id,disposition:'record-confirmed',reason:'The saved checklist entry is supported by the recorded observation.'};
+  const crossSiteReviewPath=reviewPath.replace(`/sites/${siteA}/`,`/sites/${siteA2}/`);
+  await admin.query(`INSERT INTO public.staff_authority_grants
+    (id,organisation_id,site_id,staff_user_id,capability,grant_revision,granted_by,basis_reference,valid_from)
+    VALUES($1,$2,$3,$4,'work-order.checklist.item-review',1,$5,'Synthetic cross-site denial fixture',now()-interval '1 minute')`,
+  [randomUUID(),orgA,siteA2,otherSiteStaff,otherSiteStaff]);
+  const crossSiteHeadJar=await signIn('test-other-site-head');
+  const crossSiteReview=await app.inject({method:'POST',url:crossSiteReviewPath,headers:headers(crossSiteHeadJar,randomUUID()),payload:reviewBody});
+  assert.equal(crossSiteReview.statusCode,404,'A Head with a valid grant at another site cannot review a site-local checklist record.');
+  const otherSiteRead=await admin.query(`SELECT count(*)::int AS count FROM public.work_order_checklist_item_reviews
+    WHERE organisation_id=$1 AND site_id=$2 AND checklist_item_id=$3`,[orgA,siteA2,reviewItemId]);
+  assert.equal(otherSiteRead.rows[0]?.count,0,'A cross-site attempt must not create a review in the other site.');
+  const deniedReview=await app.inject({method:'POST',url:reviewPath,headers:headers(currentSupervisorJar),payload:reviewBody});
+  assert.equal(deniedReview.statusCode,403);assert.equal(deniedReview.json().error.code,'CHECKLIST_REVIEW_AUTHORITY_REQUIRED');
+  await admin.query(`INSERT INTO public.staff_authority_grants
+    (id,organisation_id,site_id,staff_user_id,capability,grant_revision,granted_by,basis_reference,valid_from,valid_until)
+    VALUES($1,$2,$3,$4,'work-order.checklist.item-review',1,$5,'Synthetic isolated review fixture',now()-interval '1 minute',now()+interval '1 hour')`,
+  [reviewGrantId,orgA,siteA,allocationSupervisorId,actorA]);
+  await admin.query('UPDATE public.staff_role_placements SET reports_to_placement_id=$1 WHERE organisation_id=$2 AND site_id=$3 AND id=$4',
+    [restrictedSupervisorPlacementId,orgA,siteA,technicianTwo.placementId]);
+  const outOfChainReview=await app.inject({method:'POST',url:reviewPath,headers:headers(currentSupervisorJar,randomUUID()),payload:reviewBody});
+  assert.equal(outOfChainReview.statusCode,403);assert.equal(outOfChainReview.json().error.code,'DIRECT_REPORT_REVIEW_REQUIRED');
+  await admin.query('UPDATE public.staff_role_placements SET reports_to_placement_id=$1 WHERE organisation_id=$2 AND site_id=$3 AND id=$4',
+    [supervisorPlacementId,orgA,siteA,technicianTwo.placementId]);
+  await admin.query(`UPDATE public.staff_authority_grants SET revoked_at=clock_timestamp(),revoked_by=$1,
+      revocation_reason='Synthetic checklist review grant revocation' WHERE id=$2`,[actorA,reviewGrantId]);
+  const revokedGrantReview=await app.inject({method:'POST',url:reviewPath,headers:headers(currentSupervisorJar,randomUUID()),payload:reviewBody});
+  assert.equal(revokedGrantReview.statusCode,403);assert.equal(revokedGrantReview.json().error.code,'CHECKLIST_REVIEW_AUTHORITY_REQUIRED');
+  await admin.query(`INSERT INTO public.staff_authority_grants
+    (id,organisation_id,site_id,staff_user_id,capability,grant_revision,granted_by,basis_reference,valid_from,valid_until)
+    VALUES($1,$2,$3,$4,'work-order.checklist.item-review',2,$5,'Synthetic isolated review fixture after revocation',now()-interval '1 minute',now()+interval '1 hour')`,
+  [randomUUID(),orgA,siteA,allocationSupervisorId,actorA]);
+  const wrongRoleReview=await app.inject({method:'POST',url:reviewPath,headers:headers(technicianSession,randomUUID()),payload:reviewBody});
+  assert.equal(wrongRoleReview.statusCode,403);assert.equal(wrongRoleReview.json().error.code,'CHECKLIST_REVIEW_ROLE_REQUIRED');
+  const stalePlanReview=await app.inject({method:'POST',url:reviewPath,headers:headers(currentSupervisorJar,randomUUID()),payload:{...reviewBody,expectedWorkPlanRevisionId:randomUUID()}});
+  assert.equal(stalePlanReview.statusCode,409);assert.equal(stalePlanReview.json().error.code,'STALE_WORK_PLAN');
+  const staleAssignmentReview=await app.inject({method:'POST',url:reviewPath,headers:headers(currentSupervisorJar,randomUUID()),payload:{...reviewBody,expectedAssignmentRevision:currentTask.assignmentRevision+1}});
+  assert.equal(staleAssignmentReview.statusCode,409);assert.equal(staleAssignmentReview.json().error.code,'STALE_TASK_ASSIGNMENT');
+  const staleChecklistReview=await app.inject({method:'POST',url:reviewPath,headers:headers(currentSupervisorJar,randomUUID()),payload:{...reviewBody,expectedChecklistVersion:1}});
+  assert.equal(staleChecklistReview.statusCode,409);assert.equal(staleChecklistReview.json().error.code,'STALE_CHECKLIST_VERSION');
+  const changedOutcomeReview=await app.inject({method:'POST',url:reviewPath,headers:headers(currentSupervisorJar,randomUUID()),payload:{...reviewBody,outcomeRevisionId:randomUUID()}});
+  assert.equal(changedOutcomeReview.statusCode,409);assert.equal(changedOutcomeReview.json().error.code,'CHECKLIST_OUTCOME_CHANGED');
+  const rejectedReviewCount=await admin.query(`SELECT count(*)::int AS count FROM public.work_order_checklist_item_reviews WHERE checklist_item_id=$1`,[reviewItemId]);
+  assert.equal(rejectedReviewCount.rows[0]?.count,0,'Role, plan, assignment, checklist and outcome conflicts must not create review decisions.');
+  const authorizedQueue=await app.inject({url:checklistQueuePath,headers:headers(currentSupervisorJar)});
+  assert.equal(authorizedQueue.statusCode,200,authorizedQueue.body);assert.equal(authorizedQueue.json().canReview,true);
+  assert.equal(authorizedQueue.json().items.length,1);
+  const currentReviewBody=reviewBody;
+  const reviewCommandId=randomUUID();
+  const checklistReviewResponse=await app.inject({method:'POST',url:reviewPath,headers:headers(currentSupervisorJar,reviewCommandId),payload:currentReviewBody});
+  assert.equal(checklistReviewResponse.statusCode,200,checklistReviewResponse.body);assert.equal(checklistReviewResponse.json().disposition,'record-confirmed');
+  assert.equal(checklistReviewResponse.json().checklistVersion,3);
+  const reviewRecord=await admin.query('SELECT id FROM public.work_order_checklist_item_reviews WHERE outcome_revision_id=$1',[savedOutcome.outcome.id]);
+  const reviewRecordId=z.string().uuid().parse(reviewRecord.rows[0]?.id);
+  const tamperAttempts:Array<{sql:string;values:string[]}>= [
+    {sql:'UPDATE public.work_order_checklist_item_reviews SET reason=\'tampered review reason\' WHERE id=$1',values:[reviewRecordId]},
+    {sql:'DELETE FROM public.work_order_checklist_item_reviews WHERE id=$1',values:[reviewRecordId]},
+  ];
+  for (const attempt of tamperAttempts) {
+    await assert.rejects(()=>admin.query(attempt.sql,attempt.values),error=>error instanceof Error&&'code' in error&&error.code==='55000',
+      'Review decision history must reject updates and deletions at the database boundary.');
+  }
+  const reviewReplay=await app.inject({method:'POST',url:reviewPath,headers:headers(currentSupervisorJar,reviewCommandId),payload:currentReviewBody});
+  assert.equal(reviewReplay.statusCode,200,reviewReplay.body);assert.deepEqual(reviewReplay.json(),checklistReviewResponse.json());
+  const changedReviewReplay=await app.inject({method:'POST',url:reviewPath,headers:headers(currentSupervisorJar,reviewCommandId),payload:{...currentReviewBody,reason:'Changed after review.'}});
+  assert.equal(changedReviewReplay.statusCode,409);assert.equal(changedReviewReplay.json().error.code,'IDEMPOTENCY_CONFLICT');
+  const reviewState=await admin.query(`SELECT checklist.state,checklist.version,
+      (SELECT count(*)::int FROM public.work_order_checklist_item_reviews review WHERE review.outcome_revision_id=$2) AS reviews,
+      (SELECT count(*)::int FROM public.work_order_checklist_item_revisions outcome WHERE outcome.checklist_id=checklist.id) AS outcomes
+    FROM public.work_order_checklists checklist WHERE checklist.id=$1`,[reviewChecklistId,savedOutcome.outcome.id]);
+  assert.deepEqual(reviewState.rows[0],{state:'in-progress',version:3,reviews:1,outcomes:1},
+    'A checklist record review must not approve or complete technical work.');
+  const queueAfterReview=await app.inject({url:checklistQueuePath,headers:headers(currentSupervisorJar)});
+  assert.equal(queueAfterReview.statusCode,200,queueAfterReview.body);assert.deepEqual(queueAfterReview.json().items,[]);
   const activityPath=`/api/v1/sites/${siteA}/my-tasks/${order.id}/${assignedTaskId}/activity`;
   const activityBody={expectedWorkPlanRevisionId:currentTask.workPlanRevisionId,expectedAssignmentRevision:currentTask.assignmentRevision,entryType:'progress',progressState:'working',requestType:null,note:'Synthetic progress update for API verification.'};
   const activityKey=randomUUID();
@@ -2920,8 +3401,8 @@ test('Supervisor task allocations stay scoped to the current handed-off plan and
   const changedReplay=await app.inject({method:'POST',url:activityPath,headers:headers(currentAssigneeSession,activityKey),payload:{...activityBody,note:'Changed content.'}});
   assert.equal(changedReplay.statusCode,409,changedReplay.body);assert.equal(changedReplay.json().error.code,'IDEMPOTENCY_CONFLICT');
   const activityRead=await app.inject({url:activityPath,headers:headers(currentAssigneeSession)});
-  assert.equal(activityRead.statusCode,200,activityRead.body);assert.equal(activityRead.json().items.length,1);
-  assert.equal(activityRead.json().items[0].note,activityBody.note);
+   assert.equal(activityRead.statusCode,200,activityRead.body);assert.equal(activityRead.json().items.length,3);
+   assert.equal(activityRead.json().items.at(-1)?.note,activityBody.note);
   const formerActivityRead=await app.inject({url:activityPath,headers:headers(formerAssigneeSession)});
   assert.equal(formerActivityRead.statusCode,409,formerActivityRead.body);
   const acknowledgementBody={...activityBody,entryType:'acknowledgement',progressState:null,note:'Synthetic acknowledgement.'};
@@ -3055,7 +3536,7 @@ test('Supervisor task allocations stay scoped to the current handed-off plan and
   const oversizedEvidencePage=await app.inject({url:`/api/v1/sites/${siteA}/my-tasks/${order.id}/${assignedTaskId}/work-evidence?page=1&pageSize=51`,headers:headers(currentAssigneeSession)});
   assert.equal(oversizedEvidencePage.statusCode,400);
   const workEntryBody={expectedWorkPlanRevisionId:currentTask.workPlanRevisionId,expectedAssignmentRevision:currentTask.assignmentRevision,
-    kind:'test',result:'not-reproduced',summary:'Synthetic road test',detail:'No unusual sound was heard or reproduced during this test.',
+    kind:'finding',result:'observed',summary:'Synthetic task observation',detail:'Observation recorded without diagnostic testing or repair authorization.',
     observedAt:'2026-11-12T08:00:00.000Z',evidenceIds:[taskEvidenceId],supersedesEntryId:null,correctionReason:null};
   async function insertTaskEvidenceWithScanState(scanState:'quarantined'|'rejected',verdict:'unavailable'|'infected') {
     const evidenceId=randomUUID(),intentId=randomUUID(),sha='b'.repeat(64);
@@ -3082,7 +3563,7 @@ test('Supervisor task allocations stay scoped to the current handed-off plan and
   for (const [scanState,verdict] of [['quarantined','unavailable'],['rejected','infected']] as const) {
     const unavailableTaskEvidence=await insertTaskEvidenceWithScanState(scanState,verdict);
     const deniedTaskEvidence=await app.inject({method:'POST',url:workEntriesPath,headers:headers(currentAssigneeSession),
-      payload:{...workEntryBody,kind:'action',result:'done',summary:`Synthetic ${scanState} evidence denial`,evidenceIds:[unavailableTaskEvidence]}});
+      payload:{...workEntryBody,summary:`Synthetic ${scanState} evidence denial`,evidenceIds:[unavailableTaskEvidence]}});
     assert.equal(deniedTaskEvidence.statusCode,409,deniedTaskEvidence.body);
     assert.equal(deniedTaskEvidence.json().error.code,'EVIDENCE_NOT_AVAILABLE');
     const deniedEvidenceDownload=await app.inject({url:`/api/v1/sites/${siteA}/evidence/${unavailableTaskEvidence}/download`,headers:headers(currentAssigneeSession)});
@@ -3097,7 +3578,7 @@ test('Supervisor task allocations stay scoped to the current handed-off plan and
   const workEntryKey=randomUUID();
   const workEntryWrite=await app.inject({method:'POST',url:workEntriesPath,headers:headers(currentAssigneeSession,workEntryKey),payload:workEntryBody});
   assert.equal(workEntryWrite.statusCode,200,workEntryWrite.body);
-  assert.equal(workEntryWrite.json().entry.kind,'test');assert.equal(workEntryWrite.json().entry.result,'not-reproduced');
+  assert.equal(workEntryWrite.json().entry.kind,'finding');assert.equal(workEntryWrite.json().entry.result,'observed');
   assert.deepEqual(workEntryWrite.json().entry.evidenceIds,[taskEvidenceId]);
   assert.equal(workEntryWrite.json().entry.actorName,'Synthetic Direct Technician Two');
   assert.equal(workEntryWrite.json().entry.observedAt,workEntryBody.observedAt);
@@ -3106,13 +3587,25 @@ test('Supervisor task allocations stay scoped to the current handed-off plan and
   const changedWorkEntryReplay=await app.inject({method:'POST',url:workEntriesPath,headers:headers(currentAssigneeSession,workEntryKey),payload:{...workEntryBody,detail:'Changed result.'}});
   assert.equal(changedWorkEntryReplay.statusCode,409);assert.equal(changedWorkEntryReplay.json().error.code,'IDEMPOTENCY_CONFLICT');
   const invalidWorkEntry=await app.inject({method:'POST',url:workEntriesPath,headers:headers(currentAssigneeSession),payload:{...workEntryBody,kind:'action'}});
-  assert.equal(invalidWorkEntry.statusCode,400,'A test result cannot be recorded as an action result.');
-  const unavailableEvidence=await app.inject({method:'POST',url:workEntriesPath,headers:headers(currentAssigneeSession),payload:{...workEntryBody,kind:'action',result:'done',summary:'Synthetic work action',evidenceIds:[randomUUID()]}});
+  assert.equal(invalidWorkEntry.statusCode,400,'A finding result cannot be recorded as an action result.');
+  const workEntryCountBeforeDeniedTechnical=await admin.query(`SELECT count(*)::int AS count FROM work_order_task_work_entries
+    WHERE organisation_id=$1 AND site_id=$2 AND work_order_id=$3 AND task_id=$4`,[orgA,siteA,order.id,assignedTaskId]);
+  const deniedDiagnosticTest=await app.inject({method:'POST',url:workEntriesPath,headers:headers(currentAssigneeSession),payload:{...workEntryBody,kind:'test',result:'not-reproduced',summary:'Unapproved synthetic test'}});
+  assert.equal(deniedDiagnosticTest.statusCode,409);assert.equal(deniedDiagnosticTest.json().error.code,'TECHNICAL_AUTHORIZATION_UNAVAILABLE');
+  const deniedRepairAction=await app.inject({method:'POST',url:workEntriesPath,headers:headers(currentAssigneeSession),payload:{...workEntryBody,kind:'action',result:'done',summary:'Unapproved synthetic repair'}});
+  assert.equal(deniedRepairAction.statusCode,409);assert.equal(deniedRepairAction.json().error.code,'TECHNICAL_AUTHORIZATION_UNAVAILABLE');
+  const deniedCompletedFollowUp=await app.inject({method:'POST',url:workEntriesPath,headers:headers(currentAssigneeSession),payload:{...workEntryBody,kind:'follow-up',result:'done',summary:'Unapproved synthetic follow-up'}});
+  assert.equal(deniedCompletedFollowUp.statusCode,409);assert.equal(deniedCompletedFollowUp.json().error.code,'TECHNICAL_AUTHORIZATION_UNAVAILABLE');
+  const noUnauthorizedWorkRows=await admin.query(`SELECT count(*)::int AS count FROM work_order_task_work_entries
+    WHERE organisation_id=$1 AND site_id=$2 AND work_order_id=$3 AND task_id=$4`,[orgA,siteA,order.id,assignedTaskId]);
+  assert.equal(noUnauthorizedWorkRows.rows[0].count,workEntryCountBeforeDeniedTechnical.rows[0].count,
+    'Unapproved tests, repairs and completed follow-ups must not create additional work entries.');
+  const unavailableEvidence=await app.inject({method:'POST',url:workEntriesPath,headers:headers(currentAssigneeSession),payload:{...workEntryBody,summary:'Synthetic unavailable evidence',evidenceIds:[randomUUID()]}});
   assert.equal(unavailableEvidence.statusCode,409);assert.equal(unavailableEvidence.json().error.code,'EVIDENCE_NOT_AVAILABLE');
   const staleWorkEntry=await app.inject({method:'POST',url:workEntriesPath,headers:headers(currentAssigneeSession),payload:{...workEntryBody,expectedAssignmentRevision:1}});
   assert.equal(staleWorkEntry.statusCode,409);assert.equal(staleWorkEntry.json().error.code,'STALE_TASK_ASSIGNMENT');
-  const workEntryCorrectionBody={...workEntryBody,kind:'test',result:'inconclusive',summary:'Corrected road test note',
-    detail:'The earlier wording was incomplete; the test outcome is inconclusive.',supersedesEntryId:workEntryWrite.json().entry.id,correctionReason:'Synthetic correction test.'};
+  const workEntryCorrectionBody={...workEntryBody,result:'inconclusive',summary:'Corrected observation note',
+    detail:'The earlier wording was incomplete; this observation remains inconclusive.',supersedesEntryId:workEntryWrite.json().entry.id,correctionReason:'Synthetic correction test.'};
   const correctionKey=randomUUID();
   const correctionWrite=await app.inject({method:'POST',url:workEntriesPath,headers:headers(currentAssigneeSession,correctionKey),payload:workEntryCorrectionBody});
   assert.equal(correctionWrite.statusCode,200,correctionWrite.body);
@@ -3205,16 +3698,130 @@ test('Supervisor task allocations stay scoped to the current handed-off plan and
   await assert.rejects(admin.query('UPDATE work_order_task_work_entries SET detail=$1 WHERE organisation_id=$2 AND site_id=$3 AND id=$4',['forbidden rewrite',orgA,siteA,workEntryWrite.json().entry.id]),/immutable/);
   const supervisorActivity=await app.inject({url:activityPath,headers:headers(currentSupervisorJar)});
   assert.equal(supervisorActivity.statusCode,403,supervisorActivity.body);
+  const completionDeclaration={actionsSummary:'Recorded the assigned road-test check and correction note.',
+    checksSummary:'No unusual sound was heard or reproduced during the recorded road test.',
+    outcome:'reported-complete',remainingWork:'Supervisor must verify the task and any required procedure evidence.'};
+  const declarationWorkEntryIds=(await admin.query(`SELECT id FROM work_order_task_work_entries
+    WHERE organisation_id=$1 AND site_id=$2 AND work_order_id=$3 AND task_id=$4
+      AND work_plan_revision_id=$5 AND assignment_revision=$6 ORDER BY recorded_at,id`,
+  [orgA,siteA,order.id,assignedTaskId,currentTask.workPlanRevisionId,currentTask.assignmentRevision])).rows.map(row=>row.id);
+  const invalidDeclaration=await app.inject({method:'POST',url:activityPath,headers:headers(currentAssigneeSession),payload:{
+    ...activityBody,completionDeclaration,
+  }});
+  assert.equal(invalidDeclaration.statusCode,400,'A completion declaration cannot be sent as an ordinary progress update.');
+  const reviewRequestBody={...activityBody,entryType:'request',progressState:null,requestType:'supervisor-review',
+    completionDeclaration,note:'Worker report submitted for Supervisor review.'};
+  const reviewRequestKey=randomUUID();
+  const versionBeforeReviewRequest=Number((await admin.query('SELECT version FROM work_orders WHERE id=$1',[order.id])).rows[0]?.version);
+  const reviewRequest=await app.inject({method:'POST',url:activityPath,headers:headers(currentAssigneeSession,reviewRequestKey),payload:reviewRequestBody});
+  assert.equal(reviewRequest.statusCode,200,reviewRequest.body);
+  assert.equal(reviewRequest.json().activity.requestType,'supervisor-review');
+  assert.deepEqual(reviewRequest.json().activity.completionDeclaration,completionDeclaration);
+  assert.deepEqual(reviewRequest.json().activity.declarationWorkEntryIds,declarationWorkEntryIds,
+    'The report must snapshot all work entries from the current assignment in stable order.');
+  const declarationReplay=await app.inject({method:'POST',url:activityPath,headers:headers(currentAssigneeSession,reviewRequestKey),payload:reviewRequestBody});
+  assert.equal(declarationReplay.statusCode,200,declarationReplay.body);assert.deepEqual(declarationReplay.json(),reviewRequest.json());
+  const changedDeclarationReplay=await app.inject({method:'POST',url:activityPath,headers:headers(currentAssigneeSession,reviewRequestKey),payload:{
+    ...reviewRequestBody,completionDeclaration:{...completionDeclaration,remainingWork:'Different report.'},
+  }});
+  assert.equal(changedDeclarationReplay.statusCode,409);assert.equal(changedDeclarationReplay.json().error.code,'IDEMPOTENCY_CONFLICT');
+  const taskReviewQueuePath=`/api/v1/sites/${siteA}/task-review-requests?page=1&pageSize=25`;
+  const taskReviewQueue=await app.inject({url:taskReviewQueuePath,headers:headers(currentSupervisorJar)});
+  assert.equal(taskReviewQueue.statusCode,200,taskReviewQueue.body);
+  assert.equal(taskReviewQueue.headers['cache-control'],'no-store');
+  assert.deepEqual(taskReviewQueue.json().pagination,{page:1,pageSize:25,totalItems:1,totalPages:1});
+  assert.deepEqual(taskReviewQueue.json().items.map((item:{activityId:string;workOrderId:string;taskId:string;requesterName:string;technicianName:string;note:string})=>({
+    activityId:item.activityId,workOrderId:item.workOrderId,taskId:item.taskId,requesterName:item.requesterName,
+    technicianName:item.technicianName,note:item.note,
+  })),[{activityId:reviewRequest.json().activity.id,workOrderId:order.id,taskId:assignedTaskId,
+    requesterName:'Synthetic Direct Technician Two',technicianName:'Synthetic Direct Technician Two',
+    note:'Worker report submitted for Supervisor review.'}]);
+  const assignedLeadTaskReviewQueue=await app.inject({url:taskReviewQueuePath,headers:headers(leadSessionForPlan)});
+  assert.equal(assignedLeadTaskReviewQueue.statusCode,200,assignedLeadTaskReviewQueue.body);
+  assert.equal(assignedLeadTaskReviewQueue.json().pagination.totalItems,1,'The currently assigned Team Lead can see requests for their work order.');
+  const headTaskReviewQueue=await app.inject({url:taskReviewQueuePath,headers:headers(jarA)});
+  assert.equal(headTaskReviewQueue.statusCode,200,headTaskReviewQueue.body);
+  assert.equal(headTaskReviewQueue.json().pagination.totalItems,1,'The Head can see current site review requests.');
+  const deniedTechnicianTaskReviewQueue=await app.inject({url:taskReviewQueuePath,headers:headers(currentAssigneeSession)});
+  assert.equal(deniedTechnicianTaskReviewQueue.statusCode,403);
+  assert.equal(deniedTechnicianTaskReviewQueue.json().error.code,'TASK_REVIEW_QUEUE_REQUIRED');
+  const wrongSiteTaskReviewQueue=await app.inject({url:`/api/v1/sites/${siteB}/task-review-requests`,headers:headers(currentSupervisorJar)});
+  assert.equal(wrongSiteTaskReviewQueue.statusCode,403);
+  const reviewRequestReplay=await app.inject({method:'POST',url:activityPath,headers:headers(currentAssigneeSession,reviewRequestKey),payload:reviewRequestBody});
+  assert.equal(reviewRequestReplay.statusCode,200,reviewRequestReplay.body);
+  assert.deepEqual(reviewRequestReplay.json(),reviewRequest.json(),'The same review request command must replay without adding a duplicate.');
+  const reviewRequestConflict=await app.inject({method:'POST',url:activityPath,headers:headers(currentAssigneeSession,reviewRequestKey),payload:{...reviewRequestBody,note:'Changed request content.'}});
+  assert.equal(reviewRequestConflict.statusCode,409,reviewRequestConflict.body);
+  assert.equal(reviewRequestConflict.json().error.code,'IDEMPOTENCY_CONFLICT');
+  const crossSiteReviewRequest=await app.inject({method:'POST',url:`/api/v1/sites/${siteB}/my-tasks/${order.id}/${assignedTaskId}/activity`,headers:headers(currentAssigneeSession,randomUUID()),payload:reviewRequestBody});
+  assert.equal(crossSiteReviewRequest.statusCode,403,'A review request cannot be submitted through another site.');
+  const versionAfterReviewRequest=Number((await admin.query('SELECT version FROM work_orders WHERE id=$1',[order.id])).rows[0]?.version);
+  assert.equal(versionAfterReviewRequest,versionBeforeReviewRequest,'A review request does not advance work-order completion or release state.');
+  const reviewReplyPath=`/api/v1/sites/${siteA}/work-orders/${order.id}/tasks/${assignedTaskId}/task-activity/${reviewRequest.json().activity.id}/reply`;
+  const reviewReplyBody={expectedWorkPlanRevisionId:currentTask.workPlanRevisionId,expectedAssignmentRevision:currentTask.assignmentRevision,note:'Please add the measured value from the approved procedure, then request another review.'};
+  const unauthorizedLeadReply=await app.inject({method:'POST',url:reviewReplyPath,headers:headers(leadSessionForPlan,randomUUID()),payload:reviewReplyBody});
+  assert.equal(unauthorizedLeadReply.statusCode,403,unauthorizedLeadReply.body);
+  assert.equal(unauthorizedLeadReply.json().error.code,'TASK_REVIEW_RESPONSE_AUTHORITY_REQUIRED');
+  const reviewReplyKey=randomUUID();
+  const reviewReply=await app.inject({method:'POST',url:reviewReplyPath,headers:headers(currentSupervisorJar,reviewReplyKey),payload:reviewReplyBody});
+  assert.equal(reviewReply.statusCode,200,reviewReply.body);
+  const emptyTaskReviewQueue=await app.inject({url:taskReviewQueuePath,headers:headers(currentSupervisorJar)});
+  assert.equal(emptyTaskReviewQueue.statusCode,200,emptyTaskReviewQueue.body);
+  assert.deepEqual(emptyTaskReviewQueue.json().pagination,{page:1,pageSize:25,totalItems:0,totalPages:0},'Answered review requests must leave the open queue.');
+  const reviewQueueAudits=await admin.query(`SELECT result_count FROM sensitive_read_events
+    WHERE organisation_id=$1 AND site_id=$2 AND actor_id=$3 AND action='work-order-task-review-queue-read-prepared'
+    ORDER BY created_at`,[orgA,siteA,allocationSupervisorId]);
+  assert.equal(reviewQueueAudits.rowCount,2,'Successful queue reads, including an empty queue, are audited.');
+  assert.deepEqual(reviewQueueAudits.rows.map(row=>Number(row.result_count)),[1,0]);
+  assert.equal(reviewReply.json().activity.entryType,'review-response');
+  assert.equal(reviewReply.json().activity.responseToActivityId,reviewRequest.json().activity.id);
+  assert.equal(reviewReply.json().activity.note,reviewReplyBody.note);
+  const responseEvent=await admin.query(`SELECT event.event_type,event.actor_id,outbox.id AS outbox_id
+    FROM domain_events event JOIN outbox ON outbox.event_id=event.id
+    WHERE event.aggregate_id=$1 AND event.event_type='work-order.task.supervisor-review-responded'`,[assignedTaskId]);
+  assert.equal(responseEvent.rowCount,1,'The response and one outbox item commit with its audit event.');
+  assert.equal(responseEvent.rows[0].actor_id,allocationSupervisorId);
+  const responseRecord=await admin.query(`SELECT actor_user_id,authority_snapshot->>'capability' AS capability,
+      authority_snapshot->>'staff_user_id' AS grant_user_id
+    FROM work_order_task_activity WHERE id=$1`,[reviewReply.json().activity.id]);
+  assert.equal(responseRecord.rows[0].actor_user_id,allocationSupervisorId);
+  assert.equal(responseRecord.rows[0].capability,'work-order.task.review-response');
+  assert.equal(responseRecord.rows[0].grant_user_id,allocationSupervisorId);
+  const versionAfterReviewReply=Number((await admin.query('SELECT version FROM work_orders WHERE id=$1',[order.id])).rows[0]?.version);
+  assert.equal(versionAfterReviewReply,versionBeforeReviewRequest,'A response cannot complete or release the job.');
+  const reviewReplyReplay=await app.inject({method:'POST',url:reviewReplyPath,headers:headers(currentSupervisorJar,reviewReplyKey),payload:reviewReplyBody});
+  assert.equal(reviewReplyReplay.statusCode,200,reviewReplyReplay.body);
+  assert.deepEqual(reviewReplyReplay.json(),reviewReply.json(),'A repeated response command must replay without adding a second response.');
+  const changedReviewReply=await app.inject({method:'POST',url:reviewReplyPath,headers:headers(currentSupervisorJar,reviewReplyKey),payload:{...reviewReplyBody,note:'Changed response.'}});
+  assert.equal(changedReviewReply.statusCode,409,changedReviewReply.body);
+  assert.equal(changedReviewReply.json().error.code,'IDEMPOTENCY_CONFLICT');
+  const duplicateReviewReply=await app.inject({method:'POST',url:reviewReplyPath,headers:headers(currentSupervisorJar,randomUUID()),payload:reviewReplyBody});
+  assert.equal(duplicateReviewReply.statusCode,409,duplicateReviewReply.body);
+  assert.equal(duplicateReviewReply.json().error.code,'TASK_REVIEW_ALREADY_ANSWERED');
+  const technicianActivityAfterReply=await app.inject({url:activityPath,headers:headers(currentAssigneeSession)});
+  assert.equal(technicianActivityAfterReply.statusCode,200,technicianActivityAfterReply.body);
+  assert(technicianActivityAfterReply.json().items.some((item:{entryType:string;responseToActivityId:string|null;note:string})=>
+    item.entryType==='review-response'&&item.responseToActivityId===reviewRequest.json().activity.id&&item.note===reviewReplyBody.note));
+  const crossSiteReviewReply=await app.inject({method:'POST',url:`/api/v1/sites/${siteB}/work-orders/${order.id}/tasks/${assignedTaskId}/task-activity/${reviewRequest.json().activity.id}/reply`,headers:headers(currentSupervisorJar,randomUUID()),payload:reviewReplyBody});
+  assert.equal(crossSiteReviewReply.statusCode,403,'A review response cannot be submitted through another site.');
   const supervisorActivityPath=`/api/v1/sites/${siteA}/work-orders/${order.id}/task-activity?page=1&pageSize=25`;
   const supervisorActivityPage=await app.inject({url:supervisorActivityPath,headers:headers(currentSupervisorJar)});
   assert.equal(supervisorActivityPage.statusCode,200,supervisorActivityPage.body);
-  assert.deepEqual(supervisorActivityPage.json().pagination,{page:1,pageSize:25,totalItems:2,totalPages:1});
+   assert.deepEqual(supervisorActivityPage.json().pagination,{page:1,pageSize:25,totalItems:6,totalPages:1});
+  assert.equal(supervisorActivityPage.json().canRespond,true);
   assert.equal(supervisorActivityPage.json().planRevisionId,plan.workPlan.id);
+  const supervisorDeclaration=supervisorActivityPage.json().items.find((item:{completionDeclaration:{outcome:string}|null})=>item.completionDeclaration!==null);
+  assert.deepEqual(supervisorDeclaration?.completionDeclaration,completionDeclaration);
+  assert.deepEqual(supervisorDeclaration?.declarationWorkEntryIds,declarationWorkEntryIds);
   assert.deepEqual(supervisorActivityPage.json().items.map((item:{note:string;actorName:string;currentAssigneeName:string;currentAssignmentRevision:number})=>({
     note:item.note,actorName:item.actorName,currentAssigneeName:item.currentAssigneeName,currentAssignmentRevision:item.currentAssignmentRevision,
   })).sort((left:{note:string},right:{note:string})=>left.note.localeCompare(right.note)),[
+     {note:'Synthetic current assignment reports blocked.',actorName:'Synthetic Direct Technician Two',currentAssigneeName:'Synthetic Direct Technician Two',currentAssignmentRevision:2},
+     {note:'Synthetic current assignment reports waiting.',actorName:'Synthetic Direct Technician Two',currentAssigneeName:'Synthetic Direct Technician Two',currentAssignmentRevision:2},
     {note:'Synthetic acknowledgement.',actorName:'Synthetic Direct Technician Two',currentAssigneeName:'Synthetic Direct Technician Two',currentAssignmentRevision:2},
     {note:activityBody.note,actorName:'Synthetic Direct Technician Two',currentAssigneeName:'Synthetic Direct Technician Two',currentAssignmentRevision:2},
+    {note:reviewRequestBody.note,actorName:'Synthetic Direct Technician Two',currentAssigneeName:'Synthetic Direct Technician Two',currentAssignmentRevision:2},
+    {note:reviewReplyBody.note,actorName:'Synthetic Allocation Supervisor',currentAssigneeName:'Synthetic Direct Technician Two',currentAssignmentRevision:2},
   ].sort((left,right)=>left.note.localeCompare(right.note)));
   const restrictedSupervisorActivity=await app.inject({url:supervisorActivityPath,headers:headers(restrictedJar)});
   assert.equal(restrictedSupervisorActivity.statusCode,403,restrictedSupervisorActivity.body);
@@ -3224,10 +3831,17 @@ test('Supervisor task allocations stay scoped to the current handed-off plan and
   assert.equal(unassignedLeadAllocationView.json().activityAudience,null,'An unassigned Team Lead must not be included in task-feed oversight.');
   const leadActivityPage=await app.inject({url:supervisorActivityPath,headers:headers(leadSessionForPlan)});
   assert.equal(leadActivityPage.statusCode,200,leadActivityPage.body);
-  assert.equal(leadActivityPage.json().items.length,2,'The assigned Team Lead can read all current plan updates.');
+   assert.equal(leadActivityPage.json().items.length,6,'The assigned Team Lead can read all current plan updates.');
+  assert.equal(leadActivityPage.json().canRespond,false,'The Team Lead can read but has no task review-response grant.');
+  assert.equal(leadActivityPage.json().responseBlockReason,'authority-required');
   const headActivityPage=await app.inject({url:supervisorActivityPath,headers:headers(jarA)});
   assert.equal(headActivityPage.statusCode,200,headActivityPage.body);
-  assert.equal(headActivityPage.json().items.length,2,'The Head of Service Centre can read all current plan updates.');
+   assert.equal(headActivityPage.json().items.length,6,'The Head of Service Centre can read all current plan updates.');
+  assert.equal(headActivityPage.json().canRespond,false,'The Head can read but has no task review-response grant.');
+  const technicianDeclarationHistory=await app.inject({url:activityPath,headers:headers(currentAssigneeSession)});
+  assert.equal(technicianDeclarationHistory.statusCode,200,technicianDeclarationHistory.body);
+  const technicianDeclaration=technicianDeclarationHistory.json().items.find((item:{completionDeclaration:{outcome:string}|null})=>item.completionDeclaration!==null);
+  assert.deepEqual(technicianDeclaration?.completionDeclaration,completionDeclaration);
   const activityAudienceResponse=await app.inject({url:allocationPath,headers:headers(leadSessionForPlan)});
   assert.equal(activityAudienceResponse.statusCode,200,activityAudienceResponse.body);
   assert.equal(activityAudienceResponse.json().activityAudience,'team-lead');
@@ -3237,11 +3851,11 @@ test('Supervisor task allocations stay scoped to the current handed-off plan and
   const supervisorActivityAudits=await admin.query(`SELECT result_count FROM sensitive_read_events
     WHERE site_id=$1 AND actor_id=$2 AND action='work-order-task-activity-read-prepared'`,[siteA,allocationSupervisorId]);
   assert.equal(supervisorActivityAudits.rowCount,1,'Supervisor task activity reads are audited.');
-  assert.equal(Number(supervisorActivityAudits.rows[0].result_count),2);
+   assert.equal(Number(supervisorActivityAudits.rows[0].result_count),6);
   const oversightActivityAudits=await admin.query(`SELECT actor_id,result_count FROM sensitive_read_events
     WHERE site_id=$1 AND actor_id=ANY($2::uuid[]) AND action='work-order-task-activity-read-prepared'`,[siteA,[allocationLeadId,actorA]]);
   assert.equal(oversightActivityAudits.rowCount,2,'Assigned lead and Head task feed reads are audited.');
-  assert(oversightActivityAudits.rows.every(row=>Number(row.result_count)===2));
+   assert(oversightActivityAudits.rows.every(row=>Number(row.result_count)===6));
   const reassignmentLaborStart=await app.inject({method:'POST',url:laborStartPath,headers:headers(currentAssigneeSession),payload:laborStartBody});
   assert.equal(reassignmentLaborStart.statusCode,200,reassignmentLaborStart.body);
   const reassignmentLaborSession=reassignmentLaborStart.json() as typeof startedLabor;
@@ -3251,6 +3865,17 @@ test('Supervisor task allocations stay scoped to the current handed-off plan and
   assert.equal(reassignWhileClockRuns.statusCode,200,reassignWhileClockRuns.body);
   assert.equal(reassignWhileClockRuns.json().assignments[0].revision,3);
   order.version=reassignWhileClockRuns.json().version;
+   const reassignedWorkload=await app.inject({url:allocationPath,headers:headers(currentSupervisorJar)});
+   assert.equal(reassignedWorkload.statusCode,200,reassignedWorkload.body);
+   assert.deepEqual(reassignedWorkload.json().assignees.map((staff:{staffUserId:string;currentPlanTaskCount:number;lastReportedBlockedTaskCount:number;lastReportedWaitingTaskCount:number})=>[
+     staff.staffUserId,staff.currentPlanTaskCount,staff.lastReportedBlockedTaskCount,staff.lastReportedWaitingTaskCount,
+   ]),[[technicianOne.id,1,0,0],[technicianTwo.id,0,0,0]],'A new assignment revision must not inherit progress reported on an earlier assignee revision.');
+   const headProgressAfterReassignment=await app.inject({url:`/api/v1/sites/${siteA}/workforce/overview`,headers:headers(jarA)});
+   assert.equal(headProgressAfterReassignment.statusCode,200,headProgressAfterReassignment.body);
+   assert.equal(headProgressAfterReassignment.json().taskProgress.blockedCount,headProgressBaseline.blockedCount);
+   assert.equal(headProgressAfterReassignment.json().taskProgress.waitingCount,headProgressBaseline.waitingCount);
+   assert.equal(headProgressAfterReassignment.json().taskProgress.items.some((item:{workOrderId:string})=>item.workOrderId===order.id),false,
+     'Head overview must not carry progress from the previous assignee into the new assignment revision.');
   const formerOwnerStop=await app.inject({method:'POST',url:`/api/v1/sites/${siteA}/my-task-labor-sessions/${reassignmentLaborSession.id}/stop`,
     headers:headers(currentAssigneeSession),payload:{expectedStartedAt:reassignmentLaborSession.startedAt}});
   assert.equal(formerOwnerStop.statusCode,200,'The owner must be able to stop a session after the task is reassigned.');
@@ -3274,7 +3899,7 @@ test('Supervisor task allocations stay scoped to the current handed-off plan and
   const unchangedOrder=await admin.query('SELECT version FROM work_orders WHERE organisation_id=$1 AND site_id=$2 AND id=$3',[orgA,siteA,order.id]);
   assert.equal(Number(unchangedOrder.rows[0].version),order.version,'progress notes must not change the work-order version or invalidate its plan');
   const activityCount=await admin.query('SELECT count(*)::int AS total FROM work_order_task_activity WHERE organisation_id=$1 AND site_id=$2 AND work_order_id=$3 AND task_id=$4',[orgA,siteA,order.id,assignedTaskId]);
-  assert.equal(activityCount.rows[0].total,2,'same-key replay must not duplicate task history');
+   assert.equal(activityCount.rows[0].total,6,'same-key replay must not duplicate task history, including progress, review requests and response');
   await assert.rejects(admin.query('UPDATE work_order_task_activity SET note=$1 WHERE organisation_id=$2 AND site_id=$3 AND work_order_id=$4 AND task_id=$5',['forbidden rewrite',orgA,siteA,order.id,assignedTaskId]),/immutable/);
   assert.deepEqual(currentAssigneeTasks.json().pagination,{page:1,pageSize:1,totalItems:1,totalPages:1});
   const nonTechnicianTasks=await app.inject({url:`/api/v1/sites/${siteA}/my-tasks`,headers:headers(currentSupervisorJar)});
@@ -3478,6 +4103,10 @@ test('service request storage isolates sites and preserves contact history',asyn
 test('service request creation commits once and rejects changed replay',async()=>{
   const scope={organisationId:orgA,siteId:siteA,actorId:actorA}, key=randomUUID();
   const input=serviceRequestInputSchema.parse({sourceChannel:'phone',concern:'Synthetic concern'});
+  assert.equal(input.requestKind,'repair-maintenance');
+  for(const requestKind of ['repair-maintenance','routine-maintenance','psai','service-centre-pdi'])
+    assert.equal(serviceRequestInputSchema.parse({requestKind,sourceChannel:'phone',concern:'Synthetic typed concern'}).requestKind,requestKind);
+  assert.equal(serviceRequestInputSchema.safeParse({requestKind:'sales-pdi',sourceChannel:'phone',concern:'Synthetic invalid type'}).success,false);
   const [first,second]=await Promise.all([createServiceRequest(runtime,scope,key,input),createServiceRequest(runtime,scope,key,input)]);
   assert.deepEqual(first,second);
   await assert.rejects(createServiceRequest(runtime,scope,key,{...input,concern:'Changed'}),/already used/);
@@ -3487,7 +4116,7 @@ test('service request creation commits once and rejects changed replay',async()=
   const withFollowUp=await createServiceRequest(runtime,scope,randomUUID(),scheduled);
   assert.equal(serviceRequestInputSchema.safeParse({sourceChannel:'phone',concern:'Synthetic missing action',callbackDueAt:'2026-12-01T14:00:00Z'}).success,false);
   await scoped(runtime,scope,async client=>{
-    assert.equal((await client.query('SELECT id FROM service_requests WHERE id=$1',[first.id])).rowCount,1);
+    assert.equal((await client.query('SELECT id FROM service_requests WHERE id=$1 AND request_kind=\'repair-maintenance\'',[first.id])).rowCount,1);
     assert.equal((await client.query("SELECT id FROM domain_events WHERE aggregate_id=$1 AND event_type='service-request.created'",[first.id])).rowCount,1);
     assert.equal((await client.query('SELECT o.id FROM outbox o JOIN domain_events e ON e.id=o.event_id WHERE e.aggregate_id=$1',[first.id])).rowCount,1);
     const followUp=await client.query('SELECT next_action,callback_due_at,assigned_to,created_by FROM service_requests WHERE id=$1',[withFollowUp.id]);
@@ -3840,7 +4469,7 @@ test('request links to a same-site job once without changing its gates',async()=
 
 test('request reception creates one linked job atomically and rejects conflicting attempts',async()=>{
   const scope={organisationId:orgA,siteId:siteA,actorId:actorA};
-  const request=await createServiceRequest(runtime,scope,randomUUID(),serviceRequestInputSchema.parse({sourceChannel:'phone',concern:'Synthetic arrival'}));
+  const request=await createServiceRequest(runtime,scope,randomUUID(),serviceRequestInputSchema.parse({requestKind:'service-centre-pdi',vehicleSource:'partner-garage',sourceChannel:'phone',concern:'Synthetic arrival'}));
   const base=`/api/v1/sites/${siteA}/service-requests/${request.id}/reception`;
   const body={expectedVersion:1,reason:'Synthetic confirmed arrival',intake:intake('WVWZZZ1JZXW778803')},key=randomUUID();
   const readerJar=await signIn('test-reader');
@@ -3848,6 +4477,7 @@ test('request reception creates one linked job atomically and rejects conflictin
   assert.equal((await app.inject({method:'POST',url:`/api/v1/sites/${siteB}/service-requests/${request.id}/reception`,headers:headers(jarA),payload:body})).statusCode,403);
   const response=await app.inject({method:'POST',url:base,headers:headers(jarA,key),payload:body});assert.equal(response.statusCode,200,response.body);
   const job=response.json();assert.ok(job.gates.every((gate:{state:string})=>gate.state==='pending'));
+  assert.equal(job.serviceKind,'service-centre-pdi');assert.equal(job.serviceSource,'partner-garage');
   const replay=await app.inject({method:'POST',url:base,headers:headers(jarA,key),payload:body});assert.deepEqual(replay.json(),job);
   const detail=await readServiceRequest(runtime,scope,request.id,randomUUID());assert.equal(detail.workOrderId,job.id);assert.equal(detail.version,2);
   assert.equal((await app.inject({method:'POST',url:base,headers:headers(jarA),payload:body})).statusCode,409);
@@ -3938,6 +4568,49 @@ test('sales delivery and PDI observations are role-scoped, source-attributed and
   assert.equal(JSON.stringify(history.json()).toLowerCase().includes('passed'),false,'PDI history must not imply a pass or approval.');
   assert.equal((await admin.query('SELECT 1 FROM sensitive_read_events WHERE organisation_id=$1 AND site_id=$2 AND actor_id=$3 AND action=$4',[orgA,siteA,actorA,'vehicle-sales-history-read-prepared'])).rowCount,1);
   await assert.rejects(runtime.query('DELETE FROM sales_deliveries WHERE id=$1',[delivery.id]),/permission denied/i);
+});
+
+test('service history is workshop-role scoped, site and organisation isolated, and excludes sales purchaser claims',async()=>{
+  const vin=`WVWZZZ1JZXW${randomBytes(3).toString('hex').toUpperCase()}`;
+  const createdA=await create(jarA,siteA,vin);assert.equal(createdA.statusCode,200,createdA.body);
+  const orderA=detailSchema.parse(createdA.json());
+  const salesId=randomUUID();
+  await admin.query(`INSERT INTO public.sales_deliveries(id,organisation_id,site_id,vehicle_id,delivered_on,
+      purchaser_at_delivery_claim,purchaser_source,recorded_by)
+    VALUES($1,$2,$3,$4,'2026-11-01','Synthetic historical purchaser','Synthetic test source',$5)`,
+  [salesId,orgA,siteA,orderA.vehicle.id,actorA]);
+  const base=`/api/v1/sites/${siteA}/service-history?vin=${vin}`;
+  const unauthorized=await app.inject({url:base,headers:headers(await signIn('test-reader'))});
+  assert.equal(unauthorized.statusCode,403,'A site member without an approved workshop history role cannot read service history.');
+  const advisorPlacement=randomUUID();
+  await admin.query(`INSERT INTO staff_role_placements(id,organisation_id,site_id,staff_user_id,role_code,reports_to_placement_id,revision,state,created_by,updated_by)
+    VALUES($1,$2,$3,$4,'service-advisor',NULL,1,'active',$5,$5)`,[advisorPlacement,orgA,siteA,reader,actorA]);
+  await admin.query(`INSERT INTO staff_role_placement_history(organisation_id,site_id,placement_id,revision,staff_user_id,role_code,state,changed_by)
+    VALUES($1,$2,$3,1,$4,'service-advisor','active',$5)`,[orgA,siteA,advisorPlacement,reader,actorA]);
+  const readerJar=await signIn('test-reader');
+  const response=await app.inject({url:base,headers:headers(readerJar)});
+  assert.equal(response.statusCode,200,response.body);
+  const history=response.json();
+  assert.equal(history.vehicle.vin,vin);
+  assert.equal(history.items.length,1);
+  assert.equal(history.items[0].workOrderId,orderA.id);
+  assert.equal(history.items[0].reference,orderA.reference);
+  assert.deepEqual(history.items[0].complaints,['Customer reports intermittent charging.']);
+  assert.equal(history.items[0].workEntries.length,0);
+  assert.equal(Object.hasOwn(history.items[0],'purchaserAtDeliveryClaim'),false);
+  assert.equal(JSON.stringify(history).includes('Synthetic historical purchaser'),false,'Sales purchaser claims must not leak into service history.');
+  assert.deepEqual(history.pagination,{page:1,pageSize:10,totalItems:1,totalPages:1});
+  assert.equal((await admin.query(`SELECT 1 FROM sensitive_read_events WHERE organisation_id=$1 AND site_id=$2 AND actor_id=$3 AND action='vehicle-service-history-read-prepared'`,[orgA,siteA,reader])).rowCount,1);
+
+  const wrongSite=await app.inject({url:`/api/v1/sites/${siteA2}/service-history?vin=${vin}`,headers:headers(otherSiteJar)});
+  assert.equal(wrongSite.statusCode,200,wrongSite.body);
+  assert.equal(wrongSite.json().vehicle,null,'The same-organisation vehicle must not appear at a site with no service visit.');
+  const createdB=await create(jarB,siteB,vin);assert.equal(createdB.statusCode,200,createdB.body);
+  const crossOrganisation=await app.inject({url:`/api/v1/sites/${siteB}/service-history?vin=${vin}`,headers:headers(jarB)});
+  assert.equal(crossOrganisation.statusCode,200,crossOrganisation.body);
+  assert.equal(crossOrganisation.json().items.length,1);
+  assert.equal(crossOrganisation.json().items[0].reference,detailSchema.parse(createdB.json()).reference);
+  assert.notEqual(crossOrganisation.json().items[0].reference,history.items[0].reference);
 });
 
 test('delivery preparation stays separate from dated delivery and links only through an explicit versioned command',async()=>{
@@ -4263,4 +4936,158 @@ test('Finance configuration drafts require a current scoped grant and remain non
   assert.equal((await admin.query(`SELECT count(*)::int AS count FROM public.sensitive_read_events
     WHERE organisation_id=$1 AND site_id=$2 AND actor_id=$3 AND action='finance-configuration-draft-read-prepared'`,
   [orgA,siteA,actorA])).rows[0]?.count,4);
+});
+
+test('scope proposals bind exact planned tasks and remain non-authorizing',async()=>{
+  const created=await create(jarA,siteA,'WVWZZZ1JZXW000381');
+  assert.equal(created.statusCode,200,created.body);
+  const initial=detailSchema.parse(created.json());
+  const taskResponse=await app.inject({method:'POST',url:`/api/v1/sites/${siteA}/work-orders/${initial.id}/tasks`,headers:headers(jarA),payload:{expectedVersion:initial.version,complaintId:initial.complaints[0]!.id,title:'Synthetic proposed inspection task'}});
+  assert.equal(taskResponse.statusCode,200,taskResponse.body);
+  const current=detailSchema.parse(taskResponse.json());
+  const path=`/api/v1/sites/${siteA}/work-orders/${current.id}/scope-proposals`;
+  const read=await app.inject({url:path,headers:headers(jarA)});
+  assert.equal(read.statusCode,200,read.body);
+  assert.equal(read.json().canPrepare,false);
+  assert.equal(read.json().blockReason,'authority-required');
+  assert.equal(read.json().canRecordPayerResponse,false);
+  assert.equal(read.json().payerResponseBlockReason,'authority-required');
+  assert.equal(read.json().plannedTasks[0]?.id,current.tasks[0]?.id);
+  const input={expectedVersion:current.version,requestedKind:'repair',taskIds:[current.tasks[0]!.id],rationale:'Synthetic proposal only; awaiting customer and technical decisions.',estimate:{minorUnits:'125000',currency:'GHS'}};
+  const missingRepairEstimate=await app.inject({method:'POST',url:path,headers:headers(jarA),payload:{...input,estimate:null}});
+  assert.equal(missingRepairEstimate.statusCode,400,missingRepairEstimate.body);
+  const denied=await app.inject({method:'POST',url:path,headers:headers(jarA),payload:input});
+  assert.equal(denied.statusCode,403,denied.body);
+  assert.equal(denied.json().error.code,'SCOPE_PROPOSAL_AUTHORITY_REQUIRED');
+
+  const grantId=randomUUID();
+  await admin.query(`INSERT INTO public.staff_authority_grants
+    (id,organisation_id,site_id,staff_user_id,capability,grant_revision,granted_by,basis_reference,valid_from,valid_until)
+    VALUES($1,$2,$3,$4,'work-order.prepare-scope-proposal',1,$4,'Synthetic scope proposal test grant',now()-interval '1 minute',now()+interval '1 hour')`,
+  [grantId,orgA,siteA,actorA]);
+  const commandId=randomUUID();
+  const saved=await app.inject({method:'POST',url:path,headers:headers(jarA,commandId),payload:input});
+  assert.equal(saved.statusCode,200,saved.body);
+  const result=saved.json();
+  assert.equal(result.proposal.requestedKind,'repair');
+  assert.equal(result.proposal.tasks[0]?.id,current.tasks[0]?.id);
+  assert.match(result.proposal.scopeDigest,/^[0-9a-f]{64}$/);
+  assert.equal(result.version,current.version+1);
+  assert.equal(Object.hasOwn(result,'authorized'),false);
+  const replay=await app.inject({method:'POST',url:path,headers:headers(jarA,commandId),payload:input});
+  assert.equal(replay.statusCode,200,replay.body);
+  assert.deepEqual(replay.json(),result);
+  const changedReplay=await app.inject({method:'POST',url:path,headers:headers(jarA,commandId),payload:{...input,rationale:'Changed content.'}});
+  assert.equal(changedReplay.statusCode,409,changedReplay.body);
+  assert.equal(changedReplay.json().error.code,'IDEMPOTENCY_CONFLICT');
+  const stale=await app.inject({method:'POST',url:path,headers:headers(jarA),payload:input});
+  assert.equal(stale.statusCode,409,stale.body);
+  assert.equal(stale.json().error.code,'STALE_VERSION');
+  const listed=await app.inject({url:path,headers:headers(jarA)});
+  assert.equal(listed.statusCode,200,listed.body);
+  assert.equal(listed.json().proposals[0]?.id,result.proposal.id);
+  assert.equal(listed.json().canPrepare,true);
+
+  const payerResponsePath=`${path}/${result.proposal.id}/payer-response`;
+  const payerResponseInput={expectedWorkOrderVersion:result.version,scopeRevisionId:result.proposal.id,scopeDigest:result.proposal.scopeDigest,
+    responseMethod:'phone',evidenceIds:[],writtenEvidenceConfirmed:false,
+    decision:'approved',respondentName:'Synthetic Paying Client',respondentRelationship:'payer',
+    authorityBasis:'Matched the named paying client on the work order.',identityCheckSummary:'Caller confirmed the registered business contact details.',
+    scopeReadBack:true,responseSummary:'Agreed to the listed proposed tasks and GHS 1,250.00 estimate; technical checks remain outstanding.'};
+  const responseDenied=await app.inject({method:'POST',url:payerResponsePath,headers:headers(jarA),payload:payerResponseInput});
+  assert.equal(responseDenied.statusCode,403,responseDenied.body);
+  assert.equal(responseDenied.json().error.code,'PAYER_SCOPE_RESPONSE_AUTHORITY_REQUIRED');
+  const responseGrantId=randomUUID();
+  await admin.query(`INSERT INTO public.staff_authority_grants
+    (id,organisation_id,site_id,staff_user_id,capability,grant_revision,granted_by,basis_reference,valid_from,valid_until)
+    VALUES($1,$2,$3,$4,'work-order.record-payer-scope-response',1,$4,'Synthetic payer response test grant',now()-interval '1 minute',now()+interval '1 hour')`,
+  [responseGrantId,orgA,siteA,actorA]);
+  const changedEstimateDigest=await app.inject({method:'POST',url:payerResponsePath,headers:headers(jarA),payload:{...payerResponseInput,scopeDigest:'f'.repeat(64)}});
+  assert.equal(changedEstimateDigest.statusCode,409,changedEstimateDigest.body);
+  assert.equal(changedEstimateDigest.json().error.code,'SCOPE_DIGEST_CHANGED');
+  const missingWrittenEvidence=await app.inject({method:'POST',url:payerResponsePath,headers:headers(jarA),payload:{...payerResponseInput,responseMethod:'written'}});
+  assert.equal(missingWrittenEvidence.statusCode,400,missingWrittenEvidence.body);
+  assert.equal(missingWrittenEvidence.json().error.code,'VALIDATION');
+  const payerResponseCommandId=randomUUID();
+  const payerResponse=await app.inject({method:'POST',url:payerResponsePath,headers:headers(jarA,payerResponseCommandId),payload:payerResponseInput});
+  assert.equal(payerResponse.statusCode,200,payerResponse.body);
+  assert.equal(payerResponse.json().response.decision,'approved');
+  assert.equal(payerResponse.json().response.respondentName,'Synthetic Paying Client');
+  assert.equal(payerResponse.json().authorizationState,'blocked');
+  assert.equal(payerResponse.json().authorizationReason,'technical-review-and-effective-policy-required');
+  assert.equal(result.proposal.estimate.minorUnits,'125000');
+  const responseReplay=await app.inject({method:'POST',url:payerResponsePath,headers:headers(jarA,payerResponseCommandId),payload:payerResponseInput});
+  assert.equal(responseReplay.statusCode,200,responseReplay.body);
+  assert.deepEqual(responseReplay.json(),payerResponse.json());
+  const responseChangedReplay=await app.inject({method:'POST',url:payerResponsePath,headers:headers(jarA,payerResponseCommandId),payload:{...payerResponseInput,responseSummary:'Changed response.'}});
+  assert.equal(responseChangedReplay.statusCode,409,responseChangedReplay.body);
+  assert.equal(responseChangedReplay.json().error.code,'IDEMPOTENCY_CONFLICT');
+  const afterResponse=await app.inject({url:path,headers:headers(jarA)});
+  assert.equal(afterResponse.statusCode,200,afterResponse.body);
+  assert.equal(afterResponse.json().proposals[0]?.estimate?.minorUnits,'125000');
+  assert.equal(afterResponse.json().proposals[0]?.payerResponse?.decision,'approved');
+  assert.equal(afterResponse.json().proposals[0]?.payerResponse?.respondentName,'Synthetic Paying Client');
+  const payerBinding=await admin.query(`SELECT response.payer_party_id AS "payerPartyId",work.client_party_id AS "clientPartyId",
+      work.customer_id AS "ownerCustomerId" FROM public.work_order_scope_payer_responses response
+    JOIN public.work_orders work ON work.organisation_id=response.organisation_id AND work.site_id=response.site_id AND work.id=response.work_order_id
+    WHERE response.work_order_id=$1 AND response.scope_revision_id=$2`,[current.id,result.proposal.id]);
+  assert.equal(payerBinding.rows[0]?.payerPartyId,payerBinding.rows[0]?.clientPartyId);
+  assert.notEqual(payerBinding.rows[0]?.payerPartyId,payerBinding.rows[0]?.ownerCustomerId);
+  const persistedEstimate=await admin.query(`SELECT estimate_minor_units::text AS "minorUnits",estimate_currency AS currency
+    FROM public.work_order_scope_revisions WHERE work_order_id=$1 AND id=$2`,[current.id,result.proposal.id]);
+  assert.deepEqual(persistedEstimate.rows[0],{minorUnits:'125000',currency:'GHS'});
+  const responseRow=await admin.query(`SELECT payer_party_id AS "payerPartyId",scope_digest AS "scopeDigest",actor_placement_id AS "actorPlacementId",response_method AS "responseMethod"
+    FROM public.work_order_scope_payer_responses WHERE work_order_id=$1 AND scope_revision_id=$2`,[current.id,result.proposal.id]);
+  const persistedResponse=z.object({payerPartyId:z.uuid(),scopeDigest:z.string(),actorPlacementId:z.uuid(),responseMethod:z.literal('phone')}).parse(responseRow.rows[0]);
+  await assert.rejects(scoped(runtime,{actorId:actorA,organisationId:orgA,siteId:siteA},client=>client.query(`INSERT INTO public.work_order_scope_payer_responses
+    (id,organisation_id,site_id,work_order_id,scope_revision_id,payer_party_id,scope_digest,decision,respondent_name,
+     respondent_relationship,authority_basis,identity_check_summary,scope_read_back,response_summary,actor_id,actor_placement_id,authority_snapshot)
+    VALUES($1,$2,$3,$4,$5,$6,$7,'approved','Synthetic unauthorized response','payer','No authority basis','No identity check',true,'No authorization', $8,$9,'{"capability":"work-order.record-payer-scope-response"}'::jsonb)`,
+  [randomUUID(),orgA,siteA,current.id,result.proposal.id,persistedResponse.payerPartyId,persistedResponse.scopeDigest,actorA,persistedResponse.actorPlacementId])),/row-level security|permission denied/i);
+  const crossSiteResponse=await app.inject({method:'POST',url:`/api/v1/sites/${siteA2}/work-orders/${current.id}/scope-proposals/${result.proposal.id}/payer-response`,headers:headers(jarA),payload:payerResponseInput});
+  assert.ok([403,404].includes(crossSiteResponse.statusCode),crossSiteResponse.body);
+  const crossTenantResponse=await app.inject({method:'POST',url:`/api/v1/sites/${siteB}/work-orders/${current.id}/scope-proposals/${result.proposal.id}/payer-response`,headers:headers(jarB),payload:payerResponseInput});
+  assert.equal(crossTenantResponse.statusCode,404,crossTenantResponse.body);
+  const duplicateResponse=await app.inject({method:'POST',url:payerResponsePath,headers:headers(jarA),payload:{...payerResponseInput,expectedWorkOrderVersion:payerResponse.json().workOrderVersion}});
+  assert.equal(duplicateResponse.statusCode,409,duplicateResponse.body);
+  assert.equal(duplicateResponse.json().error.code,'PAYER_SCOPE_RESPONSE_ALREADY_RECORDED');
+  const crossSite=await app.inject({url:`/api/v1/sites/${siteA2}/work-orders/${current.id}/scope-proposals`,headers:headers(jarA)});
+  assert.ok([403,404].includes(crossSite.statusCode),crossSite.body);
+  const crossTenant=await app.inject({url:`/api/v1/sites/${siteB}/work-orders/${current.id}/scope-proposals`,headers:headers(jarB)});
+  assert.equal(crossTenant.statusCode,404);
+  await assert.rejects(scoped(runtime,{actorId:actorA,organisationId:orgA,siteId:siteA},client=>client.query('UPDATE public.work_order_scope_revisions SET rationale=$1 WHERE id=$2',['changed',result.proposal.id])),/permission denied/i);
+  await assert.rejects(scoped(runtime,{actorId:actorA,organisationId:orgA,siteId:siteA},client=>client.query('DELETE FROM public.work_order_scope_revisions WHERE id=$1',[result.proposal.id])),/permission denied/i);
+  const counts=await admin.query(`SELECT
+      (SELECT count(*)::int FROM public.work_order_scope_revisions WHERE id=$1) AS revisions,
+      (SELECT count(*)::int FROM public.domain_events WHERE aggregate_id=$2 AND event_type='work-order.scope-proposal-created') AS events,
+      (SELECT count(*)::int FROM public.work_order_scope_payer_responses WHERE work_order_id=$2) AS payer_responses,
+      (SELECT count(*)::int FROM public.sensitive_read_events WHERE actor_id=$3 AND site_id=$4 AND action='work-order-scope-proposals-read-prepared') AS reads,
+      (SELECT count(*)::int FROM public.domain_events WHERE aggregate_id=$2 AND event_type='work-order.payer-scope-response.recorded') AS response_events`,
+  [result.proposal.id,current.id,actorA,siteA]);
+  assert.deepEqual(counts.rows[0],{revisions:1,events:1,payer_responses:1,reads:3,response_events:1});
+});
+
+test('Sales and Finance setup route handlers return a generic unavailable response outside isolated tests',async()=>{
+  const originalMode=config.NODE_ENV;
+  const paths=[
+    {method:'GET' as const,url:`/api/v1/sites/${siteA}/vehicles/${randomUUID()}/sales-history`},
+    {method:'POST' as const,url:`/api/v1/sites/${siteA}/sales-deliveries`},
+    {method:'POST' as const,url:`/api/v1/sites/${siteA}/delivery-preparations`},
+    {method:'POST' as const,url:`/api/v1/sites/${siteA}/delivery-preparations/${randomUUID()}/link-delivery`},
+    {method:'POST' as const,url:`/api/v1/sites/${siteA}/sales-deliveries/${randomUUID()}/pdi-observations`},
+    {method:'GET' as const,url:`/api/v1/sites/${siteA}/finance/configuration-drafts`},
+    {method:'POST' as const,url:`/api/v1/sites/${siteA}/finance/configuration-drafts`},
+  ];
+  try {
+    for(const mode of ['development','staging','production'] as const){
+      config.NODE_ENV=mode;
+      for(const path of paths){
+        const response=await app.inject(path);
+        assert.equal(response.statusCode,404,`${mode} ${path.method} ${path.url}: ${response.body}`);
+        assert.deepEqual(response.json(),{error:{code:'FEATURE_UNAVAILABLE',message:'This feature is not available.'}});
+      }
+    }
+  } finally {
+    config.NODE_ENV=originalMode;
+  }
 });

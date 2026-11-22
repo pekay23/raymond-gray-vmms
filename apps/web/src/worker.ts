@@ -4,7 +4,13 @@ interface Env {
   };
   /** Fixed server-side origin. Never read this value from a request parameter or header. */
   VMMS_API_ORIGIN?: string;
+  /** Server-only Vercel deployment-protection bypass for the upstream Preview API. */
+  VMMS_API_PROTECTION_BYPASS?: string;
+  VMMS_DEPLOYMENT_STAGE?: string;
+  NODE_ENV?: string;
 }
+
+const productionApiOrigin = "https://api.raymond-gray.org";
 
 const jsonHeaders = {
   "Cache-Control": "no-store",
@@ -40,10 +46,16 @@ function unavailable(status: 502 | 503, code: string, message: string): Response
   return Response.json({ error: { code, message } }, { status, headers: jsonHeaders });
 }
 
-export async function proxyApi(request: Request, originValue: string | undefined): Promise<Response> {
+export async function proxyApi(
+  request: Request,
+  originValue: string | undefined,
+  protectionBypass?: string,
+  deploymentStage?: string,
+): Promise<Response> {
   const origin = apiOrigin(originValue);
   const incomingUrl = new URL(request.url);
-  if (!origin || origin.origin === incomingUrl.origin) {
+  const isProduction = deploymentStage === "production";
+  if (!origin || origin.origin === incomingUrl.origin || (isProduction && origin.origin !== productionApiOrigin)) {
     return unavailable(503, "API_UNAVAILABLE", "The VMMS API is not connected in this preview.");
   }
 
@@ -53,6 +65,7 @@ export async function proxyApi(request: Request, originValue: string | undefined
     const value = request.headers.get(name);
     if (value !== null) headers.set(name, value);
   }
+  if (protectionBypass && !isProduction) headers.set("x-vercel-protection-bypass", protectionBypass);
 
   const bodyAllowed = request.method !== "GET" && request.method !== "HEAD";
   const init: RequestInit & { duplex?: "half" } = {
@@ -83,7 +96,8 @@ const worker = {
     const url = new URL(request.url);
 
     if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
-      return proxyApi(request, env.VMMS_API_ORIGIN);
+      return proxyApi(request, env.VMMS_API_ORIGIN, env.VMMS_API_PROTECTION_BYPASS,
+        env.VMMS_DEPLOYMENT_STAGE ?? env.NODE_ENV);
     }
 
     return env.ASSETS.fetch(request);

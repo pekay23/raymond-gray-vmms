@@ -1,17 +1,17 @@
 # Workshop Operations Pilot: Agent Build Plan
 
-**Status:** Owner-prioritized delivery plan, 15 November 2026. This plan changes the order of work, not the full product goal or the authoritative requirements. The master specification, server-side safety rules, accepted architecture and review register remain binding.
+**Status:** Owner-prioritized delivery plan, updated 20 November 2026. This plan changes the order of work, not the full product goal or authoritative requirements. The master specification, server-side safety rules, accepted architecture and review register remain binding.
 
 ## Goal
 
-Build and locally verify the smallest complete, staff-only workflow for the EV Afriq After Sales Service Center, City Galleria. Make the next action clear from service request through repair reporting and the required sign-offs. After the full local release checks pass, deploy the web application, API and required shared-auth changes to their approved production services and verify production health. Keep engineering status, pilot readiness and management approval distinct.
+Build and locally verify the workshop workflow for the EV Afriq After Sales Service Center, City Galleria, with a safe customer/third-party request entry point and staff operations from the Service Advisor through technicians. Make the next action clear from request through repair reporting and required sign-offs. After the full local release checks pass, deploy the web application, API and required shared-auth changes to approved production services and verify production health. Keep engineering status, pilot readiness and management approval distinct.
 
 The user wants to prioritize the day-to-day maintenance operation from the Service Advisor and Head of Service Centre through Team Leads, Supervisors and Technicians/Engineers. Work for finance, sales and ideas borrowed from Smart POS should follow later unless a small control is necessary to prevent an unsafe release or unauthorized vehicle departure.
 
 ## User-approved operating sequence
 
-1. A staff member records a service request and any requested follow-up. The request keeps the caller, service client/payer, reported owner, visit contact, vehicle, concern and uncertain facts distinct.
-2. The Service Advisor confirms missing details and records each call or contact outcome. A confirmed arrival is converted into reception and one controlling work order for the visit.
+1. A client or third party submits a service request, or staff record one on the client's behalf. It identifies repair/maintenance, PSAI or Service Centre PDI and keeps requester, service client/payer, reported owner, visit contact, vehicle, concern and uncertain facts distinct.
+2. The Service Advisor reviews the request, asks for missing details and records each call or contact outcome. After confirming the vehicle, payer and visit facts, a request is converted once into one typed work order when the vehicle is received.
 3. Operations reviews the new work order, then assigns a qualified Team Lead in a separate recorded action.
 4. The Team Lead prepares a versioned work plan and hands the planned work to a Supervisor.
 5. The Supervisor assigns tasks to their Technicians/Engineers. Each assigned worker acknowledges work, records findings/tests/actions and progress, and raises blockers or requests with comments. These entries are attributed history; they do not themselves approve repair scope or sign technical completion.
@@ -26,13 +26,13 @@ The order in steps 6–9 follows the owner's direction recorded in `REV-046`, `U
 
 | Workstream | Build or verify for the pilot | Defer until the operational workflow is stable |
 | --- | --- | --- |
-| Staff access | Existing shared OIDC session, site-scoped staff roles, combined role visibility, secure sign-out, shared-device behavior | Public customer accounts, new native apps, account provisioning automation until the auth integration has passed its separate production gate |
-| Service requests | Phone/walk-in intake, caller/contact role, concern, known client/vehicle, assigned follow-up, due/overdue queue, append-only contact history and explicit conversion to reception | Sales CRM, marketing and broad customer campaign features |
-| Reception and jobs | Canonical work order, service client/owner/contact separation, vehicle facts, concerns, custody/condition, evidence, holds and readable job status | Sales delivery import, showroom sales entry, sales dashboards and historical maintenance import |
+| Staff and requester access | Existing shared OIDC session, site-scoped staff roles, combined role visibility, secure sign-out, shared-device behavior; customer/third-party request-only form with verified request-status access | Full customer accounts/history dashboard, new native apps, account provisioning automation until the auth integration has passed its separate production gate |
+| Service requests | Client/third-party and staff-on-behalf intake for repair/maintenance, PSAI and Service Centre PDI; caller/contact role, concern, reported vehicle, known-client claim, assigned follow-up, due/overdue queue, append-only contact history, protected vehicle matching and explicit advisor conversion | Sales CRM, marketing and broad customer campaign features |
+| Reception and jobs | Canonical typed work order, service client/owner/contact/requester separation, vehicle facts and source, concerns, custody/condition, evidence, holds and readable job status | Sales delivery import, showroom sales entry, sales dashboards and historical maintenance import |
 | Operations and workforce | Operations review, eligible lead assignment, Team Lead plan and Supervisor handoff, Supervisor task allocation, staff role/reporting links needed by these actions | General HR/payroll and workforce modules unrelated to current assignment, supervision or authorization |
 | Work execution | Task acknowledgement, progress, comments, findings, tests, actions, requests, blockers, evidence and labor entries with a single attributable history | Inventory purchasing, POS functions and full parts/commercial accounting; preserve any existing safety check that prevents unfit parts/equipment use |
 | Completion and release | G2 scope controls, G3 Supervisor completion, required QA and fault disposition, G4 Team Lead collection-zone release, separate Head inspection before customer contact; keep every unavailable action visibly blocked | No title-only grants, generic EV checklist, fabricated manufacturer procedure or shortcut that combines G3/G4/Head approval |
-| Maintenance | Exact-source routine-maintenance checklist instances on actual work orders, outcome reasons, review and a structured report; use 10,000 km/12 months only as an intake reminder | Sales-delivery PDI application, generic service intervals or package assumptions; PDI work stays separate from after-sales orders |
+| Inspection and maintenance | Distinct PSAI and Service Centre PDI job types with exact-source checklist/report paths; routine-maintenance checklists on actual work orders; outcome reasons, review and structured reports. PDI is fee-bearing for every third-party requester; configure its rate before issuing a quote/invoice. Use 10,000 km/12 months only as an intake reminder. | Sales delivery-preparation/PDI application, generic service intervals or package assumptions. Service Centre PDI remains a workshop work order, separate from Sales delivery history. |
 | Reports | Work-order execution history and a purpose-built Daily Service Report with source, certainty, finding/test, action, result, open items, holds, decisions and next step | Finance statements, sales reports and broad custom BI beyond the staff's operational decisions |
 | Documents and audit | Staff access to approved/effective instructions; clearly mark current interim SOPs as drafts. Keep operational audit events and required role access | Full controlled-document lifecycle, CAPA, management analytics and broader governance screens unless needed to satisfy an approved pilot control |
 | Deployment | One-site web/API production release, approved shared auth, migrations, backup/restore, monitoring, rollback and role-by-role staff acceptance | Windows/macOS native clients, iOS/iPadOS, Android, HarmonyOS and offline synchronization; retain responsive browser/PWA operation |
@@ -49,7 +49,7 @@ Work in order. A later work package can be developed behind a denied/blocked sta
 - Start with CodeGraph for code discovery and Graphify's local deterministic analysis for bounded impact. Do not submit personal, customer, staff or secret-bearing data to a graph/model service.
 - Read the existing request, reception, Operations review, work-plan/handoff, task progress, evidence, report, role navigation and authentication flows before changing them. Preserve working code and tests; do not rebuild them.
 - Reconcile the pilot list in this plan against `docs/delivery/tasks.json`. Keep existing task status honest; add individual tasks when uncovered work is found. Do not mark a source requirement complete because one UI route exists.
-- Main references: `USER-027`, `USER-038`, `USER-039`, `USER-040`, `USER-043`, `USER-045`; `BUILD-R-M-0035`–`0038`; `BUILD-USER-039-WORK-HISTORY-001`; related `CHECK-*` tasks; `F-004`/`F-005`/`F-006`/`F-008`/`F-009`/`F-011` and evidence tasks.
+- Main references: `USER-027`, `USER-038`, `USER-039`, `USER-040`, `USER-043`, `USER-045`, `USER-047`; `BUILD-R-M-0035`–`0038`; `BUILD-USER-039-WORK-HISTORY-001`; `BUILD-USER-047-*`; related `CHECK-*` tasks; `F-004`/`F-005`/`F-006`/`F-008`/`F-009`/`F-011` and evidence tasks.
 
 ### B. Make the daily path clear
 
@@ -82,7 +82,7 @@ Work in order. A later work package can be developed behind a denied/blocked sta
 - Complete `BUILD-USER-043-INSTANCE-001`, outcome/review/report/UI tasks and their checks for routine maintenance on a real work order.
 - Read the exact model/variant schedule revision; do not manufacture work from a generic EV package. If the schedule/source is missing, keep the checklist unconfigured and state why.
 - Every checklist task supports applicable/unknown, assigned owner, progress, completed, failed, not checked, not completed, blocked or not applicable. Non-complete outcomes require a reason; corrections preserve history. Keep checklist review distinct from Supervisor G3, Team Lead G4 and Head inspection.
-- Defer delivery-preparation and sales-triggered PDI tasks from this pilot. Do not mark them not-applicable; leave them for the later sales/PDI phase.
+- Build Service Centre PDI as a requested workshop work order and keep Sales delivery-preparation PDI in its separate later phase. Add PSAI as a distinct job type. No generic inspection checklist is activated without an effective exact-model/variant source and review authority. PDI quote/invoice issuance stays blocked until the mandatory fee rate and financial grant are configured; do not silently waive the fee.
 
 ### F. Prepare and prove the release
 
@@ -106,8 +106,8 @@ Passing code checks is not management approval or permission to bypass a blocked
 
 ## Deferred work
 
-- Sales recording, showroom imports, delivery preparation and PDI workflow; historical customer/maintenance backlog import until the owner completes the data inventory and approves mappings.
-- Full Finance, invoice/receipt/email, Paystack/accounting adapters, commercial reports and broader stock/purchasing functions. Preserve the invariant that no vehicle leaves without a payment record or approved guarantee; do not turn the future finance deferral into an implicit release bypass.
+- Sales recording, showroom imports, Sales delivery preparation and sales-triggered PDI; historical customer/maintenance backlog import until the owner completes the data inventory and approves mappings.
+- Full Finance beyond the minimum mandatory fee line for Service Centre PDI and the existing manual invoice/payment/receipt gate needed for vehicle handover; defer Paystack/accounting adapters, financial automation, commercial reports and broader stock/purchasing functions. Do not turn the finance deferral into a release bypass.
 - Smart POS functions that do not serve the workshop maintenance lifecycle.
 - Customer portal expansion, OS-specific Windows/macOS/iOS/iPadOS/Android/HarmonyOS apps, offline synchronization and device procurement.
 - Broad analytics, HR, payroll, advanced governance and 30-day optimization after the operational pilot.

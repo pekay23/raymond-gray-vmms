@@ -1,0 +1,15 @@
+.env*
+**/.env*
+**/.wrangler/**
+**/node_modules/**
+**/dist/**
+**/*.sqlite*
+**/*.db
+test/**
+scripts/**
+railway.*
+wrangler.*
+Dockerfile
+**/Dockerfile
+.dockerignore
+**/.dockerignore

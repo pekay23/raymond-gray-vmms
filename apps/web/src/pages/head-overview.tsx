@@ -99,6 +99,47 @@ export function HeadOverview() {
         )}
       </section>
 
+      <section aria-labelledby="task-progress-title" className="mb-8">
+        <div className="mb-4">
+          <h2 id="task-progress-title" className="text-lg font-semibold text-zinc-950">Reported task blockers and waits</h2>
+          <p className="mt-1 text-sm text-zinc-600">These counts use each assigned task’s latest progress report in current handed-over plans. They show what was last reported, not live safety, completion or staff availability.</p>
+        </div>
+        <dl className="mb-4 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="panel border-l-4 border-l-red-700 p-4">
+            <dt className="text-sm text-zinc-600">Last reported blocked</dt>
+            <dd className="mt-2 text-2xl font-semibold tabular-nums text-zinc-950">{data.taskProgress.blockedCount.toLocaleString("en-GH")}</dd>
+          </div>
+          <div className="panel border-l-4 border-l-amber-600 p-4">
+            <dt className="text-sm text-zinc-600">Last reported waiting</dt>
+            <dd className="mt-2 text-2xl font-semibold tabular-nums text-zinc-950">{data.taskProgress.waitingCount.toLocaleString("en-GH")}</dd>
+          </div>
+        </dl>
+        {data.taskProgress.items.length === 0 ? (
+          <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600" role="status">No current task has a latest progress report marked blocked or waiting.</p>
+        ) : (
+          <ol className="grid gap-3 lg:grid-cols-2">
+            {data.taskProgress.items.map(item => (
+              <li key={`${item.workOrderId}:${item.taskReference}`} className={`panel min-w-0 border-l-4 p-4 ${item.state === "blocked" ? "border-l-red-700" : "border-l-amber-600"}`}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`rounded-full px-2 py-1 text-xs font-semibold ${item.state === "blocked" ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-900"}`}>
+                    {item.state === "blocked" ? "Last reported blocked" : "Last reported waiting"}
+                  </span>
+                  <span className="text-xs text-zinc-600">{dateTime(item.reportedAt, site.timeZone)}</span>
+                </div>
+                <h3 className="mt-3 break-words text-sm font-semibold text-zinc-950">{item.taskReference} · {item.taskTitle}</h3>
+                <p className="mt-1 break-words text-sm text-zinc-600">{item.bookingReference} · Assigned to {item.assigneeName}</p>
+                <Link className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-blue-800 underline underline-offset-4 hover:text-blue-950" to={`/sites/${site.id}/work-orders/${encodeURIComponent(item.workOrderId)}`}>
+                  Open work order <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+              </li>
+            ))}
+          </ol>
+        )}
+        {data.taskProgress.blockedCount + data.taskProgress.waitingCount > data.taskProgress.items.length && (
+          <p className="mt-3 text-xs text-zinc-600">Showing the first {data.taskProgress.items.length} current reports. Open work orders for their task history.</p>
+        )}
+      </section>
+
       <section aria-labelledby="staff-summary-title">
         <div className="mb-4">
           <h2 id="staff-summary-title" className="text-lg font-semibold text-zinc-950">Staffing</h2>
@@ -114,7 +155,7 @@ export function HeadOverview() {
         </Link>
       </section>
 
-      <p className="mt-8 flex items-center gap-2 text-xs text-zinc-500" aria-live="polite">
+      <p className="mt-8 flex items-center gap-2 text-xs text-zinc-600" aria-live="polite">
         <ClipboardList className="size-3.5" aria-hidden="true" />
         Updated {dateTime(data.asOf, site.timeZone)}
       </p>

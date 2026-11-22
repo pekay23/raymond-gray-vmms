@@ -31,7 +31,22 @@ const headOverviewSchema=z.object({
     assignedToTeamLead:z.number().int().nonnegative(),
   }),
   staff:z.object({active:z.number().int().nonnegative(),activeRolePlacements:z.number().int().nonnegative()}),
+  taskProgress:z.object({
+    blockedCount:z.number().int().nonnegative(),
+    waitingCount:z.number().int().nonnegative(),
+    items:z.array(z.object({
+      workOrderId:uuid,bookingReference:z.string(),taskReference:z.string(),taskTitle:z.string(),
+      assigneeName:z.string(),state:z.enum(['blocked','waiting']),reportedAt:z.iso.datetime({offset:true}),
+    }).strict()).max(12),
+  }).strict(),
 }).strict();
+const siteActivityCursorSchema=z.object({createdAt:z.iso.datetime({offset:true}),id:uuid}).strict();
+const siteActivityItemSchema=z.object({
+  id:uuid,createdAt:z.iso.datetime({offset:true}),eventType:z.string().min(1).max(160),
+  aggregateType:z.string().min(1).max(80),aggregateVersion:z.number().int().positive(),
+  workOrderReference:z.string().max(80).nullable(),actorName:z.string().max(160),
+}).strict();
+const siteActivityPageSchema=z.object({items:z.array(siteActivityItemSchema),nextCursor:z.string().nullable(),pageSize:z.number().int().positive()}).strict();
 const assignRoleSchema = z.object({
   staffUserId: uuid,
   roleCode: z.string().regex(/^[a-z][a-z0-9-]{1,63}$/),
@@ -156,14 +171,143 @@ export async function readHeadOverview(pool:Database,scope:Scope,requestId:strin
           'activeRolePlacements',staffing_totals."activeRolePlacements"
         ) AS staff
       FROM work_order_totals CROSS JOIN staffing_totals`,[scope.organisationId,scope.siteId]);
+    const taskProgress=await client.query(`
+      WITH latest_review AS (
+        SELECT DISTINCT ON (review.work_order_id) review.work_order_id,review.id
+        FROM public.work_order_operations_reviews review
+        WHERE review.organisation_id=$1 AND review.site_id=$2
+        ORDER BY review.work_order_id,review.reviewed_work_order_version DESC,review.id DESC
+      ), latest_lead AS (
+        SELECT DISTINCT ON (assignment.work_order_id) assignment.work_order_id,assignment.id,assignment.operations_review_id
+        FROM public.work_order_lead_assignments assignment
+        WHERE assignment.organisation_id=$1 AND assignment.site_id=$2
+        ORDER BY assignment.work_order_id,assignment.created_at DESC,assignment.id DESC
+      ), latest_plan AS (
+        SELECT DISTINCT ON (plan.work_order_id,plan.lead_assignment_id)
+          plan.work_order_id,plan.lead_assignment_id,plan.id,plan.created_work_order_version
+        FROM public.work_order_work_plan_revisions plan
+        WHERE plan.organisation_id=$1 AND plan.site_id=$2
+        ORDER BY plan.work_order_id,plan.lead_assignment_id,plan.revision_number DESC,plan.id DESC
+      ), current_handoffs AS (
+        SELECT work.id AS work_order_id,plan.id AS work_plan_revision_id,handoff.work_order_version
+        FROM public.work_orders work
+        JOIN latest_review review ON review.work_order_id=work.id
+        JOIN latest_lead lead ON lead.work_order_id=work.id AND lead.operations_review_id=review.id
+        JOIN latest_plan plan ON plan.work_order_id=work.id AND plan.lead_assignment_id=lead.id
+        JOIN LATERAL (
+          SELECT current_handoff.work_order_version
+          FROM public.work_order_supervisor_handoffs current_handoff
+          WHERE current_handoff.organisation_id=$1 AND current_handoff.site_id=$2
+            AND current_handoff.work_order_id=work.id AND current_handoff.lead_assignment_id=lead.id
+            AND current_handoff.work_plan_revision_id=plan.id
+          ORDER BY current_handoff.created_at DESC,current_handoff.id DESC LIMIT 1
+        ) handoff ON true
+        WHERE work.organisation_id=$1 AND work.site_id=$2
+          AND (plan.created_work_order_version=work.version OR handoff.work_order_version<=work.version)
+          AND NOT EXISTS (
+            SELECT 1 FROM public.domain_events event
+            WHERE event.organisation_id=work.organisation_id AND event.site_id=work.site_id
+              AND event.aggregate_id=work.id AND event.aggregate_version>handoff.work_order_version
+              AND event.event_type<>'work-order.tasks-assigned'
+          )
+      ), latest_assignments AS (
+        SELECT DISTINCT ON (assignment.work_order_id,assignment.work_plan_revision_id,assignment.task_id)
+          assignment.work_order_id,assignment.work_plan_revision_id,assignment.task_id,
+          assignment.assignee_placement_id,assignment.assignee_user_id,assignment.assignment_revision
+        FROM public.work_order_task_assignment_revisions assignment
+        JOIN current_handoffs current ON current.work_order_id=assignment.work_order_id
+          AND current.work_plan_revision_id=assignment.work_plan_revision_id
+        JOIN public.work_order_work_plan_revision_tasks planned ON planned.organisation_id=assignment.organisation_id
+          AND planned.site_id=assignment.site_id AND planned.work_order_id=assignment.work_order_id
+          AND planned.work_plan_revision_id=assignment.work_plan_revision_id AND planned.task_id=assignment.task_id
+        WHERE assignment.organisation_id=$1 AND assignment.site_id=$2
+        ORDER BY assignment.work_order_id,assignment.work_plan_revision_id,assignment.task_id,
+          assignment.assignment_revision DESC,assignment.id DESC
+      ), latest_progress AS (
+        SELECT DISTINCT ON (activity.work_order_id,activity.work_plan_revision_id,activity.task_id)
+          activity.work_order_id,activity.work_plan_revision_id,activity.task_id,
+          activity.progress_state,activity.created_at
+        FROM public.work_order_task_activity activity
+        JOIN latest_assignments assignment ON assignment.work_order_id=activity.work_order_id
+          AND assignment.work_plan_revision_id=activity.work_plan_revision_id
+          AND assignment.task_id=activity.task_id AND assignment.assignment_revision=activity.assignment_revision
+        WHERE activity.organisation_id=$1 AND activity.site_id=$2 AND activity.entry_type='progress'
+        ORDER BY activity.work_order_id,activity.work_plan_revision_id,activity.task_id,
+          activity.created_at DESC,activity.id DESC
+      ), current_reported AS (
+        SELECT work.id AS "workOrderId",work.reference AS "bookingReference",
+          'T'||lpad(task.ordinal::text,2,'0') AS "taskReference",task.title AS "taskTitle",
+          assignee.display_name AS "assigneeName",progress.progress_state AS state,progress.created_at AS "reportedAt"
+        FROM latest_progress progress
+        JOIN latest_assignments assignment ON assignment.work_order_id=progress.work_order_id
+          AND assignment.work_plan_revision_id=progress.work_plan_revision_id AND assignment.task_id=progress.task_id
+        JOIN public.work_orders work ON work.organisation_id=$1 AND work.site_id=$2 AND work.id=progress.work_order_id
+        JOIN public.tasks task ON task.organisation_id=$1 AND task.site_id=$2
+          AND task.work_order_id=progress.work_order_id AND task.id=progress.task_id
+        JOIN public.staff_role_placements placement ON placement.organisation_id=$1 AND placement.site_id=$2
+          AND placement.id=assignment.assignee_placement_id AND placement.staff_user_id=assignment.assignee_user_id
+          AND placement.role_code='technician-engineer-trainee' AND placement.state='active'
+        JOIN public.staff_users assignee ON assignee.id=assignment.assignee_user_id AND assignee.active
+        JOIN public.memberships membership ON membership.user_id=assignment.assignee_user_id
+          AND membership.site_id=$2 AND membership.active AND membership.can_write
+        WHERE progress.progress_state IN ('blocked','waiting')
+      ), displayed AS (
+        SELECT * FROM current_reported
+        ORDER BY CASE state WHEN 'blocked' THEN 0 ELSE 1 END, "reportedAt" DESC, "workOrderId", "taskReference"
+        LIMIT 12
+      )
+      SELECT
+        (SELECT count(*)::int FROM current_reported WHERE state='blocked') AS "blockedCount",
+        (SELECT count(*)::int FROM current_reported WHERE state='waiting') AS "waitingCount",
+        coalesce((SELECT jsonb_agg(to_jsonb(displayed) ORDER BY CASE displayed.state WHEN 'blocked' THEN 0 ELSE 1 END,
+          displayed."reportedAt" DESC,displayed."workOrderId",displayed."taskReference") FROM displayed),'[]'::jsonb) AS items
+    `,[scope.organisationId,scope.siteId]);
     const row=z.object({asOf:z.union([z.date(),z.iso.datetime({offset:true})]),workOrders:z.unknown(),staff:z.unknown()}).parse(snapshot.rows[0]);
     const projection=headOverviewSchema.parse({
       asOf:row.asOf instanceof Date?row.asOf.toISOString():row.asOf,
       workOrders:row.workOrders,
       staff:row.staff,
+      taskProgress:taskProgress.rows[0],
     });
     await recordSensitiveRead(client,scope,'workforce-overview-read-prepared',1,requestId);
     return projection;
+  });
+}
+
+/** Read a minimal, site-scoped activity feed. Raw reasons and state snapshots are intentionally excluded. */
+export async function readHeadSiteActivity(pool:Database,scope:Scope,requestId:string,cursor?:string,pageSize=25) {
+  const size=z.number().int().min(1).max(50).parse(pageSize);
+  const decoded=cursor===undefined?undefined:(()=>{
+    if(cursor.length>512) throw new ApiError(400,'INVALID_CURSOR','The activity page link is invalid.');
+    try {
+      const parsed=siteActivityCursorSchema.safeParse(JSON.parse(Buffer.from(cursor,'base64url').toString('utf8')));
+      if(!parsed.success) throw new Error('invalid');
+      return parsed.data;
+    } catch { throw new ApiError(400,'INVALID_CURSOR','The activity page link is invalid.'); }
+  })();
+  return scoped(pool,scope,async client=>{
+    await requireActiveReadMembership(client,scope);
+    await requireHeadRole(client,scope);
+    const rows=await client.query(`SELECT event.id,event.created_at AS "createdAt",event.event_type AS "eventType",
+      event.aggregate_type AS "aggregateType",event.aggregate_version AS "aggregateVersion",
+      CASE WHEN event.aggregate_type='work-order' THEN order_row.reference ELSE NULL END AS "workOrderReference",
+      actor.display_name AS "actorName"
+      FROM public.domain_events event JOIN public.staff_users actor ON actor.id=event.actor_id
+      LEFT JOIN public.work_orders order_row ON event.aggregate_type='work-order'
+        AND order_row.organisation_id=event.organisation_id AND order_row.site_id=event.site_id AND order_row.id=event.aggregate_id
+      WHERE event.organisation_id=$1 AND event.site_id=$2
+        AND ($3::timestamptz IS NULL OR (event.created_at,event.id)<($3::timestamptz,$4::uuid))
+      ORDER BY event.created_at DESC,event.id DESC LIMIT $5`,
+    [scope.organisationId,scope.siteId,decoded?.createdAt??null,decoded?.id??null,size+1]);
+    const hasMore=rows.rows.length>size;
+    const visible=rows.rows.slice(0,size);
+    await recordSensitiveRead(client,scope,'workforce-site-activity-read-prepared',visible.length,requestId);
+    const items=visible.map(row=>siteActivityItemSchema.parse({
+      ...row,
+      createdAt:row.createdAt instanceof Date?row.createdAt.toISOString():row.createdAt,
+    }));
+    const last=items.at(-1);
+    return siteActivityPageSchema.parse({items,nextCursor:hasMore&&last?Buffer.from(JSON.stringify({createdAt:last.createdAt,id:last.id})).toString('base64url'):null,pageSize:size});
   });
 }
 

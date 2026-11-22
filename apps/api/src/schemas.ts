@@ -75,6 +75,33 @@ export const workOrderWorkflowContextSchema = z.object({
   dueAt:z.null(),
   evidenceChecklist:z.literal('awaiting-approved-sop'),
 }).strict();
+export const workOrderCloseoutPathSchema = z.array(z.object({
+  code:z.enum(['operations-review','lead-handoff','technician-work','supervisor-completion','team-lead-release','head-inspection','client-update']),
+  label:z.string().min(1),
+  responsibleRole:z.string().min(1),
+  state:z.enum(['complete','current','waiting','not-available']),
+  detail:z.string().min(1),
+}).strict()).length(7);
+export const taskWorkReadinessSchema = z.object({
+  taskId:uuid,reference:z.string(),title:z.string(),assigneeName:z.string().nullable(),
+  workEntryCount:z.number().int().nonnegative(),completedActionCount:z.number().int().nonnegative(),openActionCount:z.number().int().nonnegative(),
+  followUpCount:z.number().int().nonnegative(),
+  checklistOutcomeCount:z.number().int().nonnegative(),checklistNeedsReviewCount:z.number().int().nonnegative(),
+}).strict();
+export const workOrderCompletionReadinessSchema = z.object({
+  currentWorkPlan:z.boolean(),
+  currentSupervisorHandoff:z.boolean(),
+  openHoldCount:z.number().int().nonnegative(),
+  tasks:z.array(taskWorkReadinessSchema),
+  blockers:z.array(z.object({code:z.enum([
+    'current-work-plan-required','supervisor-handoff-required','task-assignment-required','task-work-record-required',
+    'task-action-not-complete','task-follow-up-open','task-checklist-review-required',
+    'open-hold','effective-g2-scope-unavailable','effective-task-instructions-unavailable',
+    'authority-validation-unavailable','signoff-command-unavailable',
+  ]),message:z.string().min(1),taskId:uuid.nullable()}).strict()),
+  state:z.literal('blocked'),
+}).strict();
+export type WorkOrderWorkflowContext = z.infer<typeof workOrderWorkflowContextSchema>;
 export const supervisorHandoffSchema = z.object({ expectedVersion, supervisorUserId: uuid, workPlanRevisionId: uuid, reason: z.string().trim().min(1).max(1000) }).strict();
 export const eligibleTeamLeadSchema=z.object({canAssign:z.boolean(),blockReason:z.enum(['authority-required','operations-review-required','no-qualified-leads']).nullable(),teamLeads:z.array(z.object({id:uuid,name:z.string(),qualificationCode:z.string()}))});
 export const eligibleSupervisorSchema=z.object({canHandoff:z.boolean(),supervisors:z.array(z.object({id:uuid,name:z.string(),qualificationCode:z.string()}))});
@@ -144,6 +171,13 @@ export const holdSchema = z.object({
   category:z.enum(['safety','approval','parts','equipment','competency','other']),
   severity:z.enum(['stop','warning']),reason:wording,source:wording,
 }).strict();
+export const holdResolutionSchema = z.object({
+  expectedVersion,
+  resolution:wording,
+  evidenceIds:z.array(uuid).min(1).max(10),
+}).strict().superRefine((value,context)=>{
+  if(new Set(value.evidenceIds).size!==value.evidenceIds.length) context.addIssue({code:'custom',path:['evidenceIds'],message:'Choose each evidence item only once.'});
+});
 export const summarySchema = z.object({
   id:uuid,reference:z.string(),version:z.number().int(),createdAt:at,clientName:z.string().nullable(),vehicleLabel:z.string(),vin:z.string(),registration:z.string().nullable(),status:z.literal('intakeDraft'),complaintCount:z.number().int(),openHoldCount:z.number().int(),
 });
@@ -152,11 +186,15 @@ export const workOrderEvidenceSchema = z.object({
   state:z.enum(['pending','quarantined','accepted','rejected']),scanDetailCode:z.string().nullable(),uploadedAt:at,attachedAt:at.nullable(),attachedBy:z.string().nullable(),
 });
 export const detailSchema = summarySchema.extend({
+  serviceKind:z.enum(['repair-maintenance','routine-maintenance','psai','service-centre-pdi']),
+  serviceSource:z.enum(['showroom-stock','partner-garage','other','unknown']),
+  shippingReference:z.string().nullable(),
   client:z.object({id:uuid,kind:z.enum(['person','organisation','unknown-legacy']),name:z.string(),phone:z.string().nullable(),email:z.string().nullable()}).nullable(),
   owner:z.object({id:uuid,kind:z.enum(['person','organisation','unknown-legacy']),name:z.string(),phone:z.string().nullable(),email:z.string().nullable(),state:z.enum(['reported','verified','rejected','superseded'])}).nullable(),
   visitContact:z.object({id:uuid,kind:z.enum(['person','organisation','unknown-legacy']),name:z.string(),phone:z.string().nullable(),email:z.string().nullable()}).nullable(),
   clientCode:z.string().nullable(),clientBookingSequence:z.number().int().nullable(),powertrainClass:z.enum(['EV','HYB','ICE']).nullable(),warrantyStatusAtBooking:z.enum(['confirmed','not-confirmed','unknown']).nullable(),
   canReviewOperations:z.boolean(),
+  canResolveHolds:z.boolean(),
   operationsReview:z.object({id:uuid,reviewedByName:z.string(),reviewedAt:at,notes:z.string(),reviewedWorkOrderVersion:z.number().int().positive(),isCurrent:z.boolean()}).nullable(),
   teamLeadAssignment:z.object({id:uuid,leadUserId:uuid,leadName:z.string(),operationsReviewId:uuid,powertrainClass:z.enum(['EV','HYB','ICE']),assignedByName:z.string(),assignedAt:at,reason:z.string()}).nullable(),
   supervisorHandoff:z.object({supervisorUserId:uuid,supervisorName:z.string(),assignedByName:z.string(),powertrainClass:z.enum(['EV','HYB','ICE']),assignedAt:at,reason:z.string(),workPlanRevisionId:uuid,workPlanRevisionNumber:z.number().int().positive(),workOrderVersion:z.number().int().positive(),isCurrent:z.boolean()}).nullable(),
@@ -164,12 +202,14 @@ export const detailSchema = summarySchema.extend({
   canPrepareWorkPlan:z.boolean(),
   workPlanBlockReason:workPlanBlockReasonSchema.nullable(),
   workflowContext:workOrderWorkflowContextSchema,
+  closeoutPath:workOrderCloseoutPathSchema,
+  completionReadiness:workOrderCompletionReadinessSchema,
   vehicle:z.object({id:uuid,vin:z.string(),registration:z.string().nullable(),make:z.string(),model:z.string(),variant:z.string().nullable(),powertrain:z.string().nullable()}),
   vehicleHistory:z.array(z.object({id:uuid,reference:z.string(),openedAt:at,registration:z.string().nullable(),clientName:z.string().nullable(),reportedOwnerName:z.string().nullable(),odometerKm:z.number().int(),socPercent:z.number().int().nullable(),complaints:z.array(z.object({reference:z.string(),wording:z.string()}))})),
   odometerKm:z.number().int(),socPercent:z.number().int().nullable(),
   complaints:z.array(z.object({id:uuid,reference:z.string(),wording:z.string()})),
   tasks:z.array(z.object({id:uuid,reference:z.string(),title:z.string(),complaintId:uuid,state:z.literal('planned')})),
-  holds:z.array(z.object({id:uuid,category:z.string(),severity:z.string(),reason:z.string(),source:z.string(),taskId:uuid.nullable(),openedAt:at,openedBy:z.string()})),
+  holds:z.array(z.object({id:uuid,category:z.string(),severity:z.string(),reason:z.string(),source:z.string(),taskId:uuid.nullable(),openedAt:at,openedBy:z.string(),resolution:z.object({reason:z.string(),resolvedAt:at,resolvedBy:z.string(),evidenceIds:z.array(uuid)}).nullable()})),
   evidence:z.array(workOrderEvidenceSchema),
   intakeFacts:z.array(intakeFactSchema),
   diagnosticFindings:z.array(diagnosticFindingSchema),

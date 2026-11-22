@@ -126,6 +126,23 @@ export const workforceOverviewSchema = z.object({
     active: z.number().int().nonnegative(),
     activeRolePlacements: z.number().int().nonnegative(),
   }).strict(),
+  taskProgress: z.object({
+    blockedCount: z.number().int().nonnegative(),
+    waitingCount: z.number().int().nonnegative(),
+    items: z.array(z.object({
+      workOrderId: z.string().uuid(),
+      bookingReference: z.string(),
+      taskReference: z.string(),
+      taskTitle: z.string(),
+      assigneeName: z.string(),
+      state: z.enum(["blocked", "waiting"]),
+      reportedAt: z.string().datetime({ offset: true }),
+    }).strict()).max(12),
+  }).strict(),
+}).strict();
+export const workforceActivitySchema=z.object({
+  items:z.array(z.object({id:z.string().uuid(),createdAt:z.string().datetime({offset:true}),eventType:z.string(),aggregateType:z.string(),aggregateVersion:z.number().int().positive(),workOrderReference:z.string().nullable(),actorName:z.string()}).strict()),
+  nextCursor:z.string().nullable(),pageSize:z.number().int().positive(),
 }).strict();
 export const staffMessageSchema = z.object({
   id: z.string().uuid(),
@@ -204,6 +221,24 @@ export const ownerOidcStartResponseSchema = z.object({
       (url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname));
   }),
 });
+export const vehicleServiceHistorySchema = z.object({
+  vehicle: z.object({
+    id: z.string().uuid(), vin: z.string(), registration: z.string().nullable(), make: z.string(), model: z.string(),
+    variant: z.string().nullable(), powertrain: z.string().nullable(),
+  }).strict().nullable(),
+  items: z.array(z.object({
+    workOrderId: z.string().uuid(), reference: z.string(), openedAt: z.string(), odometerKm: z.number().int().nonnegative(),
+    complaints: z.array(z.string()),
+    workEntries: z.array(z.object({
+      id: z.string().uuid(), taskReference: z.string(), taskTitle: z.string(),
+      kind: z.enum(["finding", "test", "action", "follow-up"]),
+      result: z.enum(["observed", "reproduced", "not-reproduced", "inconclusive", "done", "partial", "pending", "blocked"]),
+      summary: z.string(), detail: z.string(), actorName: z.string(), recordedAt: z.string(),
+      supersedesEntryId: z.string().uuid().nullable(), correctionReason: z.string().nullable(),
+    }).strict()),
+  }).strict()),
+  pagination: z.object({ page: z.number().int().positive(), pageSize: z.number().int().positive(), totalItems: z.number().int().nonnegative(), totalPages: z.number().int().nonnegative() }).strict(),
+}).strict();
 
 const summarySchema = z.object({
   id: z.string().uuid(),
@@ -294,6 +329,9 @@ export const activeTaskLaborSessionSchema = z.object({
   session: taskLaborSessionSchema.nullable(),
 }).strict();
 export const detailSchema = summarySchema.extend({
+  serviceKind: z.enum(["repair-maintenance", "routine-maintenance", "psai", "service-centre-pdi"]),
+  serviceSource: z.enum(["showroom-stock", "partner-garage", "other", "unknown"]),
+  shippingReference: z.string().nullable(),
   client: z.object({
     id: z.string().uuid(),
     kind: z.enum(["person", "organisation", "unknown-legacy"]),
@@ -314,6 +352,7 @@ export const detailSchema = summarySchema.extend({
   powertrainClass: z.enum(["EV","HYB","ICE"]).nullable(),
   warrantyStatusAtBooking: z.enum(["confirmed","not-confirmed","unknown"]).nullable(),
   canReviewOperations: z.boolean(),
+  canResolveHolds: z.boolean(),
   operationsReview: z.object({id:z.string().uuid(),reviewedByName:z.string(),reviewedAt:z.iso.datetime(),notes:z.string(),reviewedWorkOrderVersion:z.number().int().positive(),isCurrent:z.boolean()}).nullable(),
   teamLeadAssignment: z.object({id:z.string().uuid(),leadUserId:z.string().uuid(),leadName:z.string(),operationsReviewId:z.string().uuid(),powertrainClass:z.enum(["EV","HYB","ICE"]),assignedByName:z.string(),assignedAt:z.iso.datetime(),reason:z.string()}).nullable(),
   supervisorHandoff: z.object({supervisorUserId:z.string().uuid(),supervisorName:z.string(),assignedByName:z.string(),powertrainClass:z.enum(["EV","HYB","ICE"]),assignedAt:z.iso.datetime(),reason:z.string(),workPlanRevisionId:z.string().uuid(),workPlanRevisionNumber:z.number().int().positive(),workOrderVersion:z.number().int().positive(),isCurrent:z.boolean()}).nullable(),
@@ -331,6 +370,18 @@ export const detailSchema = summarySchema.extend({
     blockReason:z.enum(["operations-review-authority-required","assigned-lead-required","operations-review-required","site-write-required","authority-required","qualification-required","planned-tasks-required"]).nullable(),
     dueAt:z.null(),
     evidenceChecklist:z.literal("awaiting-approved-sop"),
+  }).strict(),
+  closeoutPath:z.array(z.object({
+    code:z.enum(["operations-review","lead-handoff","technician-work","supervisor-completion","team-lead-release","head-inspection","client-update"]),
+    label:z.string().min(1),responsibleRole:z.string().min(1),state:z.enum(["complete","current","waiting","not-available"]),detail:z.string().min(1),
+  }).strict()).length(7),
+  completionReadiness:z.object({
+    currentWorkPlan:z.boolean(),currentSupervisorHandoff:z.boolean(),openHoldCount:z.number().int().nonnegative(),
+    tasks:z.array(z.object({taskId:z.string().uuid(),reference:z.string(),title:z.string(),assigneeName:z.string().nullable(),
+      workEntryCount:z.number().int().nonnegative(),completedActionCount:z.number().int().nonnegative(),openActionCount:z.number().int().nonnegative(),followUpCount:z.number().int().nonnegative(),
+      checklistOutcomeCount:z.number().int().nonnegative(),checklistNeedsReviewCount:z.number().int().nonnegative()}).strict()),
+    blockers:z.array(z.object({code:z.enum(['current-work-plan-required','supervisor-handoff-required','task-assignment-required','task-work-record-required','task-action-not-complete','task-follow-up-open','task-checklist-review-required','open-hold','effective-g2-scope-unavailable','effective-task-instructions-unavailable','authority-validation-unavailable','signoff-command-unavailable']),message:z.string().min(1),taskId:z.string().uuid().nullable()}).strict()),
+    state:z.literal('blocked'),
   }).strict(),
   vehicle: z.object({
     id: z.string().uuid(),
@@ -387,6 +438,7 @@ export const detailSchema = summarySchema.extend({
       taskId: z.string().uuid().nullable(),
       openedAt: z.string(),
       openedBy: z.string(),
+      resolution: z.object({reason:z.string(),resolvedAt:z.string(),resolvedBy:z.string(),evidenceIds:z.array(z.string().uuid())}).nullable(),
     }),
   ),
   evidence: z.array(
@@ -514,7 +566,7 @@ export const taskAllocationsSchema=z.object({
   blockReason:z.enum(["handoff-required","current-plan-required","operations-review-required","no-direct-reports","site-write-required"]).nullable(),
   activityAudience:z.enum(["supervisor","team-lead","head-service-centre"]).nullable(),
   tasks:z.array(z.object({taskId:z.string().uuid(),reference:z.string(),title:z.string(),assigneeId:z.string().uuid().nullable(),assigneeName:z.string().nullable(),assignmentRevision:z.number().int().positive().nullable()})),
-  assignees:z.array(z.object({staffUserId:z.string().uuid(),displayName:z.string(),roleCode:z.literal("technician-engineer-trainee"),placementId:z.string().uuid()})),
+  assignees:z.array(z.object({staffUserId:z.string().uuid(),displayName:z.string(),roleCode:z.literal("technician-engineer-trainee"),placementId:z.string().uuid(),currentPlanTaskCount:z.number().int().nonnegative(),lastReportedBlockedTaskCount:z.number().int().nonnegative(),lastReportedWaitingTaskCount:z.number().int().nonnegative()})),
 }).strict();
 export const taskAllocationResultSchema=z.object({
   workOrderId:z.string().uuid(),version:z.number().int().positive(),planRevisionId:z.string().uuid(),
@@ -756,6 +808,10 @@ export async function uploadEvidenceFile(
 
 export const sitePath = (siteId: string) =>
   `/sites/${encodeURIComponent(siteId)}`;
+export const vehicleServiceHistoryPath = (siteId: string, vin: string, page = 1, pageSize = 10) => {
+  const query = new URLSearchParams({ vin, page: String(page), pageSize: String(pageSize) });
+  return `${sitePath(siteId)}/service-history?${query}`;
+};
 export const myAssignedTasksPath = (siteId: string, query: string, page: number, pageSize: number) => {
   const params = new URLSearchParams({ q: query, page: String(page), pageSize: String(pageSize) });
   return `${sitePath(siteId)}/my-tasks?${params}`;
@@ -781,9 +837,18 @@ export const myTaskEvidenceIntentPath = (siteId: string, workOrderId: string, ta
 export const taskActivitySchema = z.object({
   id: z.string().uuid(),
   assignmentRevision: z.number().int().positive(),
-  entryType: z.enum(["acknowledgement", "progress", "request", "comment"]),
+  entryType: z.enum(["acknowledgement", "progress", "request", "comment", "review-response"]),
   progressState: z.enum(["working", "waiting", "blocked"]).nullable(),
-  requestType: z.enum(["help", "parts", "information", "access", "evidence"]).nullable(),
+  requestType: z.enum(["help", "parts", "information", "access", "evidence", "supervisor-review"]).nullable(),
+  completionDeclaration: z.object({
+    actionsSummary: z.string(), checksSummary: z.string(), outcome: z.enum(["reported-complete", "reported-incomplete", "blocked"]),
+    remainingWork: z.string(),
+  }).strict().nullable(),
+  declarationWorkEntryIds: z.array(z.string().uuid()).nullable(),
+  responseToActivityId: z.string().uuid().nullable(),
+  responseToActorName: z.string().nullable(),
+  responseToNote: z.string().nullable(),
+  hasSupervisorResponse: z.boolean(),
   note: z.string(),
   actorName: z.string(),
   createdAt: z.string(),
@@ -848,14 +913,69 @@ export const taskWorkEvidenceOptionsSchema = z.object({
 }).strict();
 export const supervisorTaskActivityPageSchema=z.object({
   workOrderId:z.string().uuid(),planRevisionId:z.string().uuid(),
+  canRespond:z.boolean(),responseBlockReason:z.enum(['authority-required','read-only']).nullable(),
   items:z.array(taskActivitySchema.extend({
     taskId:z.string().uuid(),taskReference:z.string(),taskTitle:z.string(),
     currentAssigneeName:z.string(),currentAssignmentRevision:z.number().int().positive(),
   }).strict()),
   pagination:z.object({page:z.number().int().positive(),pageSize:z.number().int().positive(),totalItems:z.number().int().nonnegative(),totalPages:z.number().int().nonnegative()}).strict(),
 }).strict();
+export const taskReviewQueueSchema = z.object({
+  items: z.array(z.object({
+    activityId: z.string().uuid(), workOrderId: z.string().uuid(), bookingReference: z.string(),
+    vehicleLabel: z.string(), registration: z.string().nullable(), taskId: z.string().uuid(),
+    taskReference: z.string(), taskTitle: z.string(), technicianName: z.string(), requesterName: z.string(),
+    note: z.string(), createdAt: z.string().datetime({ offset: true }),
+  }).strict()),
+  pagination: z.object({ page: z.number().int().positive(), pageSize: z.number().int().positive(), totalItems: z.number().int().nonnegative(), totalPages: z.number().int().nonnegative() }).strict(),
+}).strict();
+export const taskReviewQueuePath = (siteId: string, page = 1, pageSize = 10) =>
+  `${sitePath(siteId)}/task-review-requests?${new URLSearchParams({ page: String(page), pageSize: String(pageSize) })}`;
+export const diagnosticReviewQueueSchema = z.object({
+  items: z.array(z.object({
+    findingId: z.string().uuid(), workOrderId: z.string().uuid(), bookingReference: z.string(),
+    vehicleLabel: z.string(), registration: z.string().nullable(), complaintReference: z.string(),
+    taskReference: z.string().nullable(), taskTitle: z.string().nullable(), summary: z.string(),
+    certaintyState: z.enum(["stated", "inconclusive"]), certaintyExplanation: z.string(),
+    residualRisk: z.string(), restrictions: z.string().nullable(), recordedAt: z.string().datetime({ offset: true }),
+  }).strict()),
+  pagination: z.object({ page: z.number().int().positive(), pageSize: z.number().int().positive(), totalItems: z.number().int().nonnegative(), totalPages: z.number().int().nonnegative() }).strict(),
+}).strict();
+export const diagnosticReviewQueuePath = (siteId: string, page = 1, pageSize = 10) =>
+  `${sitePath(siteId)}/diagnostic-review-findings?${new URLSearchParams({ page: String(page), pageSize: String(pageSize) })}`;
+export const checklistReviewQueueSchema = z.object({
+  canReview: z.boolean(),
+  blockReason: z.enum(["authority-required"]).nullable(),
+  items: z.array(z.object({
+    workOrderId: z.string().uuid(), bookingReference: z.string(), vehicleLabel: z.string(), registration: z.string().nullable(),
+    taskId: z.string().uuid(), taskReference: z.string(), taskTitle: z.string(), checklistId: z.string().uuid(),
+    checklistVersion: z.number().int().positive(), itemId: z.string().uuid(), itemCode: z.string(), itemLabel: z.string(),
+    outcomeRevisionId: z.string().uuid(), outcomeRevision: z.number().int().positive(),
+    result: z.enum(["completed", "failed", "not-checked", "not-completed", "blocked", "not-applicable"]),
+    reason: z.string().nullable(), comments: z.string().nullable(), measurement: z.record(z.string(), z.unknown()).nullable(),
+    evidence: z.array(z.object({ displayName: z.string(), mediaType: z.string() }).strict()),
+    evidenceRequired: z.boolean(), evidenceCurrent: z.boolean(), hasOpenHold: z.boolean(), technicianName: z.string(),
+    recordedAt: z.string().datetime({ offset: true }), workPlanRevisionId: z.string().uuid(), assignmentRevision: z.number().int().positive(),
+  }).strict()),
+  pagination: z.object({ page: z.number().int().positive(), pageSize: z.number().int().positive(), totalItems: z.number().int().nonnegative(), totalPages: z.number().int().nonnegative() }).strict(),
+}).strict();
+export type ChecklistReviewQueue = z.infer<typeof checklistReviewQueueSchema>;
+export const checklistReviewQueuePath = (siteId: string, page = 1, pageSize = 10) =>
+  `${sitePath(siteId)}/checklist-review-queue?${new URLSearchParams({ page: String(page), pageSize: String(pageSize) })}`;
+export const checklistItemReviewPath = (siteId: string, item: ChecklistReviewQueue["items"][number]) =>
+  `${sitePath(siteId)}/work-orders/${encodeURIComponent(item.workOrderId)}/tasks/${encodeURIComponent(item.taskId)}/checklists/${encodeURIComponent(item.checklistId)}/items/${encodeURIComponent(item.itemId)}/reviews`;
+export const checklistItemReviewResultSchema = z.object({
+  reviewId: z.string().uuid(), workOrderId: z.string().uuid(), checklistId: z.string().uuid(), itemId: z.string().uuid(),
+  outcomeRevisionId: z.string().uuid(), disposition: z.enum(["record-confirmed", "returned-for-correction"]),
+  checklistVersion: z.number().int().positive(), reviewedAt: z.string().datetime({ offset: true }),
+}).strict();
 export const workforceOverviewPath = (siteId: string) =>
   `${sitePath(siteId)}/workforce/overview`;
+export const workforceActivityPath=(siteId:string,cursor?:string,pageSize=25)=>{
+  const params=new URLSearchParams({pageSize:String(pageSize)});
+  if(cursor) params.set("cursor",cursor);
+  return `${sitePath(siteId)}/workforce/activity?${params}`;
+};
 export const controlledDocumentsPath = (siteId: string, q: string, page: number, pageSize: number) => {
   const params = new URLSearchParams({ q, page: String(page), pageSize: String(pageSize) });
   return `${sitePath(siteId)}/documents?${params}`;
@@ -868,23 +988,97 @@ export const workOrderChecklistsPath = (siteId: string, orderId: string, page = 
   const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
   return `${orderPath(siteId, orderId)}/checklists?${params}`;
 };
+export const workOrderChecklistReportPath = (siteId: string, orderId: string, checklistId: string, page = 1, pageSize = 50, expectedChecklistVersion?: number) => {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (expectedChecklistVersion !== undefined) params.set("expectedChecklistVersion", String(expectedChecklistVersion));
+  return `${orderPath(siteId, orderId)}/checklists/${encodeURIComponent(checklistId)}/report?${params}`;
+};
+const workOrderChecklistReportItemSchema=z.object({id:z.string().uuid(),code:z.string(),ordinal:z.number().int().positive(),label:z.string(),result:z.enum(["completed","failed","not-checked","not-completed","blocked","not-applicable"]).nullable(),reason:z.string().nullable(),applicabilityReason:z.string().nullable(),comments:z.string().nullable(),measurement:z.record(z.string(),z.unknown()).nullable(),actorName:z.string().nullable(),assigneeName:z.string().nullable(),taskReference:z.string().nullable(),taskTitle:z.string().nullable(),revision:z.number().int().positive().nullable(),correctionReason:z.string().nullable(),recordedAt:z.string().datetime({offset:true}).nullable(),evidenceLabels:z.array(z.string())}).strict().superRefine((item,context)=>{
+  if(item.result!==null&&item.result!=="completed"&&!item.reason)context.addIssue({code:"custom",path:["reason"],message:"A non-complete result must include a reason."});
+  if(item.result==="not-applicable"&&!item.applicabilityReason)context.addIssue({code:"custom",path:["applicabilityReason"],message:"A not-applicable result must include an applicability reason."});
+});
+export const workOrderChecklistReportSchema = z.object({
+  workOrderId:z.string().uuid(),bookingReference:z.string(),siteName:z.string(),
+  vehicle:z.object({registration:z.string().nullable(),make:z.string(),model:z.string(),variant:z.string().nullable(),powertrain:z.string().nullable()}).strict(),
+  checklist:z.object({id:z.string().uuid(),kind:z.literal("routine-maintenance"),state:z.enum(["draft","in-progress","submitted","returned","approved","closed"]),version:z.number().int().positive(),scheduleBasis:z.enum(["verified-history","customer-request","delivery-inspection","unknown"]),odometerAtStartKm:z.number().int().nonnegative().nullable(),templateCode:z.string(),templateRevision:z.number().int().positive(),sources:z.array(z.object({reference:z.string(),title:z.string(),revision:z.string(),status:z.string(),effectiveFrom:z.string().datetime({offset:true}),effectiveUntil:z.string().datetime({offset:true}).nullable(),current:z.boolean()}).strict())}).strict(),
+  summary:z.object({totalItems:z.number().int().nonnegative(),completed:z.number().int().nonnegative(),failed:z.number().int().nonnegative(),notChecked:z.number().int().nonnegative(),notCompleted:z.number().int().nonnegative(),blocked:z.number().int().nonnegative(),notApplicable:z.number().int().nonnegative()}).strict(),
+  items:z.array(workOrderChecklistReportItemSchema),
+  pagination:z.object({page:z.number().int().positive(),pageSize:z.number().int().positive(),totalItems:z.number().int().nonnegative(),totalPages:z.number().int().nonnegative()}).strict(),preparedAt:z.string().datetime({offset:true}),
+}).strict();
+export const scopeProposalsPath = (siteId:string,orderId:string) =>
+  `${orderPath(siteId,orderId)}/scope-proposals`;
+export const payerScopeResponsePath = (siteId:string,orderId:string,proposalId:string) =>
+  `${scopeProposalsPath(siteId,orderId)}/${encodeURIComponent(proposalId)}/payer-response`;
+export const payerScopeResponseInputSchema=z.object({
+  expectedWorkOrderVersion:z.number().int().positive(),scopeRevisionId:z.string().uuid(),scopeDigest:z.string().regex(/^[0-9a-f]{64}$/),
+  responseMethod:z.enum(['phone','written']),evidenceIds:z.array(z.string().uuid()).max(10),writtenEvidenceConfirmed:z.boolean(),
+  decision:z.enum(['approved','declined']),respondentName:z.string().trim().min(1).max(180),
+  respondentRelationship:z.enum(['payer','authorised-representative']),authorityBasis:z.string().trim().min(1).max(1000),
+  identityCheckSummary:z.string().trim().min(1).max(1000),scopeReadBack:z.literal(true),responseSummary:z.string().trim().min(1).max(1200),
+}).strict().superRefine((input,context)=>{
+  if(input.responseMethod==='written'&&input.evidenceIds.length===0)context.addIssue({code:'custom',path:['evidenceIds'],message:'Attach accepted written evidence.'});
+  if(input.responseMethod==='phone'&&input.evidenceIds.length>0)context.addIssue({code:'custom',path:['evidenceIds'],message:'Phone responses cannot include written evidence.'});
+  if(input.responseMethod==='written'&&!input.writtenEvidenceConfirmed)context.addIssue({code:'custom',path:['writtenEvidenceConfirmed'],message:'Confirm the file contains the payer response to this exact scope.'});
+  if(input.responseMethod==='phone'&&input.writtenEvidenceConfirmed)context.addIssue({code:'custom',path:['writtenEvidenceConfirmed'],message:'This confirmation is only for written responses.'});
+  if(new Set(input.evidenceIds).size!==input.evidenceIds.length)context.addIssue({code:'custom',path:['evidenceIds'],message:'Choose each file once.'});
+});
+export const payerScopeResponseSchema=z.object({
+  id:z.string().uuid(),decision:z.enum(['approved','declined']),responseMethod:z.enum(['phone','written']),evidenceIds:z.array(z.string().uuid()).max(10),writtenEvidenceConfirmed:z.boolean(),respondentName:z.string(),
+  respondentRelationship:z.enum(['payer','authorised-representative']),authorityBasis:z.string(),identityCheckSummary:z.string(),
+  scopeReadBack:z.literal(true),responseSummary:z.string(),recordedBy:z.string(),recordedAt:z.string(),
+}).strict();
+export const payerScopeResponseResultSchema=z.object({
+  workOrderId:z.string().uuid(),scopeRevisionId:z.string().uuid(),scopeDigest:z.string().regex(/^[0-9a-f]{64}$/),
+  workOrderVersion:z.number().int().positive(),response:payerScopeResponseSchema,
+  authorizationState:z.literal('blocked'),authorizationReason:z.literal('technical-review-and-effective-policy-required'),
+}).strict();
+const scopeRevisionSchema=z.object({
+  id:z.string().uuid(),revision:z.number().int().positive(),requestedKind:z.enum(['diagnosis','repair']),
+  rationale:z.string(),estimate:z.object({minorUnits:z.string().regex(/^(0|[1-9][0-9]{0,37})$/),currency:z.string().regex(/^[A-Z]{3}$/)}).strict().nullable(),
+  scopeDigest:z.string().regex(/^[0-9a-f]{64}$/),sourceWorkOrderVersion:z.number().int().positive(),
+  supersedesRevisionId:z.string().uuid().nullable(),preparedBy:z.string(),preparedAt:z.string(),
+  tasks:z.array(z.object({id:z.string().uuid(),reference:z.string(),title:z.string()})),
+  payerResponse:payerScopeResponseSchema.nullable(),
+}).strict();
+const scopeProposalViewSchema=scopeRevisionSchema.extend({canRespond:z.boolean()}).strict();
+export const scopeProposalPageSchema=z.object({
+  workOrderId:z.string().uuid(),workOrderVersion:z.number().int().positive(),canPrepare:z.boolean(),
+  blockReason:z.enum(['authority-required','read-only']).nullable(),
+  canRecordPayerResponse:z.boolean(),payerResponseBlockReason:z.enum(['authority-required','read-only']).nullable(),
+  proposals:z.array(scopeProposalViewSchema),
+  plannedTasks:z.array(z.object({id:z.string().uuid(),reference:z.string(),title:z.string()})),
+}).strict();
+export const scopeProposalResultSchema=z.object({
+  workOrderId:z.string().uuid(),
+  proposal:scopeRevisionSchema,
+  version:z.number().int().positive(),
+}).strict();
 export const workOrderChecklistsSchema = z.object({
   workOrderId: z.string().uuid(),
   workOrderVersion: z.number().int().positive(),
   vehicle: z.object({make:z.string(),model:z.string(),variant:z.string().nullable(),powertrain:z.string().nullable()}).strict(),
   checklists: z.array(z.object({
-    id:z.string().uuid(),kind:z.enum(["pdi","routine-maintenance"]),state:z.enum(["draft","in-progress","submitted","returned","approved","closed"]),
-    version:z.number().int().positive(),scheduleBasis:z.enum(["verified-history","customer-request","delivery-inspection","unknown"]),
+    id:z.string().uuid(),kind:z.literal("routine-maintenance"),state:z.enum(["draft","in-progress","submitted","returned","approved","closed"]),
+    version:z.number().int().positive(),scheduleBasis:z.enum(["verified-history","customer-request","unknown"]),templateCode:z.string(),templateRevision:z.number().int().positive(),templateRevisionId:z.string().uuid(),
     odometerAtStartKm:z.number().int().nonnegative().nullable(),createdAt:z.string().datetime({offset:true}),
   }).strict()),
   availableTemplates: z.array(z.object({
-    id:z.string().uuid(),code:z.string(),revision:z.number().int().positive(),kind:z.enum(["pdi","routine-maintenance"]),
+    id:z.string().uuid(),code:z.string(),revision:z.number().int().positive(),kind:z.literal("routine-maintenance"),
     make:z.string(),model:z.string(),variant:z.string(),powertrain:z.string(),effectiveFrom:z.string().datetime({offset:true}),
   }).strict()),
+  canPrepare:z.boolean(),
+  prepareBlockReason:z.enum(["authority-required","read-only"]).nullable(),
   unavailableReason:z.string().nullable(),
   pagination:z.object({page:z.number().int().positive(),pageSize:z.number().int().positive(),totalItems:z.number().int().nonnegative(),totalPages:z.number().int().nonnegative()}).strict(),
 }).strict();
 export type WorkOrderChecklists = z.infer<typeof workOrderChecklistsSchema>;
+export const workOrderChecklistDraftPath = (siteId:string,workOrderId:string) => `${orderPath(siteId,workOrderId)}/checklists`;
+export const workOrderChecklistDraftResultSchema=z.object({
+  workOrderId:z.string().uuid(),
+  checklist:z.object({id:z.string().uuid(),kind:z.literal("routine-maintenance"),state:z.literal("draft"),version:z.literal(1),
+    scheduleBasis:z.enum(["customer-request","unknown"]),odometerAtStartKm:z.number().int().nonnegative().nullable(),
+    templateRevisionId:z.string().uuid(),createdAt:z.iso.datetime({offset:true})}).strict(),
+}).strict();
 export const serviceReportPath = (siteId: string, orderId: string, page = 1, expectedVersion?: number, expectedTotal?: number) => {
   const params = new URLSearchParams({ page: String(page) });
   if (expectedVersion !== undefined) params.set("expectedVersion", String(expectedVersion));
@@ -905,6 +1099,8 @@ export const supervisorTaskActivityPath = (siteId:string,orderId:string,page:num
   const params=new URLSearchParams({page:String(page),pageSize:String(pageSize)});
   return `${orderPath(siteId,orderId)}/task-activity?${params}`;
 };
+export const supervisorTaskReviewReplyPath = (siteId:string,orderId:string,taskId:string,activityId:string) =>
+  `${orderPath(siteId,orderId)}/tasks/${encodeURIComponent(taskId)}/task-activity/${encodeURIComponent(activityId)}/reply`;
 export const evidenceIntentPath = (siteId: string, intentId: string) =>
   `${sitePath(siteId)}/evidence/intents/${encodeURIComponent(intentId)}`;
 export const evidenceRecordPath = (siteId: string, evidenceId: string) =>

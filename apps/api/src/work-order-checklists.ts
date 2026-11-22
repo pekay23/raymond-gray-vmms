@@ -11,10 +11,13 @@ const querySchema = z.object({
 
 const checklistSchema = z.object({
   id: uuid,
-  kind: z.enum(['pdi','routine-maintenance']),
+  kind: z.literal('routine-maintenance'),
   state: z.enum(['draft','in-progress','submitted','returned','approved','closed']),
   version: z.number().int().positive(),
-  scheduleBasis: z.enum(['verified-history','customer-request','delivery-inspection','unknown']),
+  scheduleBasis: z.enum(['verified-history','customer-request','unknown']),
+  templateCode: z.string(),
+  templateRevision: z.number().int().positive(),
+  templateRevisionId: uuid,
   odometerAtStartKm: z.number().int().nonnegative().nullable(),
   createdAt: z.iso.datetime({ offset: true }),
 }).strict();
@@ -23,7 +26,7 @@ const templateSchema = z.object({
   id: uuid,
   code: z.string(),
   revision: z.number().int().positive(),
-  kind: z.enum(['pdi','routine-maintenance']),
+  kind: z.literal('routine-maintenance'),
   make: z.string(),
   model: z.string(),
   variant: z.string(),
@@ -42,6 +45,8 @@ export const workOrderChecklistsSchema = z.object({
   }).strict(),
   checklists: z.array(checklistSchema),
   availableTemplates: z.array(templateSchema),
+  canPrepare: z.boolean(),
+  prepareBlockReason: z.enum(['authority-required','read-only']).nullable(),
   unavailableReason: z.string().nullable(),
   pagination: z.object({
     page: z.number().int().positive(),
@@ -86,14 +91,18 @@ export async function readWorkOrderChecklists(
 
     const count = await client.query(`SELECT count(*)::int AS total
       FROM public.work_order_checklists
-      WHERE organisation_id=$1 AND site_id=$2 AND work_order_id=$3`,
+      WHERE organisation_id=$1 AND site_id=$2 AND work_order_id=$3 AND kind='routine-maintenance'`,
     [scope.organisationId,scope.siteId,vehicleRow.id]);
     const totalItems = z.object({ total:z.number().int().nonnegative() }).parse(count.rows[0]).total;
-    const checklistRows = await client.query(`SELECT id,kind,state,version,schedule_basis AS "scheduleBasis",
-        odometer_at_start_km AS "odometerAtStartKm",created_at AS "createdAt"
-      FROM public.work_order_checklists
-      WHERE organisation_id=$1 AND site_id=$2 AND work_order_id=$3
-      ORDER BY created_at DESC,id DESC LIMIT $4 OFFSET $5`,
+    const checklistRows = await client.query(`SELECT checklist.id,checklist.kind,checklist.state,checklist.version,
+        checklist.schedule_basis AS "scheduleBasis",checklist.template_revision_id AS "templateRevisionId",
+        template.template_code AS "templateCode",template.revision AS "templateRevision",
+        checklist.odometer_at_start_km AS "odometerAtStartKm",checklist.created_at AS "createdAt"
+      FROM public.work_order_checklists checklist
+      JOIN public.workshop_checklist_template_revisions template ON template.organisation_id=checklist.organisation_id
+        AND template.site_id=checklist.site_id AND template.id=checklist.template_revision_id
+      WHERE checklist.organisation_id=$1 AND checklist.site_id=$2 AND checklist.work_order_id=$3 AND checklist.kind='routine-maintenance'
+      ORDER BY checklist.created_at DESC,checklist.id DESC LIMIT $4 OFFSET $5`,
     [scope.organisationId,scope.siteId,vehicleRow.id,page.pageSize,(page.page-1)*page.pageSize]);
 
     const templateRows = vehicleRow.variant && vehicleRow.powertrain
@@ -110,7 +119,7 @@ export async function readWorkOrderChecklists(
         ) decision ON decision.decision='effective'
           AND decision.effective_from<=clock_timestamp()
           AND (decision.effective_until IS NULL OR decision.effective_until>clock_timestamp())
-        WHERE template.organisation_id=$1 AND template.site_id=$2
+        WHERE template.organisation_id=$1 AND template.site_id=$2 AND template.kind='routine-maintenance'
           AND lower(trim(template.vehicle_make))=lower(trim($3))
           AND lower(trim(template.vehicle_model))=lower(trim($4))
           AND lower(trim(template.vehicle_variant))=lower(trim($5))
@@ -183,6 +192,15 @@ export async function readWorkOrderChecklists(
       ...row,
       createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : row.createdAt,
     })));
+    const membership=await client.query(`SELECT membership.can_write AS "canWrite" FROM public.memberships membership
+      JOIN public.sites site ON site.id=membership.site_id AND site.organisation_id=$1
+      WHERE membership.site_id=$2 AND membership.user_id=$3 AND membership.active`,[scope.organisationId,scope.siteId,scope.actorId]);
+    const canWrite=membership.rows[0]?.canWrite===true;
+    const prepareAuthority=await client.query(`SELECT 1 FROM public.staff_authority_grants
+      WHERE organisation_id=$1 AND site_id=$2 AND staff_user_id=$3
+        AND capability='work-order.checklist.prepare' AND revoked_at IS NULL
+        AND valid_from<=clock_timestamp() AND (valid_until IS NULL OR valid_until>clock_timestamp())
+      ORDER BY grant_revision DESC,id LIMIT 1`,[scope.organisationId,scope.siteId,scope.actorId]);
     await recordSensitiveRead(client,scope,'work-order-checklists-read-prepared',Math.min(checklists.length+availableTemplates.length,100),requestId);
     return workOrderChecklistsSchema.parse({
       workOrderId:vehicleRow.id,
@@ -190,6 +208,8 @@ export async function readWorkOrderChecklists(
       vehicle:{make:vehicleRow.make,model:vehicleRow.model,variant:vehicleRow.variant,powertrain:vehicleRow.powertrain},
       checklists,
       availableTemplates,
+      canPrepare:canWrite&&Boolean(prepareAuthority.rowCount),
+      prepareBlockReason:!canWrite?'read-only':prepareAuthority.rowCount?null:'authority-required',
       unavailableReason:availableTemplates.length ? null : (!vehicleRow.variant || !vehicleRow.powertrain)
         ? 'The vehicle variant or powertrain is not recorded exactly. Confirm the vehicle details before looking for its checklist.'
         : 'No current approved checklist was found for this exact vehicle configuration. Do not use a generic checklist.',

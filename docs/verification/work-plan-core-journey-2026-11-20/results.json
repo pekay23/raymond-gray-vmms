@@ -1,0 +1,460 @@
+{
+  "recordedAt": "2026-11-20T00:22:10.211Z",
+  "scope": "Synthetic, disposable PostgreSQL scenario with operations reviewer, assigned qualified team lead, receiving Supervisor, direct-report Technician, real VMMS API and browser work-plan/assigned-task UI.",
+  "result": "VERIFIED",
+  "checks": [
+    {
+      "name": "Accepted synthetic evidence is attached before Operations review and team-lead assignment",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Accepted source file and structured report items are recorded with recorder attribution",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Correction history remains readable and keeps the linked source file",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Printable report shows selectable source text, recorder, file name and correction history",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "The G2 gate distinguishes diagnostic consent from repair, parts and added-cost authorization.",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "operations-review form and workspace navigation pass native 200% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "operations-review form and workspace navigation pass native 400% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Toast notification stays available while focused and dismisses on request",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "operations-assignment form and workspace navigation pass native 200% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "operations-assignment form and workspace navigation pass native 400% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Team-lead choices show staff names without internal qualification codes",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Server validation errors on work-order forms are linked to their matching control",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Reception observation server errors are linked to their matching field",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Evidence upload errors are announced and described by the file picker",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "add-concern form and workspace navigation pass native 200% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "add-concern form and workspace navigation pass native 400% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "plan-task form and workspace navigation pass native 200% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "plan-task form and workspace navigation pass native 400% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "report-hold form and workspace navigation pass native 200% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "report-hold form and workspace navigation pass native 400% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "intake-facts form and workspace navigation pass native 200% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "intake-facts form and workspace navigation pass native 400% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "work-order-evidence form and workspace navigation pass native 200% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "work-order-evidence form and workspace navigation pass native 400% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Work-order form close and diagnostic observation add/remove preserve focus and announce changes through live status regions",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Authorized Operations user records current review and qualified lead assignment through the real browser UI; persisted detail preserves reviewer, notes, lead and reason",
+      "result": "VERIFIED",
+      "orderId": "6c573f98-eecf-40a6-9845-66c3a79398ab",
+      "reviewerId": "32c7fc74-4651-4b4e-94c6-986f98f943d0",
+      "leadUserId": "431b7512-16f7-4cf5-9b01-711dde431801"
+    },
+    {
+      "name": "Selecting a prior paying client in intake returns focus to its summary and announces the selection",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Server validation errors appear beside the matching intake field with invalid state and a description association",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Desktop rail collapse, independent workspace scrolling, and compact navigation toggle keep account controls available",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Job filter and intake action use plain-language labels",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Scope proposal UI explains the non-authorizing draft boundary and hides writes without a current grant",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Written payer response binds the accepted exact-job evidence and remains blocked from authorizing work",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Authorized Team Lead records a repair estimate and payer response through the real browser UI; amount and scope remain bound while work stays blocked",
+      "result": "VERIFIED",
+      "scopeWidths": [
+        280,
+        320,
+        390,
+        540,
+        768,
+        820,
+        1024,
+        1280,
+        1440
+      ]
+    },
+    {
+      "name": "A scope-response version change requires a fresh Operations review and lead assignment before planning resumes",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Workshop Service Report passes automated WCAG 2.1 A/AA checks before print",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Work-order summary PDF keeps selectable report fields, excludes application chrome, and paginates long text across 11 pages",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Purpose-built workshop service report prints its recorded details while excluding the workspace and report controls",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Supervisor assignment is gated until the current assigned lead saves a plan",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "team-lead-work-plan form and workspace navigation pass native 200% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "team-lead-work-plan form and workspace navigation pass native 400% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Response-loss simulation confirms the first browser request committed once while the form retained its values",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "supervisor-handoff form and workspace navigation pass native 200% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "supervisor-handoff form and workspace navigation pass native 400% zoom, name, clipping, target, focus and reachability checks",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Stale plan save explains the conflict, keeps entries and succeeds after the current version loads",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Retry reuses the original idempotency key and body; committed revision and work-order version remain unchanged",
+      "result": "VERIFIED",
+      "requestCount": 2,
+      "commandId": "ec59e448-71ad-42fb-a417-db0513e246ad",
+      "workPlanRevisionId": "66f48399-aa68-4025-b644-6b894eaa01a5",
+      "revisionNumber": 1,
+      "version": 15
+    },
+    {
+      "name": "Reloading the real work-order page restores the saved rationale and reordered task sequence",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Supervisor task blocker links focus and scroll to its exact assignment and progress record",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Supervisor completion preparation reads current task records and keeps sign-off unavailable without effective policy",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Work-order closeout path follows the current handoff and explains unavailable sign-offs without enabling actions",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Supervisor job step distinguishes progress from technical completion and release",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Supervisor workload summary updates from current site work-plan assignments without claiming availability",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Assigned Technician records a task progress update through the page and reads it back from the scoped API",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Assigned Technician can start, recover and stop a server-timed task session without changing task state",
+      "result": "VERIFIED",
+      "sessionId": "f82abaff-8b20-517a-a9f1-e32a70008ed4",
+      "stoppedAt": "2026-11-20T00:26:48.998Z",
+      "workOrderVersion": 17
+    },
+    {
+      "name": "Task time controls start with the keyboard and stop the session, announce stale errors, pass automated WCAG checks and fit phone, foldable, tablet and desktop widths",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Supervisor workload summary reflects only the latest blocked or waiting progress reported on each current assignment",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Task upload recovers after its response is lost and rejects another staff member, stale assignment, wrong site and pending scan without partial work",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Assigned Technician uploads and scans evidence after handoff without changing work-order scope",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Assigned Technician sends a structured, immutable work declaration linked to current task entries without signing off completion",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Assigned Technician records a work entry and appends a reasoned correction without rewriting the original",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Supervisor Today inbox shows the current unanswered request and links to its work order",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Supervisor answers a current review request with an attributed response that remains separate from completion",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Supervisor reviews the structured work declaration separately while keeping task completion and vehicle release unsigned",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Answered requests leave the Supervisor Today inbox",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Today review inbox shows loading and paginates requests forward and back",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Today review inbox shows a recoverable failure and clears after retry",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Complete 101-entry workshop service report waits for all pages and prints attributed entries and accepted evidence labels as selectable text without application chrome",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Authorized Team Lead generates a distinct, selectable-text task-progress PDF with scoped updates, no client details, print isolation, accessibility and responsive layout",
+      "result": "VERIFIED",
+      "orderId": "6c573f98-eecf-40a6-9845-66c3a79398ab",
+      "audience": "assigned-team-lead",
+      "reportWidths": [
+        {
+          "viewportWidth": 320,
+          "width": 320,
+          "scrollWidth": 320
+        },
+        {
+          "viewportWidth": 390,
+          "width": 390,
+          "scrollWidth": 390
+        },
+        {
+          "viewportWidth": 768,
+          "width": 768,
+          "scrollWidth": 768
+        },
+        {
+          "viewportWidth": 1024,
+          "width": 1024,
+          "scrollWidth": 1024
+        },
+        {
+          "viewportWidth": 1440,
+          "width": 1440,
+          "scrollWidth": 1440
+        }
+      ],
+      "updateCount": 52,
+      "paginationExercise": "52 entries across two API pages"
+    },
+    {
+      "name": "Progress report fails closed when the activity result count changes between API pages",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Supervisor, assigned Team Lead and Head see the properly scoped task progress feed without sign-off controls",
+      "result": "VERIFIED",
+      "orderId": "6c573f98-eecf-40a6-9845-66c3a79398ab",
+      "taskId": "62d66cb0-fba5-41d0-92f4-12ffd33c4661",
+      "supervisorId": "858f5404-d493-42b3-bebc-afb8f61f8897",
+      "technicianId": "c1bf4c7e-906c-4521-84b3-5577b1f5677e",
+      "activityCount": 1,
+      "supervisorActivityCount": 5,
+      "oversightAudiences": [
+        "assigned-team-lead",
+        "head-service-centre"
+      ],
+      "nonTechnicianReadStatus": 403,
+      "responsiveLayouts": [
+        {
+          "viewportWidth": 320,
+          "width": 320,
+          "scrollWidth": 320,
+          "contentWidth": 320,
+          "overflowingElements": []
+        },
+        {
+          "viewportWidth": 390,
+          "width": 390,
+          "scrollWidth": 390,
+          "contentWidth": 390,
+          "overflowingElements": []
+        },
+        {
+          "viewportWidth": 768,
+          "width": 768,
+          "scrollWidth": 768,
+          "contentWidth": 768,
+          "overflowingElements": []
+        },
+        {
+          "viewportWidth": 1024,
+          "width": 1024,
+          "scrollWidth": 1024,
+          "contentWidth": 752,
+          "overflowingElements": []
+        },
+        {
+          "viewportWidth": 1440,
+          "width": 1440,
+          "scrollWidth": 1440,
+          "contentWidth": 1168,
+          "overflowingElements": []
+        }
+      ]
+    },
+    {
+      "name": "Team-lead and supervisor work-queue controls remain usable at phone, foldable, tablet, and desktop viewports without page overflow",
+      "result": "VERIFIED",
+      "widths": [
+        320,
+        390,
+        768,
+        1024,
+        1440
+      ],
+      "actorViews": [
+        "team-lead",
+        "supervisor"
+      ]
+    },
+    {
+      "name": "Qualified assigned lead saves a versioned ordered draft through the browser and the API returns the same persisted order",
+      "result": "VERIFIED",
+      "orderId": "6c573f98-eecf-40a6-9845-66c3a79398ab",
+      "workPlanRevisionId": "66f48399-aa68-4025-b644-6b894eaa01a5",
+      "orderedTaskIds": [
+        "62d66cb0-fba5-41d0-92f4-12ffd33c4661",
+        "792587e9-ffb6-4c07-8c9b-4eb7f8994817"
+      ]
+    },
+    {
+      "name": "Team lead hands the exact current plan revision to a qualified supervisor; API detail binds the handoff to that plan",
+      "result": "VERIFIED",
+      "handoffSupervisorId": "858f5404-d493-42b3-bebc-afb8f61f8897",
+      "workPlanRevisionId": "66f48399-aa68-4025-b644-6b894eaa01a5"
+    },
+    {
+      "name": "Operations, assigned team-lead and supervisor queues filter persisted work by current workflow assignments in the API and browser UI",
+      "result": "VERIFIED",
+      "orderId": "6c573f98-eecf-40a6-9845-66c3a79398ab",
+      "reference": "EV-CL000001-00001",
+      "operationQueueBeforeAssignment": true,
+      "leadQueueAfterAssignment": true,
+      "supervisorQueueAfterHandoff": true,
+      "crossActorQueueExclusion": true
+    },
+    {
+      "name": "A same-site staff member who is not the assigned lead sees the clear block reason and cannot submit a plan",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "An unassigned same-site Team Lead cannot open the task-progress report directly",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Head sees recent attributed customer contact on the linked job and can open its canonical request to record the next update",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Service Advisor sees the linked contact history and can continue on the canonical request",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Technician work-order view hides customer contact controls and does not request customer contact history",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Assigned qualified Team Lead resolves an open hold in the browser with attached accepted evidence while independent release gates remain pending",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Work-plan panel and submit controls fit 11 phone, foldable, tablet, desktop and landscape viewports without horizontal overflow",
+      "result": "VERIFIED"
+    }
+  ],
+  "limitations": [
+    "Physical-device, production role schedule, SOP and management approval remain untested.",
+    "This draft does not authorize repairs or satisfy G2."
+  ],
+  "browser": "Chromium 157.0.4341.60",
+  "finishedAt": "2026-11-20T00:29:22.813Z",
+  "errors": []
+}

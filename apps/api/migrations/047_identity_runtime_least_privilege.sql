@@ -5,8 +5,10 @@ BEGIN
   END IF;
 END
 $roles$;
+-- Managed PostgreSQL roles are not superusers; membership is required for ALTER OWNER.
+GRANT vmms_identity_function_owner TO CURRENT_USER;
 
-ALTER ROLE vmms_identity_function_owner NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
+ALTER ROLE vmms_identity_function_owner NOLOGIN NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
 COMMENT ON ROLE vmms_identity_function_owner IS 'NOLOGIN role for narrow SECURITY DEFINER identity/session lookups; never grant membership to vmms_runtime.';
 GRANT USAGE ON SCHEMA public TO vmms_identity_function_owner;
 
@@ -100,7 +102,6 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $function$
     AND s.expires_at>transaction_timestamp()
     AND u.active
 $function$;
-ALTER FUNCTION public.current_staff_session(text) OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.current_staff_session(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.current_staff_session(text) TO vmms_runtime;
 
@@ -117,7 +118,6 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $function$
     AND session.expires_at>transaction_timestamp()
   ORDER BY s.name,s.id
 $function$;
-ALTER FUNCTION public.current_staff_session_sites(text) OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.current_staff_session_sites(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.current_staff_session_sites(text) TO vmms_runtime;
 
@@ -133,7 +133,6 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $function$
     AND session.token_hash=p_token_hash
     AND session.expires_at>transaction_timestamp()
 $function$;
-ALTER FUNCTION public.current_staff_site_access(text,uuid) OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.current_staff_site_access(text,uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.current_staff_site_access(text,uuid) TO vmms_runtime;
 
@@ -142,7 +141,6 @@ RETURNS TABLE(staff_user_id uuid,display_name text)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $function$
   SELECT u.id,u.display_name FROM public.staff_users u WHERE u.id=p_staff_user_id AND u.active
 $function$;
-ALTER FUNCTION public.active_staff_user(uuid) OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.active_staff_user(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.active_staff_user(uuid) TO vmms_runtime;
 
@@ -154,7 +152,6 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $function$
   JOIN public.staff_users u ON u.id=identity.staff_user_id AND u.active
   WHERE identity.issuer=p_issuer AND identity.subject=p_subject
 $function$;
-ALTER FUNCTION public.resolve_active_staff_identity(text,text) OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.resolve_active_staff_identity(text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.resolve_active_staff_identity(text,text) TO vmms_runtime;
 
@@ -184,7 +181,6 @@ BEGIN
   );
 END
 $function$;
-ALTER FUNCTION public.create_staff_session(text,uuid,text,text,text,text,timestamptz) OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.create_staff_session(text,uuid,text,text,text,text,timestamptz) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.create_staff_session(text,uuid,text,text,text,text,timestamptz) TO vmms_runtime;
 
@@ -193,7 +189,6 @@ RETURNS void
 LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog AS $function$
   DELETE FROM public.staff_sessions WHERE p_token_hash ~ '^[0-9a-f]{64}$' AND token_hash=p_token_hash
 $function$;
-ALTER FUNCTION public.revoke_staff_session(text) OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.revoke_staff_session(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.revoke_staff_session(text) TO vmms_runtime;
 
@@ -216,7 +211,6 @@ BEGIN
   );
 END
 $function$;
-ALTER FUNCTION public.create_oidc_login_transaction(text,text,text,text,text,text) OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.create_oidc_login_transaction(text,text,text,text,text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.create_oidc_login_transaction(text,text,text,text,text,text) TO vmms_runtime;
 
@@ -231,7 +225,6 @@ BEGIN
   );
 END
 $function$;
-ALTER FUNCTION public.expire_oidc_login_transactions() OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.expire_oidc_login_transactions() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.expire_oidc_login_transactions() TO vmms_runtime;
 
@@ -242,7 +235,6 @@ LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog AS $function$
   WHERE p_state_hash ~ '^[0-9a-f]{64}$' AND p_binding_hash ~ '^[0-9a-f]{64}$'
     AND state_hash=p_state_hash AND browser_binding_hash=p_binding_hash
 $function$;
-ALTER FUNCTION public.cancel_oidc_login_transaction(text,text) OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.cancel_oidc_login_transaction(text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.cancel_oidc_login_transaction(text,text) TO vmms_runtime;
 
@@ -255,6 +247,20 @@ LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog AS $function$
     AND t.expires_at>transaction_timestamp()
   RETURNING t.nonce,t.code_verifier,t.login_intent,t.owner_invitation_token_hash
 $function$;
-ALTER FUNCTION public.consume_oidc_login_transaction(text,text) OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.consume_oidc_login_transaction(text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.consume_oidc_login_transaction(text,text) TO vmms_runtime;
+
+GRANT CREATE ON SCHEMA public TO vmms_identity_function_owner;
+ALTER FUNCTION public.current_staff_session(text) OWNER TO vmms_identity_function_owner;
+ALTER FUNCTION public.current_staff_session_sites(text) OWNER TO vmms_identity_function_owner;
+ALTER FUNCTION public.current_staff_site_access(text,uuid) OWNER TO vmms_identity_function_owner;
+ALTER FUNCTION public.active_staff_user(uuid) OWNER TO vmms_identity_function_owner;
+ALTER FUNCTION public.resolve_active_staff_identity(text,text) OWNER TO vmms_identity_function_owner;
+ALTER FUNCTION public.create_staff_session(text,uuid,text,text,text,text,timestamptz) OWNER TO vmms_identity_function_owner;
+ALTER FUNCTION public.revoke_staff_session(text) OWNER TO vmms_identity_function_owner;
+ALTER FUNCTION public.create_oidc_login_transaction(text,text,text,text,text,text) OWNER TO vmms_identity_function_owner;
+ALTER FUNCTION public.expire_oidc_login_transactions() OWNER TO vmms_identity_function_owner;
+ALTER FUNCTION public.cancel_oidc_login_transaction(text,text) OWNER TO vmms_identity_function_owner;
+ALTER FUNCTION public.consume_oidc_login_transaction(text,text) OWNER TO vmms_identity_function_owner;
+REVOKE CREATE ON SCHEMA public FROM vmms_identity_function_owner;
+REVOKE vmms_identity_function_owner FROM CURRENT_USER;

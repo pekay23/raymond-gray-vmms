@@ -1,0 +1,130 @@
+{
+  "recordedAt": "2026-11-18T02:40:29.648Z",
+  "scope": "Synthetic, disposable PostgreSQL scenario with operations reviewer, assigned qualified team lead, receiving Supervisor, direct-report Technician, real VMMS API and browser work-plan/assigned-task UI.",
+  "result": "VERIFIED",
+  "checks": [
+    {
+      "name": "Accepted synthetic evidence is attached before Operations review and team-lead assignment",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Accepted source file and structured report items are recorded with recorder attribution",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Correction history remains readable and keeps the linked source file",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Printable report shows selectable source text, recorder, file name and correction history",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "The G2 gate distinguishes diagnostic consent from repair, parts and added-cost authorization.",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Toast notification stays available while focused and dismisses on request",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Team-lead choices show staff names without internal qualification codes",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Server validation errors on work-order forms are linked to their matching control",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Reception observation server errors are linked to their matching field",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Evidence upload errors are announced and described by the file picker",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Work-order form close and diagnostic observation add/remove preserve focus and announce changes through live status regions",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Authorized Operations user records current review and qualified lead assignment through the real browser UI; persisted detail preserves reviewer, notes, lead and reason",
+      "result": "VERIFIED",
+      "orderId": "d338b261-9140-4dc1-97c4-fbe4da91fa6f",
+      "reviewerId": "8494c9eb-755e-4725-9fc8-ba1f3bf16bbf",
+      "leadUserId": "a407f80a-7099-4b57-bf4b-e1335acb6352"
+    },
+    {
+      "name": "Selecting a prior paying client in intake returns focus to its summary and announces the selection",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Server validation errors appear beside the matching intake field with invalid state and a description association",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Desktop rail collapse, independent workspace scrolling, and compact navigation toggle keep account controls available",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Job filter and intake action use plain-language labels",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Workshop Service Report passes automated WCAG 2.1 A/AA checks before print",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Work-order summary PDF keeps selectable report fields, excludes application chrome, and paginates long text across 11 pages",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Purpose-built workshop service report prints its recorded details while excluding the workspace and report controls",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Supervisor assignment is gated until the current assigned lead saves a plan",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Response-loss simulation confirms the first browser request committed once while the form retained its values",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Stale plan save explains the conflict, keeps entries and succeeds after the current version loads",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Retry reuses the original idempotency key and body; committed revision and work-order version remain unchanged",
+      "result": "VERIFIED",
+      "requestCount": 2,
+      "commandId": "46b02172-5fcc-49d4-ba13-a5fa610e3393",
+      "workPlanRevisionId": "48656235-b583-4a54-b54f-0902ab29d308",
+      "revisionNumber": 1,
+      "version": 10
+    },
+    {
+      "name": "Reloading the real work-order page restores the saved rationale and reordered task sequence",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Assigned Technician records a task progress update through the page and reads it back from the scoped API",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Assigned Technician can start, recover and stop a server-timed task session without changing task state",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Task time controls start and stop by keyboard, announce stale errors, pass automated WCAG checks and fit phone, foldable, tablet and desktop widths",
+      "result": "VERIFIED"
+    }
+  ],
+  "limitations": [
+    "Physical-device, production role schedule, SOP and management approval remain untested.",
+    "This draft does not authorize repairs or satisfy G2."
+  ],
+  "browser": "Chromium 157.0.4341.60",
+  "finishedAt": "2026-11-18T02:42:23.655Z",
+  "errors": []
+}

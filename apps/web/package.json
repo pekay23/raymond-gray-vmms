@@ -7,7 +7,7 @@
     "assets:generate": "node scripts/build-images.mjs && node scripts/build-brand-images.mjs",
     "predev": "npm run assets:generate",
     "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
-    "test": "node --import tsx --test src/formatting.test.ts src/vin-scanner.test.ts src/drafts.test.ts src/worker.test.ts src/api.test.ts src/workspace-navigation.test.ts",
+    "test": "node --import tsx --test src/formatting.test.ts src/vin-scanner.test.ts src/drafts.test.ts src/worker.test.ts src/api.test.ts src/workspace-navigation.test.ts src/work-order-workflow-navigation.test.ts",
     "verify:workspace-navigation": "node ../../scripts/workspace-navigation-browser.mjs",
     "prebuild": "npm run assets:generate",
     "verify:responsive": "node scripts/verify-responsive.mjs",

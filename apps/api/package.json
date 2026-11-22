@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "cloudflare:spike:build": "wrangler deploy --dry-run --config wrangler.spike.jsonc",
     "cloudflare:spike:dev": "wrangler dev --config wrangler.spike.jsonc --ip 127.0.0.1 --port 8787",

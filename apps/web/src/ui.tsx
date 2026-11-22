@@ -199,7 +199,7 @@ export function Loading({
 }) {
   return (
     <div className="space-y-4" role="status">
-      <p className="text-sm text-zinc-500">{label}…</p>
+      <p className="text-sm text-zinc-600">{label}…</p>
       <div className="h-28 rounded-xl border border-zinc-200 bg-white" />
       <div className="h-44 rounded-xl border border-zinc-200 bg-white" />
     </div>

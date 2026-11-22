@@ -40,7 +40,7 @@
   "rewrites": [
     {
       "source": "/api/v1/(.*)",
-      "destination": "https://vmmsapi-production.up.railway.app/api/v1/$1"
+      "destination": "/api/proxy?__vmms_proxy_path=$1"
     },
     {
       "source": "/(.*)",

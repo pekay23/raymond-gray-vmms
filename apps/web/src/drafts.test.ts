@@ -54,7 +54,7 @@ test('request visit drafts stay separate by account, site and request',()=>{
 
 test('request draft is scoped, expires and is cleared on sign-out',()=>{
   const userId=randomUUID(),siteId=randomUUID();
-  const draft={fields:{source:'Phone',concern:'Synthetic concern',contact:'',contactPhone:'',contactRelationship:'unknown' as const,vehicle:'',client:'',followUp:false,nextAction:'',callbackDueAt:''},commandId:randomUUID(),attempted:true,savedAt:new Date().toISOString()};
+  const draft={fields:{kind:'service-centre-pdi' as const,vehicleSource:'partner-garage' as const,shippingReference:'',source:'Phone',concern:'Synthetic concern',contact:'',contactPhone:'',contactRelationship:'unknown' as const,vehicle:'',client:'',followUp:false,nextAction:'',callbackDueAt:''},commandId:randomUUID(),attempted:true,savedAt:new Date().toISOString()};
   saveRequestDraft(userId,siteId,draft);
   assert.deepEqual(loadRequestDraft(userId,siteId).draft,draft);
   assert.equal(loadRequestDraft(randomUUID(),siteId).draft,null);
@@ -73,6 +73,9 @@ test('older request drafts gain blank caller and follow-up details without guess
   assert.equal(result.draft?.fields.contact,'Caller or number');
   assert.equal(result.draft?.fields.contactPhone,'');
   assert.equal(result.draft?.fields.contactRelationship,'unknown');
+  assert.equal(result.draft?.fields.kind,'repair-maintenance');
+  assert.equal(result.draft?.fields.vehicleSource,'unknown');
+  assert.equal(result.draft?.fields.shippingReference,'');
   assert.equal(result.draft?.fields.followUp,false);
   assert.equal(result.draft?.fields.nextAction,'');
   assert.equal(result.draft?.fields.callbackDueAt,'');

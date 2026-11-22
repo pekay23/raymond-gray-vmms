@@ -1,0 +1,314 @@
+{
+  "recordedAt": "2026-11-18T02:22:44.389Z",
+  "scope": "Local Vite browser with synthetic API responses; Today work previews for single and combined roles, queue-link routing, assigned-task list, pagination, empty/failure states, keyboard targets, responsive overflow and automated accessibility scans.",
+  "result": "PASS",
+  "checks": [
+    {
+      "name": "Technician Today shows a role-specific assigned-task preview backed by the existing scoped task API.",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Today work-order previews show distinct empty and retryable API failure states.",
+      "result": "VERIFIED",
+      "queueCards": 4
+    },
+    {
+      "name": "Combined Head, lead, supervisor and technician roles show every applicable preview; queue links preserve their server filter.",
+      "result": "VERIFIED",
+      "accessibilityViolations": 0,
+      "viewports": [
+        320,
+        390,
+        768,
+        1024,
+        1440
+      ]
+    },
+    {
+      "name": "Populated first page shows 25 current assignments and the explicit authority boundary.",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Pagination advances to the final page and disables Next.",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Keyboard search filters by registration and resets pagination to the matching first page.",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Clear restores all current assignments on page one.",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Literal wildcard characters return the empty state without widening the search.",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Responsive layout keeps the navigation, content and controls inside all tested widths.",
+      "result": "VERIFIED",
+      "viewports": [
+        {
+          "width": 320,
+          "documentWidth": 320,
+          "mainWidth": 320,
+          "visiblePrimaryLinks": [
+            {
+              "text": "Today",
+              "width": 232
+            },
+            {
+              "text": "Requests and callbacks",
+              "width": 232
+            },
+            {
+              "text": "Work orders",
+              "width": 232
+            },
+            {
+              "text": "Vehicles and history",
+              "width": 232
+            },
+            {
+              "text": "Service-centre overview",
+              "width": 232
+            },
+            {
+              "text": "My assigned tasks",
+              "width": 232
+            },
+            {
+              "text": "Documents",
+              "width": 232
+            },
+            {
+              "text": "Vehicle learning",
+              "width": 232
+            },
+            {
+              "text": "People and roles",
+              "width": 232
+            },
+            {
+              "text": "Staff messages",
+              "width": 232
+            }
+          ]
+        },
+        {
+          "width": 390,
+          "documentWidth": 390,
+          "mainWidth": 390,
+          "visiblePrimaryLinks": [
+            {
+              "text": "Today",
+              "width": 147
+            },
+            {
+              "text": "Requests and callbacks",
+              "width": 147
+            },
+            {
+              "text": "Work orders",
+              "width": 147
+            },
+            {
+              "text": "Vehicles and history",
+              "width": 147
+            },
+            {
+              "text": "Service-centre overview",
+              "width": 147
+            },
+            {
+              "text": "My assigned tasks",
+              "width": 147
+            },
+            {
+              "text": "Documents",
+              "width": 147
+            },
+            {
+              "text": "Vehicle learning",
+              "width": 147
+            },
+            {
+              "text": "People and roles",
+              "width": 147
+            },
+            {
+              "text": "Staff messages",
+              "width": 147
+            }
+          ]
+        },
+        {
+          "width": 768,
+          "documentWidth": 768,
+          "mainWidth": 768,
+          "visiblePrimaryLinks": [
+            {
+              "text": "Today",
+              "width": 164
+            },
+            {
+              "text": "Requests and callbacks",
+              "width": 164
+            },
+            {
+              "text": "Work orders",
+              "width": 164
+            },
+            {
+              "text": "Vehicles and history",
+              "width": 164
+            },
+            {
+              "text": "Service-centre overview",
+              "width": 164
+            },
+            {
+              "text": "My assigned tasks",
+              "width": 164
+            },
+            {
+              "text": "Documents",
+              "width": 164
+            },
+            {
+              "text": "Vehicle learning",
+              "width": 164
+            },
+            {
+              "text": "People and roles",
+              "width": 336
+            },
+            {
+              "text": "Staff messages",
+              "width": 336
+            }
+          ]
+        },
+        {
+          "width": 1024,
+          "documentWidth": 1024,
+          "mainWidth": 752,
+          "visiblePrimaryLinks": [
+            {
+              "text": "Today",
+              "width": 231
+            },
+            {
+              "text": "Requests and callbacks",
+              "width": 231
+            },
+            {
+              "text": "Work orders",
+              "width": 231
+            },
+            {
+              "text": "Vehicles and history",
+              "width": 231
+            },
+            {
+              "text": "Service-centre overview",
+              "width": 231
+            },
+            {
+              "text": "My assigned tasks",
+              "width": 231
+            },
+            {
+              "text": "Documents",
+              "width": 231
+            },
+            {
+              "text": "Vehicle learning",
+              "width": 231
+            },
+            {
+              "text": "People and roles",
+              "width": 231
+            },
+            {
+              "text": "Staff messages",
+              "width": 231
+            }
+          ]
+        },
+        {
+          "width": 1440,
+          "documentWidth": 1440,
+          "mainWidth": 1168,
+          "visiblePrimaryLinks": [
+            {
+              "text": "Today",
+              "width": 231
+            },
+            {
+              "text": "Requests and callbacks",
+              "width": 231
+            },
+            {
+              "text": "Work orders",
+              "width": 231
+            },
+            {
+              "text": "Vehicles and history",
+              "width": 231
+            },
+            {
+              "text": "Service-centre overview",
+              "width": 231
+            },
+            {
+              "text": "My assigned tasks",
+              "width": 231
+            },
+            {
+              "text": "Documents",
+              "width": 231
+            },
+            {
+              "text": "Vehicle learning",
+              "width": 231
+            },
+            {
+              "text": "People and roles",
+              "width": 231
+            },
+            {
+              "text": "Staff messages",
+              "width": 231
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Keyboard navigation reaches visible, named controls.",
+      "result": "VERIFIED",
+      "firstTabFocus": {
+        "name": "Today",
+        "visible": true
+      }
+    },
+    {
+      "name": "Axe accessibility scan reports no violations on the populated task page.",
+      "result": "VERIFIED",
+      "violations": 0
+    },
+    {
+      "name": "Empty state explains how an assignment appears.",
+      "result": "VERIFIED"
+    },
+    {
+      "name": "Failure state presents the server message and a retry control.",
+      "result": "VERIFIED"
+    }
+  ],
+  "limitations": [
+    "The page uses synthetic API responses here; PostgreSQL authorization and audit behavior are verified separately by the API integration suite.",
+    "This does not establish staff UAT, production identity, physical-device or HarmonyOS support."
+  ]
+}

@@ -170,3 +170,5 @@ docs/html/
 .tmp/
 temp/
 tmp/
+.vercel
+.env*

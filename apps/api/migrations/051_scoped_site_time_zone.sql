@@ -7,6 +7,10 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $function$
     AND s.id=nullif(current_setting('app.site_id',true),'')::uuid
     AND m.user_id=nullif(current_setting('app.actor_id',true),'')::uuid
 $function$;
-ALTER FUNCTION public.current_scoped_site_timezone() OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.current_scoped_site_timezone() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.current_scoped_site_timezone() TO vmms_runtime;
+GRANT vmms_identity_function_owner TO CURRENT_USER;
+GRANT CREATE ON SCHEMA public TO vmms_identity_function_owner;
+ALTER FUNCTION public.current_scoped_site_timezone() OWNER TO vmms_identity_function_owner;
+REVOKE CREATE ON SCHEMA public FROM vmms_identity_function_owner;
+REVOKE vmms_identity_function_owner FROM CURRENT_USER;

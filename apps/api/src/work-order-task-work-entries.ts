@@ -95,6 +95,15 @@ export const taskWorkEvidenceOptionsSchema = z.object({
 
 type TaskWorkEntryInput = z.infer<typeof taskWorkEntryInputSchema>;
 
+function requireEffectiveTaskWorkAuthority(input: TaskWorkEntryInput): void {
+  const requiresTechnicalAuthority = input.kind === 'test'
+    || input.kind === 'action'
+    || (input.kind === 'follow-up' && input.result === 'done');
+  if (!requiresTechnicalAuthority) return;
+  throw new ApiError(409, 'TECHNICAL_AUTHORIZATION_UNAVAILABLE',
+    'This test or repair work cannot be recorded until the job has an approved scope, effective vehicle instructions, a matching qualification, and signed task authority.');
+}
+
 async function assertCurrentAssignment(
   client: PoolClient,
   scope: Scope,
@@ -260,6 +269,13 @@ export async function readMyTaskWorkEvidenceOptions(
       WHERE link.organisation_id=$1 AND link.site_id=$2 AND link.work_order_id=$3
         AND evidence.scan_state='accepted' AND evidence.accepted_key IS NOT NULL
         AND latest.verdict='clean' AND latest.scanned_sha256=evidence.sha256
+        AND NOT EXISTS (
+          SELECT 1 FROM public.work_order_scope_payer_response_evidence response_evidence
+          WHERE response_evidence.organisation_id=link.organisation_id
+            AND response_evidence.site_id=link.site_id
+            AND response_evidence.work_order_id=link.work_order_id
+            AND response_evidence.evidence_id=evidence.id
+        )
       UNION ALL
       SELECT evidence.id AS "evidenceId",evidence.display_name AS "displayName",
         evidence.media_type AS "mediaType",'attached'::text AS state,evidence.created_at AS "uploadedAt"
@@ -340,6 +356,7 @@ export async function recordMyTaskWorkEntry(
     authorize: async (client, membership) => {
       if (!membership.canWrite) throw new ApiError(403, 'READ_ONLY', 'Your site access does not permit task updates.');
       const current = await assertCurrentAssignment(client, scope, workOrderId, taskId, body);
+      requireEffectiveTaskWorkAuthority(body);
       if (body.supersedesEntryId) {
         const prior = await client.query(`SELECT entry.id FROM public.work_order_task_work_entries entry
           WHERE entry.organisation_id=$1 AND entry.site_id=$2 AND entry.work_order_id=$3 AND entry.task_id=$4 AND entry.id=$5`,

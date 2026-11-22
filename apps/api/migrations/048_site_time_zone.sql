@@ -4,6 +4,8 @@ ALTER TABLE public.sites
 
 GRANT SELECT (time_zone) ON public.sites TO vmms_identity_function_owner;
 
+GRANT vmms_identity_function_owner TO CURRENT_USER;
+GRANT CREATE ON SCHEMA public TO vmms_identity_function_owner;
 DROP FUNCTION public.current_staff_session_sites(text);
 
 CREATE FUNCTION public.current_staff_session_sites(p_token_hash text)
@@ -19,6 +21,8 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $function$
     AND session.expires_at>transaction_timestamp()
   ORDER BY s.name,s.id
 $function$;
-ALTER FUNCTION public.current_staff_session_sites(text) OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.current_staff_session_sites(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.current_staff_session_sites(text) TO vmms_runtime;
+ALTER FUNCTION public.current_staff_session_sites(text) OWNER TO vmms_identity_function_owner;
+REVOKE CREATE ON SCHEMA public FROM vmms_identity_function_owner;
+REVOKE vmms_identity_function_owner FROM CURRENT_USER;

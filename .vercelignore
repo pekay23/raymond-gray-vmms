@@ -1,0 +1,36 @@
+# Never upload local environment files or tool credentials.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+.vercel
+**/.vercel
+.wrangler
+**/.wrangler
+.railway
+**/.railway
+
+# Vercel installs from the root workspace lockfile; exclude generated state and unrelated documentation/data.
+.git
+node_modules
+**/node_modules
+.codegraph
+graphify-out
+tmp
+docs
+/scripts
+*.pdf
+*.docx
+*.xlsx
+*.sqlite
+*.db
+Dockerfile
+docker-compose*.yml
+compose*.yaml
+fly.*.toml
+setup-oracle-vm.sh
+DEPLOYMENT*.md
+AGENTS.md
+review-findings.json

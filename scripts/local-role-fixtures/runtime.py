@@ -465,7 +465,9 @@ def verify_prepared_installation(
         raise RuntimeErrorSafe("The isolated rehearsal records could not be verified.") from None
     personas = lifecycle._read_json(Path(__file__).with_name("personas.json"))
     expected_staff = len(personas["staff"])
-    expected_placements = sum(len(persona["placements"]) for persona in personas["staff"])
+    # The fixture manifest defines one active role placement per staff persona;
+    # reporting structure is represented separately by each persona's reportsTo.
+    expected_placements = len(personas["staff"])
     if counts.get("name") != runtime.get("databaseName") or str(counts.get("oid")) != str(runtime.get("databaseOid")):
         raise RuntimeErrorSafe("The live database name or OID differs from the private runtime record.")
     if int(counts.get("staff", -1)) != expected_staff or int(counts.get("identities", -1)) != expected_staff or int(counts.get("placements", -1)) != expected_placements or int(counts.get("grants", -1)) != 0:
@@ -596,11 +598,30 @@ def up_installation(installation_id: str, *, root: Path | None = None) -> dict[s
         local_data = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / "AppData" / "Local"))
         root = local_data / "VMMS-Role-Rehearsal"
     folder = Path(root) / installation_id
-    verify = verify_prepared_installation(installation_id, root=root)
     runtime_path = folder / "runtime.json"
     journal = lifecycle._read_json(runtime_path)
     if journal.get("phase") not in {"prepared", "starting-api", "starting-web", "up"}:
         raise RuntimeErrorSafe("The local rehearsal is not ready to start its VMMS app.")
+    if journal.get("phase") == "up":
+        node = shutil.which("node")
+        vmms_root = Path(__file__).resolve().parents[2]
+        processes = journal.get("processes") if isinstance(journal.get("processes"), dict) else {}
+        api_live = bool(node and "api" in processes and _check_recorded_app_process(
+            "api", processes["api"], node_executable=str(Path(node).resolve()),
+            script_marker=str(vmms_root / "apps/api/src/server.ts"), port=journal.get("apiPort", 0)))
+        web_live = bool(node and "web" in processes and _check_recorded_app_process(
+            "web", processes["web"], node_executable=str(Path(node).resolve()),
+            script_marker=str(vmms_root / "node_modules/vite/bin/vite.js"), port=journal.get("webPort", 0)))
+        if not api_live or not web_live:
+            if not api_live:
+                processes.pop("api", None)
+            if not web_live:
+                processes.pop("web", None)
+            journal["processes"] = processes
+            journal["phase"] = "starting-api" if not api_live else "starting-web"
+            _write_runtime(runtime_path, journal)
+    verify = verify_prepared_installation(installation_id, root=root)
+    journal = lifecycle._read_json(runtime_path)
     node = shutil.which("node")
     if not node:
         raise RuntimeErrorSafe("Node.js is unavailable in the local environment.")

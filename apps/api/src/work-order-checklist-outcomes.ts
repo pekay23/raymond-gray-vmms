@@ -79,10 +79,58 @@ export const checklistOutcomeHistorySchema = z.object({
   pagination: z.object({ page:z.number().int().positive(), pageSize:z.number().int().positive(), totalItems:z.number().int().nonnegative(), totalPages:z.number().int().nonnegative() }).strict(),
 }).strict();
 
+export const myTaskChecklistItemsSchema = z.object({
+  workOrderId: uuid,
+  taskId: uuid,
+  workPlanRevisionId: uuid,
+  assignmentRevision: z.number().int().positive(),
+  checklists: z.array(z.object({
+    id: uuid,
+    state: z.enum(['draft','in-progress','submitted','returned','approved','closed']),
+    version: z.number().int().positive(),
+    templateCode: z.string(),
+    templateRevision: z.number().int().positive(),
+    items: z.array(z.object({id:uuid,code:z.string(),definition:z.record(z.string(),z.unknown())}).strict()),
+  }).strict()),
+}).strict();
+
+export async function readMyTaskChecklistItems(pool:Database,scope:Scope,workOrderId:string,taskId:string,requestId:string) {
+  return scoped(pool,scope,async client=>{
+    await requireActiveReadMembership(client,scope);
+    const assignment=await currentAssignment(client,scope,workOrderId,taskId);
+    const result=await client.query(`SELECT checklist.id,checklist.state,checklist.version,
+        template.template_code AS "templateCode",template.revision AS "templateRevision",
+        coalesce(items.rows,'[]'::jsonb) AS items
+      FROM public.work_order_checklists checklist
+      JOIN public.workshop_checklist_template_revisions template
+        ON template.organisation_id=checklist.organisation_id AND template.site_id=checklist.site_id
+        AND template.id=checklist.template_revision_id
+      LEFT JOIN LATERAL (
+        SELECT jsonb_agg(jsonb_build_object('id',item.id,'code',item.item_code,'definition',item.definition_snapshot)
+          ORDER BY item.ordinal,item.id) AS rows
+        FROM public.work_order_checklist_items item
+        WHERE item.organisation_id=checklist.organisation_id AND item.site_id=checklist.site_id
+          AND item.work_order_id=checklist.work_order_id AND item.checklist_id=checklist.id
+      ) items ON true
+      WHERE checklist.organisation_id=$1 AND checklist.site_id=$2 AND checklist.work_order_id=$3
+        AND checklist.kind='routine-maintenance'
+      ORDER BY checklist.created_at DESC,checklist.id DESC LIMIT 100`,
+    [scope.organisationId,scope.siteId,workOrderId]);
+    const checklists=z.array(myTaskChecklistItemsSchema.shape.checklists.element).parse(result.rows);
+    await recordSensitiveRead(client,scope,'my-task-checklist-items-read',Math.min(checklists.length,100),requestId);
+    return myTaskChecklistItemsSchema.parse({workOrderId,taskId,workPlanRevisionId:assignment.workPlanRevisionId,
+      assignmentRevision:assignment.assignmentRevision,checklists});
+  });
+}
+
 type Input = z.infer<typeof checklistOutcomeInputSchema>;
 const itemRulesSchema = z.object({
   id: z.string().trim().min(1).max(100),
   label: z.string().optional(),
+  classification: z.object({
+    systemCode: z.string().regex(/^[A-Z0-9][A-Z0-9._:-]{1,159}$/),
+    taskClassCode: z.string().regex(/^[A-Z0-9][A-Z0-9._:-]{1,159}$/),
+  }).strict(),
   requiredQualifications: z.array(z.string().regex(/^[A-Z0-9][A-Z0-9._-]{1,79}$/)).min(1).max(20),
   evidenceRequired: z.boolean().optional(),
   notApplicableAllowed: z.boolean().optional(),
@@ -123,12 +171,13 @@ async function assertCurrentAssignment(client: PoolClient, scope: Scope, workOrd
   return assignment;
 }
 
-async function assertChecklistSource(client: PoolClient, scope: Scope, workOrderId: string, checklistId: string, itemId: string) {
+export async function assertChecklistSource(client: PoolClient, scope: Scope, workOrderId: string, checklistId: string, itemId: string) {
   const result = await client.query(`
     SELECT checklist.id,checklist.version,checklist.state,checklist.kind,checklist.template_revision_id AS "templateRevisionId",
       checklist.vehicle_snapshot AS "vehicleSnapshot",template.kind AS "templateKind",template.items,template.vehicle_make AS make,template.vehicle_model AS model,
       template.vehicle_variant AS variant,template.powertrain,
       vehicle.vin AS "actualVin",vehicle.make AS "actualMake",vehicle.model AS "actualModel",vehicle.variant AS "actualVariant",vehicle.powertrain AS "actualPowertrain",
+      work.powertrain_class AS "powertrainClass",
       item.id AS "itemId",item.item_code AS "itemCode",item.definition_snapshot AS definition
     FROM public.work_order_checklists checklist
     JOIN public.work_orders work ON work.organisation_id=checklist.organisation_id AND work.site_id=checklist.site_id
@@ -140,13 +189,14 @@ async function assertChecklistSource(client: PoolClient, scope: Scope, workOrder
       AND item.site_id=checklist.site_id AND item.work_order_id=checklist.work_order_id
       AND item.checklist_id=checklist.id AND item.id=$5
     WHERE checklist.organisation_id=$1 AND checklist.site_id=$2 AND checklist.work_order_id=$3 AND checklist.id=$4
-    FOR UPDATE OF checklist,item`,[scope.organisationId,scope.siteId,workOrderId,checklistId,itemId]);
+    FOR UPDATE OF checklist`,[scope.organisationId,scope.siteId,workOrderId,checklistId,itemId]);
   const row = result.rows[0] as Record<string,unknown>|undefined;
   if (!row) notFound();
   const parsed = z.object({
     id:uuid,version:z.number().int().positive(),state:z.enum(['draft','in-progress','submitted','returned','approved','closed']),
     kind:z.enum(['pdi','routine-maintenance']),templateKind:z.enum(['pdi','routine-maintenance']),templateRevisionId:uuid,items:z.array(z.unknown()),make:z.string(),model:z.string(),variant:z.string(),powertrain:z.string(),
     vehicleSnapshot:z.record(z.string(),z.unknown()),actualVin:z.string(),actualMake:z.string(),actualModel:z.string(),actualVariant:z.string().nullable(),actualPowertrain:z.string().nullable(),
+    powertrainClass:z.enum(['EV','HYB','ICE']),
     itemId:uuid,itemCode:z.string(),definition:z.record(z.string(),z.unknown()),
   }).parse(row);
   if (parsed.version !== undefined && parsed.state !== 'in-progress') {
@@ -228,7 +278,7 @@ async function assertChecklistSource(client: PoolClient, scope: Scope, workOrder
           AND grant_row.grant_revision::text=decision.grant_snapshot->>'grant_revision'
           AND grant_row.revoked_at IS NULL AND grant_row.valid_from<=clock_timestamp()
           AND (grant_row.valid_until IS NULL OR grant_row.valid_until>clock_timestamp()))
-    ORDER BY decision.decided_at DESC,decision.id DESC LIMIT 1 FOR SHARE OF decision`,
+    ORDER BY decision.decided_at DESC,decision.id DESC LIMIT 1`,
   [scope.organisationId,scope.siteId,parsed.templateRevisionId]);
   if (!source.rowCount) throw new ApiError(409,'CHECKLIST_SOURCE_NOT_EFFECTIVE','The exact vehicle checklist or its approved source is not currently effective.');
   const definition = parsed.items.find(candidate => {
@@ -236,30 +286,37 @@ async function assertChecklistSource(client: PoolClient, scope: Scope, workOrder
     return (candidate as Record<string,unknown>).id === parsed.itemCode && isDeepStrictEqual(candidate,parsed.definition);
   });
   if (!definition) throw new ApiError(409,'CHECKLIST_ITEM_SOURCE_MISMATCH','This checklist item does not match its immutable source template revision.');
-  return { version:parsed.version,templateRevisionId:parsed.templateRevisionId,itemCode:parsed.itemCode,definition:parsed.definition };
+  return { version:parsed.version,templateRevisionId:parsed.templateRevisionId,itemCode:parsed.itemCode,definition:parsed.definition,
+    actualMake:parsed.actualMake,actualModel:parsed.actualModel,actualVariant:parsed.actualVariant,powertrainClass:parsed.powertrainClass };
 }
 
-async function lockOutcomeAuthority(client: PoolClient, scope: Scope) {
-  const result = await client.query(`SELECT to_jsonb(grant_row) AS snapshot FROM public.staff_authority_grants grant_row
-    WHERE grant_row.organisation_id=$1 AND grant_row.site_id=$2 AND grant_row.staff_user_id=$3
-      AND grant_row.capability='work-order.checklist.item-outcome.record' AND grant_row.revoked_at IS NULL
-      AND grant_row.valid_from<=clock_timestamp() AND (grant_row.valid_until IS NULL OR grant_row.valid_until>clock_timestamp())
-    ORDER BY grant_row.grant_revision DESC,grant_row.id LIMIT 1 FOR SHARE`,[scope.organisationId,scope.siteId,scope.actorId]);
-  if (!result.rowCount) throw new ApiError(403,'CHECKLIST_OUTCOME_AUTHORITY_REQUIRED','A current checklist-outcome authority grant is required. Ask the authorized technical manager to review access.');
-  return z.record(z.string(),z.unknown()).parse((result.rows[0] as {snapshot:unknown}).snapshot);
+async function lockOutcomeAuthority(client: PoolClient) {
+  const result = await client.query(`SELECT public.lock_work_order_authority_grant('work-order.checklist.item-outcome.record') AS snapshot`);
+  const snapshot = result.rows[0]?.snapshot;
+  if (!snapshot) throw new ApiError(403,'CHECKLIST_OUTCOME_AUTHORITY_REQUIRED','A current checklist-outcome authority grant is required. Ask the authorized technical manager to review access.');
+  return z.record(z.string(),z.unknown()).parse(snapshot);
 }
 
-async function lockQualifications(client: PoolClient, scope: Scope, codes: string[]) {
-  const result = await client.query(`SELECT qualification_code AS code,qualification_revision AS revision,
-      evidence_reference AS "evidenceReference",assessed_by AS "assessedBy",assessed_at AS "assessedAt",valid_from AS "validFrom",valid_until AS "validUntil"
-    FROM public.staff_qualifications WHERE organisation_id=$1 AND site_id=$2 AND staff_user_id=$3
-      AND qualification_code=ANY($4::text[]) AND state='accepted'
-      AND valid_from<=clock_timestamp() AND (valid_until IS NULL OR valid_until>clock_timestamp())
-    ORDER BY qualification_code,qualification_revision DESC FOR SHARE`,[scope.organisationId,scope.siteId,scope.actorId,codes]);
-  const latest = new Map<string,Record<string,unknown>>();
-  for (const row of result.rows as Array<Record<string,unknown>>) if (!latest.has(String(row.code))) latest.set(String(row.code),row);
-  if (codes.some(code => !latest.has(code))) throw new ApiError(403,'CHECKLIST_QUALIFICATION_REQUIRED','One or more qualifications required by the approved item are missing or expired. Ask the technical manager to verify qualifications.');
-  return codes.map(code => latest.get(code)!);
+function qualificationModelScopeKey(make: string, model: string, variant: string) {
+  return [make, model, variant]
+    .map(value => value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('en-US'))
+    .join('::');
+}
+
+async function lockQualifications(
+  client: PoolClient,
+  codes: string[],
+  scope: { model: string; systemCode: string; taskClassCode: string; powertrainClass: 'EV' | 'HYB' | 'ICE' },
+) {
+  const qualifications: Record<string,unknown>[] = [];
+  for (const code of codes) {
+    const result = await client.query(`SELECT public.lock_work_order_checklist_qualification($1,$2,$3,$4,$5) AS qualification`,
+      [code,scope.model,scope.systemCode,scope.taskClassCode,scope.powertrainClass]);
+    const qualification = result.rows[0]?.qualification;
+    if (!qualification) throw new ApiError(403,'CHECKLIST_QUALIFICATION_REQUIRED','One or more qualifications required by the approved item are missing or expired. Ask the technical manager to verify qualifications.');
+    qualifications.push(z.record(z.string(),z.unknown()).parse(qualification));
+  }
+  return qualifications;
 }
 
 async function assertAcceptedOrderEvidence(client: PoolClient, scope: Scope, workOrderId: string, evidenceIds: string[]) {
@@ -286,8 +343,13 @@ async function lockChecklistOutcomeContext(
   const sourceItem = itemRulesSchema.safeParse(checklist.definition);
   if (!sourceItem.success) throw new ApiError(409,'CHECKLIST_MODEL_RULES_INCOMPLETE','The item lacks approved model-specific qualification and measurement rules.');
   const rules = validateOutcomeAgainstItemRules(input,checklist.definition);
-  const grant = await lockOutcomeAuthority(client,scope);
-  const qualifications = await lockQualifications(client,scope,rules.requiredQualifications);
+  const grant = await lockOutcomeAuthority(client);
+  const qualifications = await lockQualifications(client,rules.requiredQualifications,{
+    model:qualificationModelScopeKey(checklist.actualMake,checklist.actualModel,checklist.actualVariant!),
+    systemCode:rules.classification.systemCode,
+    taskClassCode:rules.classification.taskClassCode,
+    powertrainClass:checklist.powertrainClass,
+  });
   if (forMutation) await assertAcceptedOrderEvidence(client,scope,workOrderId,input.evidenceIds);
   const isRequiredMeasurement = rules.measurementRule?.required === true;
   if (isRequiredMeasurement && !input.measurement) throw new ApiError(409,'CHECKLIST_MEASUREMENT_REQUIRED','Record the measurement and unit prescribed by the approved vehicle checklist.');
@@ -373,7 +435,7 @@ async function readOutcomeRows(
       revision.applicability_reason AS "applicabilityReason",revision.comments,revision.measurement,
       revision.assignment_revision AS "assignmentRevision",revision.work_plan_revision_id AS "workPlanRevisionId",
       revision.supersedes_revision_id AS "supersedesRevisionId",revision.correction_reason AS "correctionReason",
-      revision.recorded_at AS "recordedAt",actor.display_name AS "actorName",assignee.display_name AS "assigneeName",
+      revision.created_at AS "recordedAt",actor.display_name AS "actorName",assignee.display_name AS "assigneeName",
       coalesce(evidence.items,'[]'::jsonb) AS "evidenceIds"
     FROM public.work_order_checklist_item_revisions revision
     JOIN public.staff_users actor ON actor.id=revision.actor_id
@@ -384,7 +446,7 @@ async function readOutcomeRows(
         AND link.outcome_revision_id=revision.id) evidence ON true
     WHERE revision.organisation_id=$1 AND revision.site_id=$2 AND revision.work_order_id=$3
       AND revision.task_id=$4 AND revision.checklist_id=$5 AND ($6::uuid IS NULL OR revision.checklist_item_id=$6)
-    ORDER BY revision.recorded_at ${latestOnly?'DESC':'ASC'},revision.id ${latestOnly?'DESC':'ASC'}
+    ORDER BY revision.created_at DESC,revision.id DESC
     OFFSET CASE WHEN $7 THEN 0 ELSE $8 END LIMIT CASE WHEN $7 THEN 1 ELSE $9 END`,
   [scope.organisationId,scope.siteId,workOrderId,taskId,checklistId,itemId??null,latestOnly,(effectivePage-1)*pageSize,pageSize]);
   return {checklistVersion:row.version,sourceTemplateRevisionId:row.sourceTemplateRevisionId,

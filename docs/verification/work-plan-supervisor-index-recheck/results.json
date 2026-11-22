@@ -1,0 +1,10 @@
+{
+  "recordedAt": "2026-11-20T00:03:24.959Z",
+  "scope": "Synthetic, disposable PostgreSQL scenario with operations reviewer, assigned qualified team lead, receiving Supervisor, direct-report Technician, real VMMS API and browser work-plan/assigned-task UI.",
+  "result": "RUNNING",
+  "checks": [],
+  "limitations": [
+    "Physical-device, production role schedule, SOP and management approval remain untested.",
+    "This draft does not authorize repairs or satisfy G2."
+  ]
+}

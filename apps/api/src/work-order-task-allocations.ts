@@ -35,6 +35,9 @@ export const taskAllocationsSchema = z.object({
     displayName: z.string(),
     roleCode: z.literal('technician-engineer-trainee'),
     placementId: uuid,
+    currentPlanTaskCount: z.number().int().nonnegative(),
+    lastReportedBlockedTaskCount: z.number().int().nonnegative(),
+    lastReportedWaitingTaskCount: z.number().int().nonnegative(),
   }).strict()),
 }).strict();
 
@@ -178,18 +181,104 @@ export function getPlanState(context: PlanContext) {
 async function activeDirectReports(client: PoolClient, scope: Scope, supervisorPlacementId: string) {
   const result = await client.query(`
     SELECT placement.id AS "placementId",placement.staff_user_id AS "staffUserId",
-      staff.display_name AS "displayName",placement.role_code AS "roleCode"
+      staff.display_name AS "displayName",placement.role_code AS "roleCode",
+      coalesce(workload.task_count,0)::int AS "currentPlanTaskCount",
+      coalesce(workload.blocked_task_count,0)::int AS "lastReportedBlockedTaskCount",
+      coalesce(workload.waiting_task_count,0)::int AS "lastReportedWaitingTaskCount"
     FROM public.staff_role_placements placement
     JOIN public.staff_users staff ON staff.id=placement.staff_user_id AND staff.active
     JOIN public.memberships membership ON membership.user_id=placement.staff_user_id
       AND membership.site_id=placement.site_id
       AND membership.active AND membership.can_write
+    LEFT JOIN LATERAL (
+      WITH latest_review AS (
+        SELECT DISTINCT ON (review.work_order_id) review.work_order_id,review.id
+        FROM public.work_order_operations_reviews review
+        WHERE review.organisation_id=$1 AND review.site_id=$2
+        ORDER BY review.work_order_id,review.reviewed_work_order_version DESC,review.id DESC
+      ), latest_lead AS (
+        SELECT DISTINCT ON (assignment.work_order_id) assignment.work_order_id,assignment.id,assignment.operations_review_id
+        FROM public.work_order_lead_assignments assignment
+        WHERE assignment.organisation_id=$1 AND assignment.site_id=$2
+        ORDER BY assignment.work_order_id,assignment.created_at DESC,assignment.id DESC
+      ), latest_plan AS (
+        SELECT DISTINCT ON (plan.work_order_id,plan.lead_assignment_id)
+          plan.work_order_id,plan.lead_assignment_id,plan.id,plan.created_work_order_version
+        FROM public.work_order_work_plan_revisions plan
+        WHERE plan.organisation_id=$1 AND plan.site_id=$2
+        ORDER BY plan.work_order_id,plan.lead_assignment_id,plan.revision_number DESC,plan.id DESC
+      ), current_handoffs AS (
+        SELECT work.id AS work_order_id,plan.id AS plan_revision_id,handoff.work_order_version
+        FROM public.work_orders work
+        JOIN latest_review review ON review.work_order_id=work.id
+        JOIN latest_lead lead ON lead.work_order_id=work.id AND lead.operations_review_id=review.id
+        JOIN latest_plan plan ON plan.work_order_id=work.id AND plan.lead_assignment_id=lead.id
+        JOIN LATERAL (
+          SELECT current_handoff.work_order_version
+          FROM public.work_order_supervisor_handoffs current_handoff
+          WHERE current_handoff.organisation_id=$1 AND current_handoff.site_id=$2
+            AND current_handoff.work_order_id=work.id AND current_handoff.lead_assignment_id=lead.id
+            AND current_handoff.work_plan_revision_id=plan.id
+          ORDER BY current_handoff.created_at DESC,current_handoff.id DESC LIMIT 1
+        ) handoff ON true
+        WHERE work.organisation_id=$1 AND work.site_id=$2
+          AND (plan.created_work_order_version=work.version OR handoff.work_order_version<=work.version)
+          AND NOT EXISTS (
+            SELECT 1 FROM public.domain_events event
+            WHERE event.organisation_id=work.organisation_id AND event.site_id=work.site_id
+              AND event.aggregate_id=work.id AND event.aggregate_version>handoff.work_order_version
+              AND event.event_type<>'work-order.tasks-assigned'
+          )
+      ), latest_assignments AS (
+        SELECT DISTINCT ON (assignment.work_order_id,assignment.work_plan_revision_id,assignment.task_id)
+          assignment.work_order_id,assignment.work_plan_revision_id,assignment.task_id,
+          assignment.assignee_placement_id,assignment.assignment_revision
+        FROM public.work_order_task_assignment_revisions assignment
+        JOIN current_handoffs current ON current.work_order_id=assignment.work_order_id
+          AND current.plan_revision_id=assignment.work_plan_revision_id
+        JOIN public.work_order_work_plan_revision_tasks planned ON planned.organisation_id=assignment.organisation_id
+          AND planned.site_id=assignment.site_id AND planned.work_order_id=assignment.work_order_id
+          AND planned.work_plan_revision_id=assignment.work_plan_revision_id AND planned.task_id=assignment.task_id
+        WHERE assignment.organisation_id=$1 AND assignment.site_id=$2
+        ORDER BY assignment.work_order_id,assignment.work_plan_revision_id,assignment.task_id,
+          assignment.assignment_revision DESC,assignment.id DESC
+      )
+      , latest_progress AS (
+        SELECT DISTINCT ON (activity.work_order_id,activity.work_plan_revision_id,activity.task_id)
+          activity.work_order_id,activity.work_plan_revision_id,activity.task_id,
+          activity.progress_state
+        FROM public.work_order_task_activity activity
+        JOIN latest_assignments assignment ON assignment.work_order_id=activity.work_order_id
+          AND assignment.work_plan_revision_id=activity.work_plan_revision_id
+          AND assignment.task_id=activity.task_id
+          AND assignment.assignment_revision=activity.assignment_revision
+        WHERE activity.organisation_id=$1 AND activity.site_id=$2 AND activity.entry_type='progress'
+        ORDER BY activity.work_order_id,activity.work_plan_revision_id,activity.task_id,
+          activity.created_at DESC,activity.id DESC
+      )
+      SELECT count(*)::int AS task_count,
+        count(*) FILTER (WHERE progress.progress_state='blocked')::int AS blocked_task_count,
+        count(*) FILTER (WHERE progress.progress_state='waiting')::int AS waiting_task_count
+      FROM latest_assignments assignment
+      LEFT JOIN latest_progress progress ON progress.work_order_id=assignment.work_order_id
+        AND progress.work_plan_revision_id=assignment.work_plan_revision_id
+        AND progress.task_id=assignment.task_id
+      WHERE assignment.assignee_placement_id=placement.id
+    ) workload ON true
     WHERE placement.organisation_id=$1 AND placement.site_id=$2
       AND placement.reports_to_placement_id=$3 AND placement.state='active'
       AND placement.role_code='technician-engineer-trainee'
     ORDER BY staff.display_name,placement.staff_user_id
   `, [scope.organisationId, scope.siteId, supervisorPlacementId]);
-  return z.array(z.object({ placementId: uuid, staffUserId: uuid, displayName: z.string(), roleCode: z.literal('technician-engineer-trainee') })).parse(result.rows);
+  return z.array(z.object({
+    placementId: uuid,
+    staffUserId: uuid,
+    displayName: z.string(),
+    roleCode: z.literal('technician-engineer-trainee'),
+    currentPlanTaskCount: z.number().int().nonnegative(),
+    lastReportedBlockedTaskCount: z.number().int().nonnegative(),
+    lastReportedWaitingTaskCount: z.number().int().nonnegative(),
+  })).parse(result.rows);
 }
 
 export async function readTaskAllocations(pool: Database, scope: Scope, workOrderId: string, requestId: string) {

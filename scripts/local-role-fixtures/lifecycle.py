@@ -29,6 +29,7 @@ WINDOWS_PRINCIPALS = (
     "s-1-5-18",
     "s-1-5-32-544",
 )
+PERSONA_MANIFEST_PATH = Path(__file__).with_name("personas.json")
 
 
 class FixtureStateError(Exception):
@@ -265,6 +266,20 @@ def inspect_installation(
     }
 
 
+def _expected_identity_actor_keys() -> set[str]:
+    try:
+        manifest = json.loads(PERSONA_MANIFEST_PATH.read_text(encoding="utf-8"))
+        staff = manifest.get("staff")
+        if not isinstance(staff, list) or not staff or any(not isinstance(persona, dict) for persona in staff):
+            raise ValueError
+        if not isinstance(manifest.get("owner"), dict):
+            raise ValueError
+        count = len(staff) + 1
+    except (OSError, json.JSONDecodeError, AttributeError, ValueError):
+        raise FixtureStateError("The current role persona manifest is invalid.") from None
+    return {f"p{index:02d}" for index in range(1, count + 1)}
+
+
 def _validate_identity_receipt(receipt: Any, state: dict[str, Any], installation_id: str) -> None:
     if not isinstance(receipt, dict):
         raise FixtureStateError("The identity receipt is invalid.")
@@ -275,11 +290,12 @@ def _validate_identity_receipt(receipt: Any, state: dict[str, Any], installation
         raise FixtureStateError("The identity receipt issuer does not match the fixture state.")
     if receipt.get("clientId") != state["clientId"]:
         raise FixtureStateError("The identity receipt client does not match the fixture state.")
+    expected_actor_keys = _expected_identity_actor_keys()
     actors = receipt.get("actors")
-    if not isinstance(actors, list) or len(actors) != 16:
-        raise FixtureStateError("The identity receipt must include all 15 staff identities and the separate owner test identity.")
+    if not isinstance(actors, list) or len(actors) != len(expected_actor_keys):
+        raise FixtureStateError("The identity receipt must include every current staff persona and the separate owner test identity.")
     keys = [item.get("key") for item in actors if isinstance(item, dict)]
-    if len(keys) != 16 or set(keys) != {f"p{index:02d}" for index in range(1, 17)}:
+    if len(keys) != len(expected_actor_keys) or set(keys) != expected_actor_keys:
         raise FixtureStateError("The identity receipt has missing or unexpected synthetic actor markers.")
     for item in actors:
         try:

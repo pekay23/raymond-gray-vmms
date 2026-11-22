@@ -70,11 +70,13 @@ class LocalRoleFixtureInstanceTests(unittest.TestCase):
             request = json.loads((state_dir / "identity-request.json").read_text(encoding="utf-8"))
             credentials = json.loads((state_dir / "identity-credentials.json").read_text(encoding="utf-8"))
             login_guide = (state_dir / "login-credentials.txt").read_text(encoding="utf-8")
+            personas = json.loads(Path(__file__).with_name("personas.json").read_text(encoding="utf-8"))
+            expected_actor_count = len(personas["staff"]) + 1
 
             self.assertEqual(state["installationId"], "a1b2c3d4-1122-4334-8556-aabbccddeeff")
             self.assertEqual(state["instanceSlug"], "a1b2c3d4")
-            self.assertEqual(len(request["actors"]), 15)
-            self.assertEqual(set(credentials["actors"]), {f"p{index:02d}" for index in range(1, 16)})
+            self.assertEqual(len(request["actors"]), expected_actor_count)
+            self.assertEqual(set(credentials["actors"]), {f"p{index:02d}" for index in range(1, expected_actor_count + 1)})
             self.assertNotIn("roleCode", json.dumps(request))
             self.assertNotIn("clientSecret", json.dumps(state))
             self.assertNotIn("databasePassword", json.dumps(state))

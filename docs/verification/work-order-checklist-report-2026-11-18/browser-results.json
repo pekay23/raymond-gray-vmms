@@ -1,0 +1,32 @@
+{
+  "result": "passed",
+  "mode": "mocked browser API; synthetic report only",
+  "browser": "Chromium 157.0.4341.60",
+  "widths": [
+    320,
+    360,
+    390,
+    430,
+    768,
+    1024,
+    1440
+  ],
+  "pagesFetched": [
+    {
+      "page": 1,
+      "expectedChecklistVersion": null
+    },
+    {
+      "page": 2,
+      "expectedChecklistVersion": "7"
+    }
+  ],
+  "axeViolations": 0,
+  "printView": {
+    "printMode": true,
+    "reportVisibility": "visible",
+    "toolbarDisplay": "none",
+    "title": "EV-SR-00017 maintenance checklist"
+  },
+  "pageErrors": []
+}

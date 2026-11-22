@@ -4,16 +4,20 @@ import {
   buildAuthorizationUrl,
   buildEndSessionUrl,
   calculatePKCECodeChallenge,
+  ClientSecretBasic,
   discovery,
   enableNonRepudiationChecks,
+  customFetch as customFetchKey,
   randomPKCECodeVerifier,
   randomState,
   randomNonce,
+  type CustomFetch,
 } from 'openid-client';
 import { z } from 'zod';
 import type { Config } from './config.js';
 
-const subjectClaims = z.object({ iss: z.string().url(), sub: z.string().min(1).max(255), sid: z.string().min(1).max(255).optional(), iat: z.number().int().positive() });
+const mfaAssuranceClass = 'urn:raymond-gray:auth:mfa';
+const subjectClaims = z.object({ iss: z.string().url(), sub: z.string().min(1).max(255), sid: z.string().min(1).max(255).optional(), iat: z.number().int().positive(), acr: z.string().optional(), amr: z.array(z.string()).optional() });
 
 export type AuthorizationParameters = {
   state: string;
@@ -38,7 +42,7 @@ export class OidcClient implements OidcProvider {
   private clientConfiguration: ReturnType<typeof discovery> | undefined;
   private readonly clientSecret: string;
 
-  constructor(private readonly config: Config) {
+  constructor(private readonly config: Config, private readonly customFetch?: CustomFetch) {
     const secret = config.OIDC_CLIENT_SECRET;
     if (!secret) throw new Error('OIDC client secret is required outside isolated tests.');
     this.clientSecret = secret;
@@ -55,6 +59,7 @@ export class OidcClient implements OidcProvider {
       nonce: input.nonce,
       code_challenge: challenge,
       code_challenge_method: 'S256',
+      ...(this.config.OIDC_REQUIRE_MFA_ASSURANCE ? { acr_values: mfaAssuranceClass } : {}),
     });
   }
 
@@ -67,6 +72,7 @@ export class OidcClient implements OidcProvider {
     });
     const claims = subjectClaims.parse(tokens.claims());
     if (claims.iss !== this.config.OIDC_ISSUER) throw new Error('The identity issuer did not match the configured issuer.');
+    if (this.config.OIDC_REQUIRE_MFA_ASSURANCE && (claims.acr !== mfaAssuranceClass || !claims.amr?.includes('mfa'))) throw new Error('The identity provider did not prove fresh multi-factor authentication.');
     return { issuer: claims.iss, subject: claims.sub, ...(claims.sid ? { sessionId: claims.sid } : {}), issuedAt: claims.iat };
   }
 
@@ -84,9 +90,9 @@ export class OidcClient implements OidcProvider {
       const discoveryRequest = discovery(
         new URL(this.config.OIDC_ISSUER),
         this.config.OIDC_CLIENT_ID,
-        this.clientSecret,
         undefined,
-        { execute: new URL(this.config.OIDC_ISSUER).protocol==='http:'?[allowInsecureRequests]:[] },
+        ClientSecretBasic(this.clientSecret),
+        { execute: new URL(this.config.OIDC_ISSUER).protocol==='http:'?[allowInsecureRequests]:[], ...(this.customFetch ? { [customFetchKey]: this.customFetch } : {}) },
       ).then((client) => {
         enableNonRepudiationChecks(client);
         return client;

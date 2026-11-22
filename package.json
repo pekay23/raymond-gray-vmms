@@ -50,7 +50,10 @@
     "dev:link-auth": "npm run dev:link-auth --workspace @vmms/api",
     "dev:seed-browser-switch": "npm run dev:seed-browser-switch --workspace @vmms/api",
     "verify:service-requests-browser": "node --import tsx scripts/service-requests-real-browser.mjs --run",
-    "verify:sales-deliveries-browser": "node --import tsx scripts/sales-deliveries-real-browser.mjs --run"
+    "verify:sales-deliveries-browser": "node --import tsx scripts/sales-deliveries-real-browser.mjs --run",
+    "verify:checklist-report-browser": "node scripts/work-order-checklist-report-browser.mjs",
+    "verify:checklist-review-browser": "node scripts/checklist-review-browser.mjs",
+    "verify:checklist-preparation-browser": "node scripts/checklist-preparation-browser.mjs"
   },
   "dependencies": {
     "railway": "^3.17.0"

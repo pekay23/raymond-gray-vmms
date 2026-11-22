@@ -8,7 +8,6 @@ CREATE TABLE public.oidc_rp_logout_transactions (
 CREATE INDEX oidc_rp_logout_transactions_expiry
   ON public.oidc_rp_logout_transactions(expires_at);
 
-ALTER TABLE public.oidc_rp_logout_transactions OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON TABLE public.oidc_rp_logout_transactions FROM PUBLIC, vmms_runtime;
 
 CREATE FUNCTION public.create_oidc_rp_logout_transaction(p_state_hash text, p_binding_hash text, p_destination text)
@@ -23,7 +22,6 @@ BEGIN
     VALUES(p_state_hash,p_binding_hash,p_destination,transaction_timestamp()+interval '5 minutes');
 END
 $function$;
-ALTER FUNCTION public.create_oidc_rp_logout_transaction(text,text,text) OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.create_oidc_rp_logout_transaction(text,text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.create_oidc_rp_logout_transaction(text,text,text) TO vmms_runtime;
 
@@ -34,7 +32,6 @@ LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog AS $function$
   WHERE p_state_hash ~ '^[0-9a-f]{64}$' AND p_binding_hash ~ '^[0-9a-f]{64}$'
     AND state_hash=p_state_hash AND browser_binding_hash=p_binding_hash
 $function$;
-ALTER FUNCTION public.cancel_oidc_rp_logout_transaction(text,text) OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.cancel_oidc_rp_logout_transaction(text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.cancel_oidc_rp_logout_transaction(text,text) TO vmms_runtime;
 
@@ -48,7 +45,6 @@ LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog AS $function$
     AND transaction.expires_at>transaction_timestamp()
   RETURNING transaction.destination
 $function$;
-ALTER FUNCTION public.consume_oidc_rp_logout_transaction(text,text) OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.consume_oidc_rp_logout_transaction(text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.consume_oidc_rp_logout_transaction(text,text) TO vmms_runtime;
 
@@ -64,6 +60,16 @@ BEGIN
   );
 END
 $function$;
-ALTER FUNCTION public.expire_oidc_rp_logout_transactions() OWNER TO vmms_identity_function_owner;
 REVOKE ALL ON FUNCTION public.expire_oidc_rp_logout_transactions() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.expire_oidc_rp_logout_transactions() TO vmms_runtime;
+
+-- Managed PostgreSQL roles are not superusers; temporary membership permits the ownership transfer.
+GRANT vmms_identity_function_owner TO CURRENT_USER;
+GRANT CREATE ON SCHEMA public TO vmms_identity_function_owner;
+ALTER TABLE public.oidc_rp_logout_transactions OWNER TO vmms_identity_function_owner;
+ALTER FUNCTION public.create_oidc_rp_logout_transaction(text,text,text) OWNER TO vmms_identity_function_owner;
+ALTER FUNCTION public.cancel_oidc_rp_logout_transaction(text,text) OWNER TO vmms_identity_function_owner;
+ALTER FUNCTION public.consume_oidc_rp_logout_transaction(text,text) OWNER TO vmms_identity_function_owner;
+ALTER FUNCTION public.expire_oidc_rp_logout_transactions() OWNER TO vmms_identity_function_owner;
+REVOKE CREATE ON SCHEMA public FROM vmms_identity_function_owner;
+REVOKE vmms_identity_function_owner FROM CURRENT_USER;
